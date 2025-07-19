@@ -1,0 +1,26 @@
+import com.evtnet.evtnetback.Entities.Base;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.List;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@Entity
+@Table(name = "Caracteristica")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Caracteristica extends Base {
+
+    @Column(name = "nombre")
+    private String nombre;
+    
+    // Relaciones
+    @OneToMany(mappedBy = "caracteristica")
+    private List<IconoCaracteristica> iconosCaracteristica;
+    
+    @ManyToMany(mappedBy = "caracteristicas")
+    private List<Espacio> espacios;
+} 
