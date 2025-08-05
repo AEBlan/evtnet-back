@@ -1,4 +1,4 @@
-package main.java.com.evtnet.evtnetback.Entities;
+package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

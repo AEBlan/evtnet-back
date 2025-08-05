@@ -1,4 +1,4 @@
-package main.java.com.evtnet.evtnetback.Repositories;
+package com.evtnet.evtnetback.Repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
