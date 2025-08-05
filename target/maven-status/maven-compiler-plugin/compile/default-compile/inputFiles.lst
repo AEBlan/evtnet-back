@@ -1,7 +1,63 @@
-C:\Users\Sergio\Desktop\OTRO\evtnet - back\evtnet-back\src\main\java\com\evtnet\evtnetback\Controllers\BaseController.java
-C:\Users\Sergio\Desktop\OTRO\evtnet - back\evtnet-back\src\main\java\com\evtnet\evtnetback\Controllers\BaseControllerImpl.java
-C:\Users\Sergio\Desktop\OTRO\evtnet - back\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Base.java
-C:\Users\Sergio\Desktop\OTRO\evtnet - back\evtnet-back\src\main\java\com\evtnet\evtnetback\EvtnetApplication.java
-C:\Users\Sergio\Desktop\OTRO\evtnet - back\evtnet-back\src\main\java\com\evtnet\evtnetback\Repositories\BaseRepository.java
-C:\Users\Sergio\Desktop\OTRO\evtnet - back\evtnet-back\src\main\java\com\evtnet\evtnetback\Services\BaseService.java
-C:\Users\Sergio\Desktop\OTRO\evtnet - back\evtnet-back\src\main\java\com\evtnet\evtnetback\Services\BaseServiceImpl.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Controllers\BaseController.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Controllers\BaseControllerImpl.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Controllers\UsuarioController.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\AdministradorEspacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\AdministradorEvento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\AdministradorSuperEvento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Base.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Calificacion.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\CalificacionMotivoCalificacion.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\CalificacionTipo.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Caracteristica.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Chat.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ComisionPorInscripcion.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ComisionPorOrganizacion.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ComprobantePago.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ConfiguracionHorarioEspacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\DenunciaEvento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\DenunciaEventoEstado.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Disciplina.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\DisciplinaEspacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\DisciplinaEvento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Espacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\EstadoDenunciaEvento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\EstadoSEP.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Evento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\EventoModoEvento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ExcepcionHorarioEspacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Grupo.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\HorarioEspacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\IconoCaracteristica.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ImagenEspacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ImagenMascota.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Inscripcion.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\InstanciaMascota.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\InstanciaMascotaSecuencia.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Invitado.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\MedioDePago.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Mensaje.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ModoEvento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\MotivoCalificacion.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ParametroSistema.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Permiso.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\PorcentajeReintegroCancelacionInscripcion.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\ReseñaEspacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Rol.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\RolPermiso.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\RolUsuario.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\SEPEstado.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\SolicitudEspacioPublico.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\SuperEvento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\TipoCalificacion.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\TipoEspacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\TipoExcepcionHorarioEspacio.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\TipoInscripcionEvento.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\TipoUsuarioGrupo.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\Usuario.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\UsuarioGrupo.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Entities\UsuarioInstanciaMascota.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\EvtnetApplication.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Repositories\BaseRepository.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Repositories\UsuarioRepository.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Services\BaseService.java
+C:\Users\usuario\Desktop\Proyecto\evtnet-back\src\main\java\com\evtnet\evtnetback\Services\BaseServiceImpl.java
