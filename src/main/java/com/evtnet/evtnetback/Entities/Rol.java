@@ -1,4 +1,5 @@
 package com.evtnet.evtnetback.Entities;
+
 import com.evtnet.evtnetback.Entities.Base;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -18,20 +19,20 @@ public class Rol extends Base {
 
     @Column(name = "nombre")
     private String nombre;
-    
+
     @Column(name = "descripcion")
     private String descripcion;
-    
+
     @Column(name = "fechaHoraAlta")
     private LocalDateTime fechaHoraAlta;
-    
+
     @Column(name = "fechaHoraBaja")
     private LocalDateTime fechaHoraBaja;
-    
+
     // Relaciones
-    @OneToMany(mappedBy = "rolPermiso")
+    @OneToMany(mappedBy = "rol")
     private List<RolPermiso> rolesPermiso;
-    
-    @OneToMany(mappedBy = "rolUsuario")
+
+    @OneToMany(mappedBy = "rol") // <- cambiado aquí
     private List<RolUsuario> rolesUsuario;
-} 
+}

@@ -5,6 +5,13 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email VARCHAR(100) NOT NULL UNIQUE
 );
 
--- Insertar un usuario de prueba
-INSERT INTO usuarios (nombre, email) VALUES
-('Usuario de Prueba', 'prueba@evtnet.com');
+
+
+CREATE TABLE IF NOT EXISTS clientes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL
+);
+
+INSERT INTO clientes (nombre, email) VALUES ('Cliente Prueba 1', 'cliente1@prueba.com');
+INSERT INTO clientes (nombre, email) VALUES ('Cliente Prueba 2', 'cliente2@prueba.com');
