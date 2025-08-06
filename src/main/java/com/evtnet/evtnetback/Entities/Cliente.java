@@ -4,11 +4,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "clientes")
-public class Cliente {
+public class Cliente extends Base{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
