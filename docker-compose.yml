@@ -1,28 +1,27 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: evtnet-mysql
+  mariadb:
+    image: mariadb:11.3
+    container_name: evtnet-mariadb
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: evtnet_db
-      MYSQL_USER: evtnet_user
-      MYSQL_PASSWORD: evtnet_pass
+      MARIADB_ROOT_PASSWORD: root123
+      MARIADB_DATABASE: evtnet_db
+      MARIADB_USER: evtnet_user
+      MARIADB_PASSWORD: evtnet_pass
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
       - ./mysql/init:/docker-entrypoint-initdb.d
-    command: --default-authentication-plugin=mysql_native_password
     networks:
       - evtnet-network
 
 volumes:
-  mysql_data:
+  mariadb_data:
     driver: local
 
 networks:
   evtnet-network:
-    driver: bridge 
+    driver: bridge

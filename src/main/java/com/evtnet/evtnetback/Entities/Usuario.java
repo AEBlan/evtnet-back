@@ -54,7 +54,7 @@ public class Usuario extends Base {
     private List<RolUsuario> rolesUsuario;
     
     @OneToMany(mappedBy = "autor")
-    private List<CalificacionTipo> calificacionesTipo;
+    private List<Calificacion> calificacionesComoAutor;
     
     @OneToMany(mappedBy = "denunciante")
     private List<DenunciaEvento> denunciasEvento;
@@ -88,9 +88,6 @@ public class Usuario extends Base {
     @OneToMany(mappedBy = "usuario")
     private List<Inscripcion> inscripciones;
     
-    @OneToMany(mappedBy = "autor")
-    private List<Calificacion> calificacionesComoAutor;
-    
     @OneToMany(mappedBy = "calificado")
     private List<Calificacion> calificacionesComoCalificado;
     
@@ -98,5 +95,4 @@ public class Usuario extends Base {
     private List<DenunciaEventoEstado> denunciasEventoEstado;
     
     @OneToMany(mappedBy = "usuario")
-    private List<SEPEstado> sepEstados;
-}
+    private List<SEPEstado> sepEstados; }
