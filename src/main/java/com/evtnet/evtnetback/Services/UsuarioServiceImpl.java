@@ -1,7 +1,6 @@
 package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.Usuario;
-import com.evtnet.evtnetback.Repositories.BaseRepository;
 import com.evtnet.evtnetback.Repositories.UsuarioRepository;
 import org.springframework.stereotype.Service;
 

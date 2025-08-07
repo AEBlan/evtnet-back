@@ -19,9 +19,5 @@ public class UsuarioController extends BaseControllerImpl <Usuario, UsuarioServi
     @Autowired
     private UsuarioRepository repository;
 
-    @GetMapping("/todos")
-    public List<Usuario> getTodosUsuarios() {
-        return repository.findAll();
-    }
     
 }
