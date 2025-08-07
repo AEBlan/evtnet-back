@@ -2,11 +2,16 @@ package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.Usuario;
 import com.evtnet.evtnetback.Repositories.BaseRepository;
+import com.evtnet.evtnetback.Repositories.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+@Service
 public class UsuarioServiceImpl extends BaseServiceImpl <Usuario, Long> implements UsuarioService {
 
-    public UsuarioServiceImpl(BaseRepository<Usuario, Long> baseRepository) {
-        super(baseRepository);
+    @Autowired
+    public UsuarioServiceImpl(UsuarioRepository usuarioRepository) {
+        super(usuarioRepository);
     }
     
 }

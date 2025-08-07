@@ -1,5 +1,7 @@
 package com.evtnet.evtnetback.Services;
 
-public class InstanciaMascotaSecuenciaService  {
+import com.evtnet.evtnetback.Entities.InstanciaMascotaSecuencia;
+
+public interface InstanciaMascotaSecuenciaService extends BaseService<InstanciaMascotaSecuencia, Long> {
     
 }

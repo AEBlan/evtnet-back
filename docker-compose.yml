@@ -11,10 +11,10 @@ services:
       MARIADB_USER: evtnet_user
       MARIADB_PASSWORD: evtnet_pass
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d
+      - ./mariadb/init:/docker-entrypoint-initdb.d
     networks:
       - evtnet-network
 
