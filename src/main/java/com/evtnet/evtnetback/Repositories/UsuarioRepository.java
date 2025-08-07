@@ -1,8 +1,8 @@
 package com.evtnet.evtnetback.Repositories;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import com.evtnet.evtnetback.Entities.Usuario;
+import org.springframework.stereotype.Repository;
 
-public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
+@Repository
+public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
 }
