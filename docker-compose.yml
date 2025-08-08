@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.3'
 
 services:
   mariadb:
@@ -15,6 +15,18 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql
       - ./mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - evtnet-network
+
+  evtnet-back:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: evtnet-back
+    depends_on:
+      - mariadb
+    ports:
+      - "8080:8080"
     networks:
       - evtnet-network
 
