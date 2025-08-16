@@ -7,24 +7,24 @@
 
 ## Pasos para levantar la base de datos
 
-### 1. Levantar MySQL con Docker
+### 1. Levantar MariaDB con Docker
 ```bash
 docker-compose up -d
 ```
 
-### 2. Verificar que MySQL esté funcionando
+### 2. Verificar que MariaDB esté funcionando
 ```bash
 docker-compose ps
 ```
 
-### 3. Ver logs de MySQL
+### 3. Ver logs de MariaDB
 ```bash
 docker-compose logs mysql
 ```
 
-### 4. Conectarse a MySQL (opcional)
+### 4. Conectarse a MariaDB (opcional)
 ```bash
-docker exec -it evtnet-mysql mysql -u evtnet_user -p
+docker exec -it evtnet-mariadb mariadb -u evtnet_user -p
 # Contraseña: evtnet_pass
 ```
 
@@ -40,7 +40,7 @@ La aplicación Spring Boot está configurada para conectarse automáticamente a 
 
 ## Comandos útiles
 
-### Detener MySQL
+### Detener MariaDB
 ```bash
 docker-compose down
 ```
@@ -50,9 +50,9 @@ docker-compose down
 docker-compose down -v
 ```
 
-### Reiniciar MySQL
+### Reiniciar MariaDB
 ```bash
-docker-compose restart mysql
+docker-compose restart mariadb
 ```
 
 ## Estructura de archivos
@@ -69,6 +69,6 @@ evtnet-back/
 ## Notas importantes
 
 1. **Persistencia de datos**: Los datos se guardan en un volumen de Docker llamado `mysql_data`
-2. **Puerto**: MySQL está expuesto en el puerto 3306
+2. **Puerto**: MariaDB está expuesto en el puerto 3306
 3. **Seguridad**: Cambia las contraseñas en producción
 4. **JPA**: La aplicación está configurada con `ddl-auto=update` para crear/actualizar tablas automáticamente 
