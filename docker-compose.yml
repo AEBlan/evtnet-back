@@ -1,39 +1,46 @@
-version: '3.3'
+version: "3.9"
 
 services:
   mariadb:
-    image: mariadb:11.3
+    image: mariadb:11.4
     container_name: evtnet-mariadb
     restart: unless-stopped
     environment:
-      MARIADB_ROOT_PASSWORD: root123
       MARIADB_DATABASE: evtnet_db
       MARIADB_USER: evtnet_user
       MARIADB_PASSWORD: evtnet_pass
+      MARIADB_ROOT_PASSWORD: root_pass
+      MARIADB_AUTO_UPGRADE: "1"     # opcional, ayuda si detecta datos viejos
+      TZ: "UTC"
     ports:
-      - "3307:3306"
+      - "3307:3306"                 # host:container
     volumes:
-      - mariadb_data:/var/lib/mysql
-      - ./mariadb/init:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
     networks:
-      - evtnet-network
+      - evtnet-net
 
   evtnet-back:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
+    image: evtnet-back:latest
     container_name: evtnet-back
+    restart: unless-stopped
     depends_on:
-      - mariadb
+      - mariadb                    # solo orden de arranque (sin healthcheck)
     ports:
       - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/evtnet_db
+      SPRING_DATASOURCE_USERNAME: evtnet_user
+      SPRING_DATASOURCE_PASSWORD: evtnet_pass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT: "0"  # no falla si DB tarda
+      # SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MariaDBDialect # (opcional)
     networks:
-      - evtnet-network
+      - evtnet-net
 
 volumes:
-  mariadb_data:
-    driver: local
+  mysql_data:
 
 networks:
-  evtnet-network:
+  evtnet-net:
     driver: bridge

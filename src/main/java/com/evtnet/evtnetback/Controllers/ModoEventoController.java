@@ -7,9 +7,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;            
 
 @RestController
-@RequestMapping("/modoevento") // guion medio para separar palabras
+@RequestMapping("/modosDeEvento")
 public class ModoEventoController extends BaseControllerImpl<ModoEvento, ModoEventoServiceImpl> {
 
     private final ModoEventoServiceImpl service;
@@ -18,17 +19,23 @@ public class ModoEventoController extends BaseControllerImpl<ModoEvento, ModoEve
         this.service = service;
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getByIdSoloIdYNombre(@PathVariable Long id) {
+    @GetMapping("/buscar")
+    public ResponseEntity<?> buscar(@RequestParam String text) {
         try {
-            ModoEvento me = service.findById(id);
-            Map<String, Object> body = new HashMap<>();
-            body.put("id", me.getId());
-            body.put("nombre", me.getNombre());
-            return ResponseEntity.ok(body);
+            List<ModoEvento> lista = service.findAll();
+            List<Map<String, Object>> result = lista.stream()
+                    .filter(me -> me.getNombre() != null &&
+                                  me.getNombre().toLowerCase().contains(text.toLowerCase()))
+                    .map(me -> {
+                        Map<String, Object> m = new HashMap<>();
+                        m.put("id", me.getId());
+                        m.put("nombre", me.getNombre());
+                        return m;
+                    })
+                    .toList();
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }
-

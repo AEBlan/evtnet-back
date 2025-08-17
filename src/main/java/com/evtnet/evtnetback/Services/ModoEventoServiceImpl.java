@@ -1,15 +1,18 @@
 package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.ModoEvento;
-import com.evtnet.evtnetback.Repositories.BaseRepository;
 import com.evtnet.evtnetback.Repositories.ModoEventoRepository;
+import org.springframework.stereotype.Service;
 
-public class ModoEventoServiceImpl extends BaseServiceImpl <ModoEvento, Long> implements ModoEventoService {
+@Service
+public class ModoEventoServiceImpl
+        extends BaseServiceImpl<ModoEvento, Long>
+        implements ModoEventoService {
 
-    private  final ModoEventoRepository modoEventoRepository;
-    
-    public ModoEventoServiceImpl(BaseRepository<ModoEvento, Long> baseRepository) {
-        super(baseRepository);
+    private final ModoEventoRepository modoEventoRepository;
+
+    public ModoEventoServiceImpl(ModoEventoRepository modoEventoRepository) {
+        super(modoEventoRepository);               
+        this.modoEventoRepository = modoEventoRepository;
     }
-    
 }
