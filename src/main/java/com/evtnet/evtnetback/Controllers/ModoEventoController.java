@@ -26,8 +26,6 @@ public class ModoEventoController extends BaseControllerImpl<ModoEvento, ModoEve
             final String q = text == null ? "" : text.trim().toLowerCase();
 
             List<DTOModoEvento> result = service.findAll().stream()
-                    // si usás “baja lógica”, podés filtrar las dadas de baja:
-                    // .filter(me -> me.getFechaHoraBaja() == null)
                     .filter(me -> Objects.nonNull(me.getNombre()))
                     .filter(me -> q.isEmpty() || me.getNombre().toLowerCase().contains(q))
                     .map(this::toDto)
