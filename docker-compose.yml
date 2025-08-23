@@ -10,12 +10,13 @@ services:
       MARIADB_USER: evtnet_user
       MARIADB_PASSWORD: evtnet_pass
       MARIADB_ROOT_PASSWORD: root_pass
-      MARIADB_AUTO_UPGRADE: "1"     # opcional, ayuda si detecta datos viejos
+      MARIADB_AUTO_UPGRADE: "1"
       TZ: "UTC"
     ports:
-      - "3307:3306"                 # host:container
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mariadb/init:/docker-entrypoint-initdb.d:ro
     networks:
       - evtnet-net
 
@@ -25,16 +26,24 @@ services:
     container_name: evtnet-back
     restart: unless-stopped
     depends_on:
-      - mariadb                    # solo orden de arranque (sin healthcheck)
+      - mariadb
+    volumes:
+      - ./storage/perfiles:/app/storage/perfiles
     ports:
       - "8080:8080"
     environment:
+      # DB (dentro de la red el host es el nombre del service: mariadb)
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/evtnet_db
       SPRING_DATASOURCE_USERNAME: evtnet_user
       SPRING_DATASOURCE_PASSWORD: evtnet_pass
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT: "0"  # no falla si DB tarda
-      # SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MariaDBDialect # (opcional)
+
+      # JWT por ENV (sobrescribe lo del application.properties)
+      APP_JWT_SECRET: "PON_ACA_UN_SECRETO_BIEN_LARGO_ALEATORIO_MIN_32_CHARS"
+      APP_JWT_EXPIRATION: "3600000"
+
+      # Ruta de storage (opcional si ya está en properties)
+      APP_STORAGE_PERFILES: "/app/storage/perfiles"
     networks:
       - evtnet-net
 

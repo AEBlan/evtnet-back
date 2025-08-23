@@ -1,16 +1,14 @@
 package com.evtnet.evtnetback.dto.usuarios;
 
-import java.util.List;
+import lombok.*;
 
-public record DTOPerfil(
-    String username,
-    String nombre,
-    String apellido,
-    String mail,
-    String dni,
-    Long fechaNacimiento,
-    List<Calificacion> calificaciones
-) {
-    public record Calificacion(String nombre, double porcentaje) {}
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
+public class DTOPerfil {
+    private String username;
+    private String nombre;
+    private String apellido;
+    private String mail;
+    private String fotoPerfil; // nombre del archivo
+    private String nombreCompleto;
+    private String fotoUrl;
 }
-

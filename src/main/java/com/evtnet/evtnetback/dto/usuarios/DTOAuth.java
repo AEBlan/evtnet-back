@@ -1,10 +1,12 @@
 package com.evtnet.evtnetback.dto.usuarios;
 
+import lombok.*;
+
 import java.util.List;
 
-public record DTOAuth(
-    String token,
-    List<String> permisos,
-    String username
-) {}
-
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
+public class DTOAuth {
+    private String token;
+    private List<String> permisos;
+    private String username;
+}
