@@ -5,8 +5,7 @@ import lombok.*;
 import java.util.List;
 
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-public class DTOAuth {
-    private String token;
-    private List<String> roles;
-    private String username;
+public class DTOSetPassword {
+    private String mail;
+    private String nuevaPassword;
 }

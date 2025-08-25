@@ -29,8 +29,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/usuarios/registrarse").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/iniciarSesion").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/ingresarCodigo").permitAll()
+                .requestMatchers(HttpMethod.POST, "/usuarios/loginGoogle").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/recuperarContrasena").permitAll()
                 .requestMatchers(HttpMethod.PUT,  "/usuarios/enviarCodigo").permitAll()
+                .requestMatchers(HttpMethod.PUT,  "/usuarios/definirContrasena").permitAll() // Solo para ver si funciona 
                 .requestMatchers(HttpMethod.PUT,  "/usuarios/enviarCodigoRecuperarContrasena").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/usuarios/obtenerImagenDeCalificacion").permitAll()
                 .requestMatchers(HttpMethod.GET, "/usuarios/verificarUsernameDisponible").permitAll()

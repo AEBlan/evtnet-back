@@ -12,7 +12,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.text.Normalizer;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -39,8 +41,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String token = auth.substring(7);
                 if (jwtUtil.validate(token)) {
                     String username = jwtUtil.getUsername(token);
+                    List<String> roles = jwtUtil.getRoles(token); // <-- método agregado en JwtUtil
+
+                    var authorities = roles.stream()
+                            .map(r -> new SimpleGrantedAuthority(toSpringRole(r)))
+                            .collect(Collectors.toList());
+
                     var authToken = new UsernamePasswordAuthenticationToken(
-                            username, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                            username, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             } catch (Exception ignored) {
@@ -54,14 +62,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return (method.equals("POST") && (
                 requestURI.equals("/usuarios/registrarse") ||
                 requestURI.equals("/usuarios/iniciarSesion") ||
-                requestURI.equals("/usuarios/ingresarCodigo")||
+                requestURI.equals("/usuarios/ingresarCodigo") ||
+                requestURI.equals("/usuarios/loginGoogle") ||
                 requestURI.equals("/usuarios/recuperarContrasena")
         )) || (method.equals("PUT") && (
                 requestURI.equals("/usuarios/enviarCodigo") ||
+                requestURI.equals("/usuarios/definirContrasena") ||
                 requestURI.equals("/usuarios/enviarCodigoRecuperarContrasena")
         )) || (method.equals("GET") && (
                 requestURI.equals("/usuarios/obtenerImagenDeCalificacion") ||
                 requestURI.equals("/usuarios/verificarUsernameDisponible")
         ));
+    }
+
+    // ==== AQUÍ EL MÉTODO QUE NORMALIZA LOS NOMBRES DE ROL A "ROLE_*" ====
+    private String toSpringRole(String r) {
+        if (r == null || r.isBlank()) return "ROLE_USER";
+        // 1) quitar tildes
+        String base = Normalizer.normalize(r, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        // 2) reemplazar no alfanumérico por "_"
+        base = base.replaceAll("[^A-Za-z0-9]+", "_");
+        // 3) mayúsculas
+        base = base.toUpperCase();
+        // 4) prefijo ROLE_
+        return "ROLE_" + base; // Usuario -> ROLE_USUARIO; PendienteConfirmacion -> ROLE_PENDIENTECONFIRMACION
     }
 }

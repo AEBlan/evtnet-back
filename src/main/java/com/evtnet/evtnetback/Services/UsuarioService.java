@@ -5,11 +5,11 @@ import com.evtnet.evtnetback.dto.usuarios.*;
 
 public interface UsuarioService extends BaseService<Usuario, Long> {
     DTOAuth login(String mail, String password) throws Exception;
-    DTOAuth loginGoogle(String idToken) throws Exception;          // opcional
+    DTOAuth loginGoogle(String idToken) throws Exception;   // <- mantener
     DTOAuth register(DTORegistrarse body) throws Exception;
 
     DTOAuth ingresarCodigo(String codigo) throws Exception;
-    void enviarCodigo(String mail) throws Exception;
+    void enviarCodigo(String mail) throws Exception;        // <- con throws
 
     boolean usernameDisponible(String username) throws Exception;
 
@@ -24,4 +24,8 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
 
     DTOEditarPerfil obtenerPerfilParaEditar(String username) throws Exception;
     void editarPerfil(DTOEditarPerfil datos, byte[] foto, String nombreArchivo, String contentType) throws Exception;
+
+    void definirContrasena(String mail, String nuevaPassword) throws Exception;
+
 }
+

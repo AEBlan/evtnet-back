@@ -44,6 +44,7 @@ services:
 
       # Ruta de storage (opcional si ya está en properties)
       APP_STORAGE_PERFILES: "/app/storage/perfiles"
+
     networks:
       - evtnet-net
 

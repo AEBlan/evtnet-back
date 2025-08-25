@@ -49,4 +49,14 @@ public class JwtUtil {
         return Jwts.parserBuilder().setSigningKey(secretKey).build()
                 .parseClaimsJws(token).getBody().getSubject();
     }
+    
+    public List<String> getRoles(String token) {
+        var claims = Jwts.parserBuilder().setSigningKey(secretKey).build()
+                .parseClaimsJws(token).getBody();
+        Object raw = claims.get("roles");
+        if (raw instanceof List<?> list) {
+            return list.stream().map(Object::toString).toList();
+        }
+        return List.of();
+    }
 }

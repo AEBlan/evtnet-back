@@ -1,21 +1,26 @@
 package com.evtnet.evtnetback.Controllers;
 
 import com.evtnet.evtnetback.Entities.Usuario;
-import com.evtnet.evtnetback.Services.UsuarioServiceImpl;
+import com.evtnet.evtnetback.Services.UsuarioService; // ← interfaz
+import com.evtnet.evtnetback.Services.UsuarioServiceImpl; // si tu BaseControllerImpl lo requiere en el genérico
 import com.evtnet.evtnetback.dto.usuarios.*;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+
 import java.util.Map;
 
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServiceImpl> {
 
-    private final UsuarioServiceImpl service;
-    public UsuarioController(UsuarioServiceImpl service) { this.service = service; }
+    private final UsuarioService service;  // ← interfaz
+
+    public UsuarioController(UsuarioService service) {
+        this.service = service;
+    }
 
     // --- Auth ---
     @PostMapping("/iniciarSesion")
@@ -25,8 +30,21 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     }
 
     @PostMapping("/loginGoogle")
-    public ResponseEntity<DTOAuth> loginGoogle(@RequestParam String idToken) throws Exception {
-        return ResponseEntity.ok(service.loginGoogle(idToken));
+    public ResponseEntity<DTOAuth> loginGoogle(@RequestBody(required = false) DTOLoginGoogle body, @RequestParam(value = "idToken", required = false) String idToken
+    ) throws Exception {
+        String token = (body != null && body.getIdToken() != null && !body.getIdToken().isBlank())
+                ? body.getIdToken()
+                : idToken;
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("idToken requerido");
+        }
+        return ResponseEntity.ok(service.loginGoogle(token));
+    }
+
+    @PutMapping("/definirContrasena")
+    public ResponseEntity<Void> definirContrasena(@RequestBody DTOSetPassword dto) throws Exception {
+        service.definirContrasena(dto.getMail(), dto.getNuevaPassword());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/registrarse")
@@ -36,9 +54,9 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
 
     // --- Códigos (registro / verificación de email) ---
     @PutMapping("/enviarCodigo") // PUBLICO
-    public ResponseEntity<Void> enviarCodigo(@RequestParam String mail) {
-        service.enviarCodigo(mail);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Void> enviarCodigo(@RequestParam String mail) throws Exception {
+        service.enviarCodigo(mail);                // ← usar 'mail', no 'email'
+        return ResponseEntity.noContent().build(); // ← evita HttpStatus import
     }
 
     @PostMapping("/ingresarCodigo") // PUBLICO
@@ -54,12 +72,12 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
 
     // --- Recupero de contraseña ---
     @PutMapping("/enviarCodigoRecuperarContrasena") // PUBLICO
-    public ResponseEntity<Void> enviarCodigoRecuperarContrasena(@RequestParam String mail) {
+    public ResponseEntity<Void> enviarCodigoRecuperarContrasena(@RequestParam String mail) throws Exception {
         service.enviarCodigoRecuperarContrasena(mail);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/recuperarContrasena") // PUBLICO según tu tabla
+    @PutMapping("/recuperarContrasena") // PUBLICO
     public ResponseEntity<DTOAuth> recuperarContrasena(@RequestParam String mail,
                                                        @RequestParam String password,
                                                        @RequestParam String codigo) throws Exception {
@@ -71,7 +89,7 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     public ResponseEntity<Void> restablecerContrasena(@RequestParam String currentPassword,
                                                       @RequestParam String newPassword) throws Exception {
         service.restablecerContrasena(currentPassword, newPassword);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     // --- Perfil (AUTENTICADO según tu tabla) ---
@@ -80,33 +98,32 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
         return ResponseEntity.ok(service.obtenerPerfil(username));
     }
 
-    @GetMapping(value = "/obtenerFotoDePerfil") // tu tabla dice "sí" auth
+    @GetMapping(value = "/obtenerFotoDePerfil")
     public ResponseEntity<byte[]> obtenerFotoDePerfil(@RequestParam String username) throws Exception {
         byte[] img = service.obtenerFotoDePerfil(username);
         if (img == null) return ResponseEntity.noContent().build();
-        // Tip: si la guardás como jpg/png, devolvé content-type dinámico si querés.
         return ResponseEntity.ok(img);
     }
 
-    @GetMapping(value = "/obtenerImagenDeCalificacion") // tu tabla dice "no" auth
+    @GetMapping(value = "/obtenerImagenDeCalificacion")
     public ResponseEntity<byte[]> obtenerImagenDeCalificacion(@RequestParam String username) throws Exception {
         byte[] img = service.obtenerImagenDeCalificacion(username);
         if (img == null) return ResponseEntity.noContent().build();
         return ResponseEntity.ok(img);
     }
 
-    @GetMapping("/obtenerPerfilParaEditar") // requiere token
+    @GetMapping("/obtenerPerfilParaEditar")
     public ResponseEntity<DTOEditarPerfil> obtenerPerfilParaEditar(@RequestParam String username) throws Exception {
         return ResponseEntity.ok(service.obtenerPerfilParaEditar(username));
     }
 
-    @PutMapping(value = "/editarPerfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE) // requiere token
+    @PutMapping(value = "/editarPerfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> editarPerfil(@RequestPart("datos") DTOEditarPerfil datos,
                                              @RequestPart(value = "foto", required = false) MultipartFile foto) throws Exception {
         byte[] bytes = (foto != null && !foto.isEmpty()) ? foto.getBytes() : null;
         String nombre = (foto != null) ? foto.getOriginalFilename() : null;
         String ct     = (foto != null) ? foto.getContentType() : null;
         service.editarPerfil(datos, bytes, nombre, ct);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }
