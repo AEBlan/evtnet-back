@@ -22,22 +22,7 @@ public class ModoEventoController extends BaseControllerImpl<ModoEvento, ModoEve
     // GET /modosDeEvento/buscar?text=...
     @GetMapping("/buscar")
     public ResponseEntity<List<DTOModoEvento>> buscar(@RequestParam String text) {
-        try {
-            final String q = text == null ? "" : text.trim().toLowerCase();
-
-            List<DTOModoEvento> result = service.findAll().stream()
-                    .filter(me -> Objects.nonNull(me.getNombre()))
-                    .filter(me -> q.isEmpty() || me.getNombre().toLowerCase().contains(q))
-                    .map(this::toDto)
-                    .toList();
-
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    private DTOModoEvento toDto(ModoEvento me) {
-        return new DTOModoEvento(me.getId(), me.getNombre());
-    }
+        try { return ResponseEntity.ok(service.buscarPorNombre(text)); 
+        }catch (Exception e) { return ResponseEntity.badRequest().build(); }
+}
 }

@@ -1,4 +1,4 @@
-# Configuración de MySQL para EvtNet Backend
+# Configuración de mariadb para EvtNet Backend
 
 ## Requisitos previos
 - Docker y Docker Compose instalados
@@ -24,8 +24,10 @@ docker-compose logs mysql
 
 ### 4. Conectarse a MariaDB (opcional)
 ```bash
-docker exec -it evtnet-mariadb mariadb -u evtnet_user -p
 # Contraseña: evtnet_pass
+docker exec -it evtnet-mariadb mariadb -u evtnet_user -p
+#Una vez que hibernate cree las tablas, en el CMD, colocar este comando para cargar manualmente el dump con los datos con la carga inicial 
+type mariadb\init\dump.sql | docker exec -i evtnet-mariadb mariadb -uroot -proot_pass evtnet_db
 ```
 
 ## Configuración de la aplicación
@@ -33,7 +35,8 @@ docker exec -it evtnet-mariadb mariadb -u evtnet_user -p
 La aplicación Spring Boot está configurada para conectarse automáticamente a MySQL con los siguientes parámetros:
 
 - **Host**: localhost
-- **Puerto**: 3306
+- **Puerto dentro del docker**: 3306 
+- **Puerto en el host**: 3307
 - **Base de datos**: evtnet_db
 - **Usuario**: evtnet_user
 - **Contraseña**: evtnet_pass
@@ -60,7 +63,7 @@ docker-compose restart mariadb
 ```
 evtnet-back/
 ├── docker-compose.yml          # Configuración de Docker
-├── mysql/
+├── mariadb/
 │   └── init/                   # Scripts de inicialización
 └── src/main/resources/
     └── application.properties  # Configuración de la aplicación
