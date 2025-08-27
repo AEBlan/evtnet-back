@@ -89,4 +89,9 @@ public class Evento extends Base {
     
     @OneToMany(mappedBy = "evento")
     private List<DenunciaEvento> denunciasEvento;
+
+    @ManyToOne
+    @JoinColumn(name = "espacio_id")
+    private Espacio espacio;
+
 } 
