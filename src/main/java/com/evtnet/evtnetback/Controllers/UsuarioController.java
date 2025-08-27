@@ -9,6 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
+import jakarta.validation.Valid;
+import com.evtnet.evtnetback.dto.usuarios.DTOEnviarCodigoRecuperarContrasena;
+
 
 import java.util.Map;
 
@@ -71,10 +74,10 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     }
 
     // --- Recupero de contraseña ---
-    @PutMapping("/enviarCodigoRecuperarContrasena") // PUBLICO
-    public ResponseEntity<Void> enviarCodigoRecuperarContrasena(@RequestParam String mail) throws Exception {
-        service.enviarCodigoRecuperarContrasena(mail);
-        return ResponseEntity.noContent().build();
+    @PostMapping("/enviarCodigoRecuperarContrasena")
+    public ResponseEntity<Void> enviarCodigoRecuperarContrasena(@Valid @RequestBody DTOEnviarCodigoRecuperarContrasena dto)throws Exception {
+        service.enviarCodigoRecuperarContrasena(dto.getMail());
+        return ResponseEntity.noContent().build(); // 204
     }
 
     @PutMapping("/recuperarContrasena") // PUBLICO
