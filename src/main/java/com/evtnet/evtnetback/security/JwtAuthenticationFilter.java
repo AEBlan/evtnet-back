@@ -64,11 +64,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 requestURI.equals("/usuarios/iniciarSesion") ||
                 requestURI.equals("/usuarios/ingresarCodigo") ||
                 requestURI.equals("/usuarios/loginGoogle") ||
-                requestURI.equals("/usuarios/recuperarContrasena")
+                requestURI.equals("/usuarios/recuperarContrasena") ||
+                requestURI.equals("/usuarios/enviarCodigoRecuperarContrasena")
         )) || (method.equals("PUT") && (
                 requestURI.equals("/usuarios/enviarCodigo") ||
-                requestURI.equals("/usuarios/definirContrasena") ||
-                requestURI.equals("/usuarios/enviarCodigoRecuperarContrasena")
+                requestURI.equals("/usuarios/definirContrasena") 
         )) || (method.equals("GET") && (
                 requestURI.equals("/usuarios/obtenerImagenDeCalificacion") ||
                 requestURI.equals("/usuarios/verificarUsernameDisponible")

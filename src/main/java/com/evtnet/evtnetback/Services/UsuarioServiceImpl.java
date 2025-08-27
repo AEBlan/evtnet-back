@@ -1,26 +1,31 @@
 package com.evtnet.evtnetback.Services;
 
-import com.evtnet.evtnetback.Entities.Usuario;
 import com.evtnet.evtnetback.Entities.Rol;
 import com.evtnet.evtnetback.Entities.RolUsuario;
+import com.evtnet.evtnetback.Entities.Usuario;
 import com.evtnet.evtnetback.Repositories.BaseRepository;
 import com.evtnet.evtnetback.Repositories.RolRepository;
-import com.evtnet.evtnetback.Repositories.UsuarioRepository;
 import com.evtnet.evtnetback.Repositories.RolUsuarioRepository;
+import com.evtnet.evtnetback.Repositories.UsuarioRepository;
 import com.evtnet.evtnetback.dto.usuarios.*;
-import com.evtnet.evtnetback.util.CurrentUser;
 import com.evtnet.evtnetback.security.JwtUtil;
+import com.evtnet.evtnetback.util.CurrentUser;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
-
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,10 +39,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final RolUsuarioRepository rolUsuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-
-    // Códigos (demo en memoria)
-    private final Map<String, String> codigosRegistroPorMail = new ConcurrentHashMap<>();
-    private final Map<String, String> codigosRecuperoPorMail = new ConcurrentHashMap<>();
+    private final MailService mailService; // ✅ inyectado para enviar el mail
 
     // Directorio para fotos de perfil (montá un volumen)
     @Value("${app.storage.perfiles:/app/uploads/perfiles}")
@@ -53,7 +55,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             RolRepository rolRepository,
             RolUsuarioRepository rolUsuarioRepository,
             PasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil
+            JwtUtil jwtUtil,
+            MailService mailService
     ) {
         super(baseRepository);
         this.usuarioRepository = usuarioRepository;
@@ -61,6 +64,89 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         this.rolUsuarioRepository = rolUsuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.mailService = mailService;
+    }
+
+    // ===== Config (recupero por mail) =====
+    private static final Duration RESET_TTL = Duration.ofMinutes(15);         // vence a los 15 min
+    private static final Duration RESEND_MIN_INTERVAL = Duration.ofSeconds(45);
+    private static final int MAX_PER_HOUR = 5;
+    private static final boolean PRIVACY_MODE = true;                         // no revelar si existe el mail
+
+    // ===== Estado en memoria (thread-safe) =====
+    private static final class CodeMeta {
+        final String code;
+        final Instant expiresAt;
+        Instant lastSentAt;
+        int sentThisHour;
+        Instant hourWindowStart;
+
+        CodeMeta(String code, Instant now) {
+            this.code = code;
+            this.expiresAt = now.plus(RESET_TTL);
+            this.lastSentAt = now;
+            this.hourWindowStart = now;
+            this.sentThisHour = 1;
+        }
+        boolean expired(Instant now) { return now.isAfter(expiresAt); }
+        boolean canResend(Instant now) {
+            if (Duration.between(lastSentAt, now).compareTo(RESEND_MIN_INTERVAL) < 0) return false;
+            if (Duration.between(hourWindowStart, now).toHours() >= 1) {
+                hourWindowStart = now;
+                sentThisHour = 0;
+            }
+            return sentThisHour < MAX_PER_HOUR;
+        }
+        void markResent(Instant now) { lastSentAt = now; sentThisHour++; }
+    }
+
+    // Recupero contraseña (usa CodeMeta)
+    private final Map<String, CodeMeta> codigosRecuperoPorMail = new ConcurrentHashMap<>();
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    // Registro (código simple en memoria)
+    private final Map<String, String> codigosRegistroPorMail = new ConcurrentHashMap<>();
+
+    // ===== Utils =====
+    private String normalizeMail(String mail) {
+        return mail == null ? null : mail.trim().toLowerCase();
+    }
+    private String generateCode() {
+        return String.format("%06d", secureRandom.nextInt(1_000_000)); // 000000..999999
+    }
+
+    // ================== ENVIAR CÓDIGO (RECUPERO) ==================
+    @Override
+    public void enviarCodigoRecuperarContrasena(String mail) {
+        String m = normalizeMail(mail);
+        Instant now = Instant.now();
+
+        boolean existe = usuarioRepository.existsByMail(m);
+
+        // Privacy mode: no revelar si existe
+        if (!existe && PRIVACY_MODE) return;
+        if (!existe) throw new IllegalArgumentException("Mail no registrado");
+
+        CodeMeta meta = codigosRecuperoPorMail.get(m);
+        if (meta == null || meta.expired(now)) {
+            meta = new CodeMeta(generateCode(), now);
+            codigosRecuperoPorMail.put(m, meta);
+        } else {
+            if (!meta.canResend(now)) return; // silencio anti-spam
+            meta.markResent(now);
+        }
+
+        String subject = "Código de recuperación de contraseña";
+        String body = """
+                Hola,
+
+                Tu código de recuperación es: %s
+                Este código expira en %d minutos.
+
+                Si no solicitaste este código, podés ignorar este mensaje.
+                """.formatted(meta.code, RESET_TTL.toMinutes());
+
+        mailService.enviar(m, subject, body);
     }
 
     // ---------- AUTH LOCAL ----------
@@ -73,7 +159,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         String token = jwtUtil.generateToken(u.getUsername(), roles);
         return DTOAuth.builder()
                 .token(token)
-                .roles(roles) // <- ahora enviamos "roles"
+                .roles(roles)
                 .username(u.getUsername())
                 .build();
     }
@@ -95,7 +181,6 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         if (usuarioRepository.existsByUsername(body.getUsername()))
             throw new Exception("Username no disponible");
 
-        // Crear usuario
         Usuario u = Usuario.builder()
                 .username(body.getUsername())
                 .mail(body.getMail())
@@ -106,14 +191,13 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .build();
         usuarioRepository.save(u);
 
-        // Asignar rol PendienteConfirmación
         Rol rolPend = rolRepository.findByNombre("PendienteConfirmación")
                 .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmación"));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolPend)) {
             rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolPend).build());
         }
 
-        // Enviar código (en memoria por ahora)
+        // Enviar código de registro (simple en memoria)
         enviarCodigo(body.getMail());
 
         return authFromUser(u);
@@ -122,14 +206,13 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     // ---------- CÓDIGOS (registro/verificación) ----------
     @Override
     public void enviarCodigo(String mail) throws Exception {
-        // Validá que el usuario exista (si querés evitar códigos huérfanos)
         usuarioRepository.findByMail(mail)
                 .orElseThrow(() -> new Exception("Usuario no encontrado para " + mail));
 
         String code = generateCode();
         codigosRegistroPorMail.put(mail, code);
         System.out.println("[REGISTRO] Código para " + mail + ": " + code);
-        // TODO: integrar emailService para enviarlo realmente
+        // Si querés enviar por mail: mailService.enviar(mail, "Código de registro", "Tu código es: " + code);
     }
 
     @Override
@@ -149,11 +232,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Rol rolUsr = rolRepository.findByNombre("Usuario")
                 .orElseThrow(() -> new IllegalStateException("Falta rol Usuario"));
 
-        // quitar PendienteConfirmación (si está)
         rolUsuarioRepository.findByUsuarioAndRol(u, rolPend)
                 .ifPresent(ru -> rolUsuarioRepository.deleteByUsuarioAndRol(u, rolPend));
-
-        // agregar Usuario (si no está)
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolUsr)) {
             rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolUsr).build());
         }
@@ -162,7 +242,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         return authFromUser(u);
     }
 
-    // ---------- GOOGLE (stub para no romper compilación; reemplazá luego) ----------
+    // ---------- GOOGLE ----------
     @Override
     public DTOAuth loginGoogle(String idToken) throws Exception {
         if (googleClientId == null || googleClientId.isBlank()) {
@@ -179,10 +259,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         GoogleIdToken token = verifier.verify(idToken);
         if (token == null) throw new Exception("ID token inválido");
 
-        // >>> DECLARACIÓN DEL PAYLOAD <<<
         GoogleIdToken.Payload payload = token.getPayload();
 
-        // (Opcional) Validaciones extra
         String iss = payload.getIssuer();
         if (!"accounts.google.com".equals(iss) && !"https://accounts.google.com".equals(iss)) {
             throw new Exception("Issuer inválido");
@@ -199,67 +277,68 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         String name = (String) payload.get("name");
         String pictureUrl = (String) payload.get("picture");
 
-        // Busca por mail; si no existe, crea usuario nuevo
         Usuario u = usuarioRepository.findByMail(email).orElseGet(() -> {
             Usuario nu = Usuario.builder()
                     .mail(email)
                     .username(suggestUsername(email))
                     .nombre(name)
-                    .contrasena(passwordEncoder.encode(UUID.randomUUID().toString())) // placeholder
+                    .contrasena(passwordEncoder.encode(UUID.randomUUID().toString()))
                     .fechaHoraAlta(LocalDateTime.now())
                     .build();
             return usuarioRepository.save(nu);
         });
 
-        // Asegura rol "Usuario"
         Rol rolUsr = rolRepository.findByNombre("Usuario")
                 .orElseThrow(() -> new IllegalStateException("Falta rol Usuario"));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolUsr)) {
             rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolUsr).build());
         }
 
-        // Guarda foto URL de Google si no tienes una local
         if ((u.getFotoPerfil() == null || u.getFotoPerfil().isBlank()) && pictureUrl != null) {
             u.setFotoPerfil(pictureUrl);
             usuarioRepository.save(u);
         }
 
-        return authFromUser(u); // genera tu JWT con roles
+        return authFromUser(u);
     }
 
-    @Override //Para definir contraseña local si no tendra bueno borralo
+    @Override
     @Transactional
     public void definirContrasena(String mail, String nuevaPassword) throws Exception {
         Usuario u = usuarioRepository.findByMail(mail)
-            .orElseThrow(() -> new Exception("Usuario no encontrado"));
+                .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
         u.setContrasena(passwordEncoder.encode(nuevaPassword));
         usuarioRepository.save(u);
     }
-    
+
     @Override
     public boolean usernameDisponible(String username) {
         return !usuarioRepository.existsByUsername(username);
     }
 
-    @Override
-    public void enviarCodigoRecuperarContrasena(String mail) {
-        String code = generateCode();
-        codigosRecuperoPorMail.put(mail, code);
-        System.out.println("[RECUPERO] Código para " + mail + ": " + code);
-    }
-
+    // ✅ ARREGLADO: usa CodeMeta con TTL para validar el código y resetear
     @Override
     public DTOAuth recuperarContrasena(String mail, String password, String codigo) throws Exception {
-        String esperado = codigosRecuperoPorMail.get(mail);
-        if (!Objects.equals(esperado, codigo)) throw new Exception("Código inválido");
+        String m = normalizeMail(mail);
+        CodeMeta meta = codigosRecuperoPorMail.get(m);
+        if (meta == null) throw new Exception("Código inválido o expirado");
 
-        Usuario u = usuarioRepository.findByMail(mail)
+        Instant now = Instant.now();
+        if (meta.expired(now)) {
+            codigosRecuperoPorMail.remove(m);
+            throw new Exception("Código expirado");
+        }
+        if (!Objects.equals(meta.code, codigo)) {
+            throw new Exception("Código inválido");
+        }
+
+        Usuario u = usuarioRepository.findByMail(m)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
         u.setContrasena(passwordEncoder.encode(password));
         usuarioRepository.save(u);
-        codigosRecuperoPorMail.remove(mail);
+        codigosRecuperoPorMail.remove(m); // consumir
 
         return authFromUser(u);
     }
@@ -286,7 +365,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         return DTOPerfil.builder()
                 .username(u.getUsername())
                 .mail(u.getMail())
-                .nombreCompleto(((u.getNombre() != null) ? u.getNombre() : "") + " " +
+                .nombreCompleto(
+                        ((u.getNombre() != null) ? u.getNombre() : "") + " " +
                         ((u.getApellido() != null) ? u.getApellido() : ""))
                 .fotoUrl(u.getFotoPerfil())
                 .build();
@@ -305,7 +385,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
     @Override
     public byte[] obtenerImagenDeCalificacion(String username) {
-        return null;
+        return null; // TODO
     }
 
     @Override
@@ -357,10 +437,6 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     }
 
     // ---------- Helpers ----------
-    private String generateCode() {
-        return String.valueOf(100000 + new Random().nextInt(900000));
-    }
-
     private String suggestUsername(String email) {
         String base = email.split("@")[0];
         String candidate = base;
