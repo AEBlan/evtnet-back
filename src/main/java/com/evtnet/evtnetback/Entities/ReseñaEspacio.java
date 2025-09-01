@@ -3,6 +3,7 @@ import com.evtnet.evtnetback.Entities.Base;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import com.evtnet.evtnetback.Entities.*;
 
 import java.time.LocalDateTime;
 

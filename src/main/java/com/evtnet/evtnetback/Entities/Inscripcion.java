@@ -1,9 +1,8 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.evtnet.evtnetback.Entities.*;
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.evtnet.evtnetback.Entities.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,52 +10,40 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "Inscripcion")
+@Table(name = "inscripcion")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Inscripcion extends Base {
 
-    @Column(name = "fechaHoraAlta")
-    private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
-    private LocalDateTime fechaHoraBaja;
-    
-    @Column(name = "precioInscripcion")
-    private BigDecimal precioInscripcion;
-    
-    @Column(name = "permitirDevolucionCompleta")
-    private Boolean permitirDevolucionCompleta;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "evento_id")
-    private Evento evento;
-    
-    @ManyToOne
-    @JoinColumn(name = "invitado_id")
-    private Invitado invitado;
-    
-    @OneToMany(mappedBy = "inscripcion")
-    private List<DenunciaEvento> denunciasEvento;
-    
-    @ManyToOne
-    @JoinColumn(name = "administrador_evento_id")
-    private AdministradorEvento administradorEvento;
-    
-    @ManyToOne
+    // --- Atributos (respeta DER) ---
+    @Column(name = "fecha_hora_alta", nullable = false)
+    private LocalDateTime fecha_hora_alta;
+
+    // NO agrego fecha_hora_baja: ya heredás fecha_baja en Base
+
+    @Column(name = "precio_inscripcion", precision = 15, scale = 2)
+    private BigDecimal precio_inscripcion;
+
+    @Column(name = "permitir_devolucion_completa", nullable = false)
+    private Boolean permitir_devolucion_completa;
+
+    // --- Relaciones ---
+    // muchas inscripciones pertenecen a un usuario
+    @ManyToOne(optional = false)
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
-    
-    @ManyToOne
-    @JoinColumn(name = "tipo_inscripcion_evento_id")
-    private TipoInscripcionEvento tipoInscripcionEvento;
-    
-    @ManyToOne
-    @JoinColumn(name = "porcentaje_reintegro_cancelacion_inscripcion_id")
-    private PorcentajeReintegroCancelacionInscripcion porcentajeReintegroCancelacionInscripcion;
-    
+
+    // muchas inscripciones pertenecen a un evento
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "evento_id", nullable = false)
+    private Evento evento;
+
+    // una inscripción puede tener 0..n invitados
     @OneToMany(mappedBy = "inscripcion")
-    private List<ComprobantePago> comprobantesPago;
-} 
+    private List<Invitado> invitados;
+
+    // una inscripción puede tener 0..n comprobantes de pago
+    @OneToMany(mappedBy = "inscripcion")
+    private List<ComprobantePago> comprobante_pagos;
+}

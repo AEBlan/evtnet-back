@@ -26,6 +26,6 @@ public class AdministradorEspacio extends Base {
     @JoinColumn(name = "propietario_id")
     private Usuario propietario;
     
-    @OneToMany(mappedBy = "administradorEspacio")
+    @OneToMany(mappedBy = "inc")
     private List<Espacio> espacios;
 } 

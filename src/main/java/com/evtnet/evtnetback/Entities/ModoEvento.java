@@ -1,34 +1,30 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "ModoEvento")
+@Table(name = "modo_evento")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ModoEvento extends Base {
 
-    @Column(name = "nombre")
+    @Column(name = "nombre", nullable = false)
     private String nombre;
-    
+
     @Column(name = "descripcion")
     private String descripcion;
-    
-    @Column(name = "fechaHoraAlta")
-    private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
-    private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
-    @OneToMany(mappedBy = "modoEvento")
-    private List<EventoModoEvento> eventosModoEvento;
-} 
+
+    @Column(name = "fecha_hora_alta", nullable = false)
+    private LocalDateTime fecha_hora_alta;
+
+    // 1 modo_evento -> 0..n evento_modo_evento
+    @OneToMany(mappedBy = "modo_evento")
+    private List<EventoModoEvento> evento_modo_eventos;
+}

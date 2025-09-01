@@ -27,6 +27,4 @@ public class AdministradorEvento extends Base {
     @JoinColumn(name = "responsable_id")
     private Usuario responsable;
     
-    @OneToMany(mappedBy = "administradorEvento")
-    private List<Inscripcion> inscripciones;
 } 

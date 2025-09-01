@@ -1,5 +1,6 @@
 package com.evtnet.evtnetback.Entities;
 import com.evtnet.evtnetback.Entities.Base;
+import com.evtnet.evtnetback.Entities.Espacio;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,9 +20,11 @@ public class Caracteristica extends Base {
     private String nombre;
     
     // Relaciones
-    @OneToMany(mappedBy = "caracteristica")
-    private List<IconoCaracteristica> iconosCaracteristica;
+    @ManyToOne
+    @JoinColumn(name = "icono_caracteristica_id")
+    private IconoCaracteristica icono_caracteristica;
     
-    @ManyToMany(mappedBy = "caracteristicas")
-    private List<Espacio> espacios;
+    @ManyToOne
+    @JoinColumn(name = "espacio_id")
+    private Espacio espacio;
 } 

@@ -1,15 +1,14 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.evtnet.evtnetback.Entities.*;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "ImagenMascota")
+@Table(name = "imagen_mascota")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -17,18 +16,14 @@ public class ImagenMascota extends Base {
 
     @Column(name = "nombre")
     private String nombre;
-    
-    @Column(name = "imagen")
+
+    @Column(name = "imagen")   // URL o ruta pública (png/svg)
     private String imagen;
-    
-    @Column(name = "fechaHoraAlta")
-    private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
-    private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "instancia_mascota_id")
-    private InstanciaMascota instanciaMascota;
-} 
+
+    @Column(name = "fecha_hora_alta")
+    private LocalDateTime fecha_hora_alta;
+
+    // 1 imagen -> 0..n secuencias (FK en InstanciaMascotaSecuencia: imagen_mascota_id)
+    @OneToMany(mappedBy = "imagen_mascota")
+    private List<InstanciaMascotaSecuencia> instancia_mascota_secuencias;
+}

@@ -1,29 +1,29 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "UsuarioInstanciaMascota")
+@Table(name = "usuario_instancia_mascota")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UsuarioInstanciaMascota extends Base {
 
-    @Column(name = "fechaHora")
-    private LocalDateTime fechaHora;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "instancia_mascota_id")
-    private InstanciaMascota instanciaMascota;
-    
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
+    @Column(name = "fecha_hora", nullable = false)
+    private LocalDateTime fecha_hora;
+
+    // n..1: muchas filas -> un usuario
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
-} 
+
+    // n..1: muchas filas -> una instancia_mascota
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "instancia_mascota_id", nullable = false)
+    private InstanciaMascota instancia_mascota;
+}

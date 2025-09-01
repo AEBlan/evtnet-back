@@ -7,6 +7,8 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
     DTOAuth login(String mail, String password) throws Exception;
     DTOAuth loginGoogle(String idToken) throws Exception;   // <- mantener
     DTOAuth register(DTORegistrarse body) throws Exception;
+    DTOAuth registerConFoto(DTORegistrarse body, byte[] foto, String nombreArchivo, String contentType) throws Exception;
+
 
     DTOAuth ingresarCodigo(String codigo) throws Exception;
     void enviarCodigo(String mail) throws Exception;        // <- con throws

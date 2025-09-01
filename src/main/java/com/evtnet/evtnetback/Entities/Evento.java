@@ -77,9 +77,6 @@ public class Evento extends Base {
     @JoinColumn(name = "disciplina_evento_id")
     private DisciplinaEvento disciplinaEvento;
     
-    @ManyToOne
-    @JoinColumn(name = "administrador_evento_id")
-    private AdministradorEvento administradorEvento;
     
     @OneToMany(mappedBy = "evento")
     private List<EventoModoEvento> eventosModoEvento;

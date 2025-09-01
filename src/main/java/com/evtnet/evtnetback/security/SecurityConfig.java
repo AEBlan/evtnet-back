@@ -38,17 +38,35 @@ public class SecurityConfig {
             .httpBasic(basic -> basic.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // PÚBLICOS
+                // CORS preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // PÚBLICOS (existentes)
                 .requestMatchers(HttpMethod.POST, "/usuarios/registrarse").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/iniciarSesion").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/ingresarCodigo").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/loginGoogle").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/recuperarContrasena").permitAll()
                 .requestMatchers(HttpMethod.PUT,  "/usuarios/enviarCodigo").permitAll()
-                .requestMatchers(HttpMethod.PUT,  "/usuarios/definirContrasena").permitAll() // Solo para ver si funciona 
-                .requestMatchers(HttpMethod.POST,  "/usuarios/enviarCodigoRecuperarContrasena").permitAll()
+                .requestMatchers(HttpMethod.PUT,  "/usuarios/definirContrasena").permitAll()
+                .requestMatchers(HttpMethod.POST, "/usuarios/enviarCodigoRecuperarContrasena").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/usuarios/obtenerImagenDeCalificacion").permitAll()
-                .requestMatchers(HttpMethod.GET, "/usuarios/verificarUsernameDisponible").permitAll()
+                .requestMatchers(HttpMethod.GET,  "/usuarios/verificarUsernameDisponible").permitAll()
+                .requestMatchers(HttpMethod.POST, "/usuarios/registrarseConFoto").permitAll()
+
+
+                // ARCHIVOS ESTÁTICOS DE SUBIDAS (públicos)
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
+                // Imágenes de espacios:
+                // GET listar por espacio (público)
+                .requestMatchers(HttpMethod.GET, "/imagenes-espacio/espacios/**").permitAll()
+                // POST subir imagen (déjalo authenticated en prod; PERMITALL solo si querés probar rápido)
+                .requestMatchers(HttpMethod.POST, "/imagenes-espacio/espacios/*/upload").permitAll()
+
+                // Iconos de característica (si querés probar subidas sin token)
+                .requestMatchers(HttpMethod.POST, "/iconos-caracteristica/caracteristicas/*/upload").permitAll()
+
                 // EL RESTO AUTENTICADO
                 .anyRequest().authenticated()
             )

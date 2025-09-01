@@ -1,28 +1,28 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.List;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "MotivoCalificacion")
+@Table(name = "motivo_calificacion")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class MotivoCalificacion extends Base {
 
-    @Column(name = "nombre")
+    @Column(name = "nombre", nullable = false)
     private String nombre;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "tipo_calificacion_id")
-    private TipoCalificacion tipoCalificacion;
-    
-    @OneToMany(mappedBy = "motivoCalificacion")
-    private List<CalificacionMotivoCalificacion> calificacionesMotivoCalificacion;
-} 
+
+    // n..1: muchos motivos pertenecen a un tipo
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "tipo_calificacion_id", nullable = false)
+    private TipoCalificacion tipo_calificacion;
+
+    // 1 motivo -> 0..n filas puente
+    @OneToMany(mappedBy = "motivo_calificacion")
+    private List<CalificacionMotivoCalificacion> calificacion_motivo_calificaciones;
+}
