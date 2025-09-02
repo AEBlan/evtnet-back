@@ -10,7 +10,9 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "grupo")                       
+@Table(name = "grupo", indexes = {
+    @Index(name = "ix_grupo_chat", columnList = "chat_id")
+})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -24,7 +26,10 @@ public class Grupo extends Base {
 
     @OneToMany(mappedBy = "grupo")
     private List<UsuarioGrupo> usuariosGrupo;
-
-    @OneToOne(mappedBy = "grupo")
+    
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "chat_id", nullable = false, unique = true)
     private Chat chat;
-}
+
+
+} 

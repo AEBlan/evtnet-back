@@ -9,23 +9,33 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "AdministradorEspacio")
+@Table(
+    name = "administrador_espacio",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_admin_espacio_propietario",
+            columnNames = {"espacio_id", "propietario_id"}
+        )
+    }
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class AdministradorEspacio extends Base {
 
-    @Column(name = "fechaHoraAlta")
+    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
+
+    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
-    @OneToOne
-    @JoinColumn(name = "propietario_id")
+
+    // muchos administradores -> un usuario
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "propietario_id", nullable = false)
     private Usuario propietario;
-    
-    @OneToMany(mappedBy = "inc")
-    private List<Espacio> espacios;
-} 
+
+    // muchos administradores -> un espacio
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "espacio_id", nullable = false)
+    private Espacio espacio;
+}

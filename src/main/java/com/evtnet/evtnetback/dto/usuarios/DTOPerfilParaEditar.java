@@ -1,4 +1,4 @@
-package com.evtnet.evtnetback.dto.usuario;
+package com.evtnet.evtnetback.dto.usuarios;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -7,6 +7,8 @@ import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,6 +26,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
+@EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -31,13 +34,15 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
+            .cors(Customizer.withDefaults())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+               
                 // CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
@@ -47,6 +52,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/usuarios/ingresarCodigo").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/loginGoogle").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/recuperarContrasena").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/usuarios/enviarCodigo").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/usuarios/definirContrasena").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/usuarios/enviarCodigoRecuperarContrasena").permitAll()
+                .requestMatchers(HttpMethod.GET, "/usuarios/obtenerImagenDeCalificacion").permitAll()
+                .requestMatchers(HttpMethod.GET, "/usuarios/verificarUsernameDisponible").permitAll()
+                .requestMatchers(HttpMethod.POST, "/eventos/crearEvento").permitAll()
                 .requestMatchers(HttpMethod.PUT,  "/usuarios/enviarCodigo").permitAll()
                 .requestMatchers(HttpMethod.PUT,  "/usuarios/definirContrasena").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/enviarCodigoRecuperarContrasena").permitAll()

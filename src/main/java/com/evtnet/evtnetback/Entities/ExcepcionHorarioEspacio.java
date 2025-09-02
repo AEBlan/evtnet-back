@@ -1,32 +1,37 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "ExcepcionHorarioEspacio")
+@Table(
+    name = "excepcion_horario_espacio",
+    indexes = {
+        @Index(name = "ix_excep_conf", columnList = "configuracion_horario_espacio_id"),
+        @Index(name = "ix_excep_tipo", columnList = "tipo_excepcion_horario_espacio_id")
+    }
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ExcepcionHorarioEspacio extends Base {
 
-    @Column(name = "fechaHoraDesde")
+    @Column(name = "fecha_hora_desde")
     private LocalDateTime fechaHoraDesde;
-    
-    @Column(name = "fechaHoraHasta")
+
+    @Column(name = "fecha_hora_hasta")
     private LocalDateTime fechaHoraHasta;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "configuracion_horario_espacio_id")
+
+    // N -> 1 ConfiguracionHorarioEspacio
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "configuracion_horario_espacio_id", nullable = false)
     private ConfiguracionHorarioEspacio configuracionHorarioEspacio;
-    
-    @OneToMany(mappedBy = "excepcionHorarioEspacio")
-    private List<TipoExcepcionHorarioEspacio> tiposExcepcionHorarioEspacio;
-} 
+
+    // N -> 1 TipoExcepcionHorarioEspacio  (CORREGIDO)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tipo_excepcion_horario_espacio_id", nullable = false)
+    private TipoExcepcionHorarioEspacio tipoExcepcionHorarioEspacio;
+}

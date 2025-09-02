@@ -10,21 +10,27 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "AdministradorEvento")
+@Table(name = "administrador_evento")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class AdministradorEvento extends Base {
 
-    @Column(name = "fechaHoraAlta")
+    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
+
+    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
-    @OneToOne
-    @JoinColumn(name = "responsable_id")
+
+    // 🔹 MUCHOS administradores → UN mismo usuario (quién administra)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "responsable_id", nullable = false)
     private Usuario responsable;
-    
-} 
+
+    // 🔹 MUCHOS administradores → UN mismo evento (qué evento administra)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "evento_id", nullable = false)
+    private Evento evento;
+
+
+}

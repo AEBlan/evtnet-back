@@ -1,34 +1,33 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "EstadoDenunciaEvento")
+@Table(name = "estado_denuncia_evento",
+       uniqueConstraints = @UniqueConstraint(name = "uk_estado_denuncia_nombre", columnNames = "nombre"))
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class EstadoDenunciaEvento extends Base {
 
-    @Column(name = "nombre")
+    @Column(name = "nombre", nullable = false)
     private String nombre;
-    
+
     @Column(name = "descripcion")
     private String descripcion;
-    
-    @Column(name = "fechaHoraAlta")
+
+    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
+
+    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
+
+    // 1 -> N DenunciaEventoEstado (inverso)
     @OneToMany(mappedBy = "estadoDenunciaEvento")
     private List<DenunciaEventoEstado> denunciasEventoEstado;
-} 
+}
