@@ -1,32 +1,34 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "Mensaje")
+@Table(name = "mensaje")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Mensaje extends Base {
 
-    @Column(name = "texto")
+    @Column(name = "texto", nullable = false, length = 1000)
     private String texto;
-    
-    @Column(name = "fechaHora")
-    private LocalDateTime fechaHora;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "chat_id")
+
+    @Column(name = "fecha_hora", nullable = false)
+    private LocalDateTime fecha_hora;
+
+    // --- Relaciones ---
+
+    // Muchos mensajes -> un chat
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "chat_id", nullable = false)
     private Chat chat;
-    
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
+
+    // Muchos mensajes -> un usuario (autor)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
-} 
+}

@@ -54,6 +54,18 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     public ResponseEntity<DTOAuth> registrarse(@RequestBody DTORegistrarse dto) throws Exception {
         return ResponseEntity.ok(service.register(dto));
     }
+    
+    @PostMapping(value = "/registrarseConFoto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DTOAuth> registrarseConFoto(
+            @RequestPart("datos") DTORegistrarse datos,                 // JSON del usuario
+            @RequestPart(value = "foto", required = false) MultipartFile foto // archivo PNG/SVG/JPG
+    ) throws Exception {
+        byte[] bytes       = (foto != null && !foto.isEmpty()) ? foto.getBytes() : null;
+        String nombre      = (foto != null) ? foto.getOriginalFilename() : null;
+        String contentType = (foto != null) ? foto.getContentType() : null;
+
+        return ResponseEntity.ok(service.registerConFoto(datos, bytes, nombre, contentType));
+    }
 
     // --- Códigos (registro / verificación de email) ---
     @PutMapping("/enviarCodigo") // PUBLICO

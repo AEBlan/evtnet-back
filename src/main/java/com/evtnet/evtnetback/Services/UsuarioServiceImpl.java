@@ -202,6 +202,61 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
         return authFromUser(u);
     }
+    
+    @Override
+    @Transactional
+    public DTOAuth registerConFoto(DTORegistrarse body, byte[] foto, String nombreArchivo, String contentType) throws Exception {
+        if (usuarioRepository.existsByMail(body.getMail()))
+            throw new Exception("Mail ya registrado");
+        if (usuarioRepository.existsByUsername(body.getUsername()))
+            throw new Exception("Username no disponible");
+
+        LocalDateTime fnac = null;
+        if (body.getFechaNacimiento() != null) {
+            fnac = LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(body.getFechaNacimiento()),
+                    java.time.ZoneId.systemDefault()
+            );
+        }
+
+        Usuario u = Usuario.builder()
+                .username(body.getUsername())
+                .mail(body.getMail())
+                .nombre(body.getNombre())
+                .apellido(body.getApellido())
+                .dni(body.getDni())
+                .fechaNacimiento(fnac)
+                .contrasena(passwordEncoder.encode(body.getPassword()))
+                .fechaHoraAlta(LocalDateTime.now())
+                .build();
+
+        // 1) Persistir para obtener ID
+        u = usuarioRepository.save(u);
+
+        // 2) Guardar foto (si vino)
+        if (foto != null && foto.length > 0) {
+            Files.createDirectories(Paths.get(perfilesDir)); // ej: ./uploads/perfiles
+            String ext = getExtension(nombreArchivo);        // ya lo tenés implementado
+            String filename = u.getUsername() + "_" + System.currentTimeMillis() + (ext.isEmpty() ? "" : "." + ext);
+            Path destino = Paths.get(perfilesDir).resolve(filename).toAbsolutePath().normalize();
+            Files.write(destino, foto, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            u.setFotoPerfil(destino.toString());            // seguís usando ruta absoluta en BD
+            usuarioRepository.save(u);
+        }
+
+        // 3) Rol inicial igual que en register(...)
+        Rol rolPend = rolRepository.findByNombre("PendienteConfirmación")
+                .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmación"));
+        if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolPend)) {
+            rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolPend).build());
+        }
+
+        // 4) Enviar código (igual que antes)
+        enviarCodigo(body.getMail());
+
+        // 5) Devolver DTOAuth igual que register(...)
+        return authFromUser(u);
+    }
 
     // ---------- CÓDIGOS (registro/verificación) ----------
     @Override

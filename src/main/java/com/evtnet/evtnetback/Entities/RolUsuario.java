@@ -1,32 +1,29 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "RolUsuario")
+@Table(name = "rol_usuario")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class RolUsuario extends Base {
 
-    @Column(name = "fechaHoraAlta")
-    private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
-    private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "rol_id")
+    @Column(name = "fecha_hora_alta", nullable = false)
+    private LocalDateTime fecha_hora_alta;
+
+    // muchas asignaciones -> un rol
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "rol_id", nullable = false)
     private Rol rol;
-    
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
+
+    // muchas asignaciones -> un usuario
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
-} 
+}

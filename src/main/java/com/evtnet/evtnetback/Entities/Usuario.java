@@ -2,6 +2,8 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.evtnet.evtnetback.Entities.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
