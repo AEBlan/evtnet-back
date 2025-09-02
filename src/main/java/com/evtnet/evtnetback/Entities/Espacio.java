@@ -1,9 +1,7 @@
 package com.evtnet.evtnetback.Entities;
 
-import com.evtnet.evtnetback.Entities.Base;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,7 +9,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "Espacio")
+@Table(name = "espacio")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -23,25 +21,23 @@ public class Espacio extends Base {
     @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(name = "fechaHoraAlta")
+    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
 
-    @Column(name = "fechaHoraBaja")
+    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
 
-    @Column(name = "direccionUbicacion")
+    @Column(name = "direccion_ubicacion")
     private String direccionUbicacion;
 
-    @Column(name = "latitudUbicacion")
+    @Column(name = "latitud_ubicacion")
     private BigDecimal latitudUbicacion;
 
-    @Column(name = "longitudUbicacion")
+    @Column(name = "longitud_ubicacion")
     private BigDecimal longitudUbicacion;
 
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "administrador_espacio_id")
-    private AdministradorEspacio administradorEspacio;
+    @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AdministradorEspacio> administradoresEspacio;
 
     @OneToMany(mappedBy = "espacio")
     private List<ImagenEspacio> imagenesEspacio;
@@ -52,23 +48,22 @@ public class Espacio extends Base {
     @OneToMany(mappedBy = "espacio")
     private List<ReseñaEspacio> reseñasEspacio;
 
-    @OneToMany(mappedBy = "espacio")
+    @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DisciplinaEspacio> disciplinasEspacio;
 
     @ManyToOne
     @JoinColumn(name = "tipo_espacio_id")
     private TipoEspacio tipoEspacio;
 
-    @ManyToMany
-    @JoinTable(
-        name = "espacio_caracteristica",
-        joinColumns = @JoinColumn(name = "espacio_id"),
-        inverseJoinColumns = @JoinColumn(name = "caracteristica_id")
-    )
+    @OneToMany(mappedBy = "espacio", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Caracteristica> caracteristicas;
 
-    // Relación agregada para que funcione el mappedBy de SolicitudEspacioPublico
     @ManyToOne
     @JoinColumn(name = "solicitud_espacio_publico_id")
     private SolicitudEspacioPublico solicitudEspacioPublico;
+
+    @OneToOne(mappedBy = "espacio", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Chat chat;
+
+
 }

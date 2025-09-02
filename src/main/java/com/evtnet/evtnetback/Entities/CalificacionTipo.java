@@ -1,6 +1,5 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,7 +9,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "CalificacionTipo")
+@Table(name = "calificacion_tipo")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -18,14 +17,13 @@ public class CalificacionTipo extends Base {
 
     @Column(name = "nombre")
     private String nombre;
-    
-    @Column(name = "fechaHoraAlta")
+
+    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
+
+    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
-    @OneToMany(mappedBy = "calificacionTipo")
+
+    @OneToMany(mappedBy = "calificacion_tipo")
     private List<Calificacion> calificaciones;
-} 
+}

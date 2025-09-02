@@ -1,24 +1,26 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "DisciplinaEspacio")
+@Table(name = "disciplina_espacio",
+       indexes = {
+         @Index(name = "ix_de_disciplina", columnList = "disciplina_id"),
+         @Index(name = "ix_de_espacio", columnList = "espacio_id")
+       })
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class DisciplinaEspacio extends Base {
 
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "disciplina_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "disciplina_id", nullable = false)
     private Disciplina disciplina;
 
-    @ManyToOne
-    @JoinColumn(name = "espacio_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "espacio_id", nullable = false)
     private Espacio espacio;
-} 
+}

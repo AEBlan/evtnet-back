@@ -1,8 +1,8 @@
-// Services/EventoService.java
 package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.Evento;
 import com.evtnet.evtnetback.dto.eventos.*;
+import com.evtnet.evtnetback.dto.eventos.DTOEventoCreate;
 
 import java.util.List;
 
@@ -11,7 +11,6 @@ public interface EventoService extends BaseService<Evento, Long> {
     List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro);
     DTOEvento obtenerEventoDetalle(long idEvento);
     DTODatosCreacionEvento obtenerDatosCreacionEvento(Long idEspacioOrNull);
-    long crearEvento(DTOCrearEvento req);
+    long crearEvento(DTOEventoCreate req);
     int obtenerCantidadEventosSuperpuestos(long idEspacio, long fechaDesdeMillis, long fechaHastaMillis);
 }
-

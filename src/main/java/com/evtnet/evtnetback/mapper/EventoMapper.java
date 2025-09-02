@@ -1,89 +1,37 @@
 package com.evtnet.evtnetback.mapper;
 
 import com.evtnet.evtnetback.Entities.Evento;
-import com.evtnet.evtnetback.dto.eventos.*;
-import com.evtnet.evtnetback.utils.TimeUtil;
+import com.evtnet.evtnetback.dto.eventos.DTOEventoCreate;
+import com.evtnet.evtnetback.dto.eventos.DTOEventoResponse;
+import org.mapstruct.Builder;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-import java.util.List;
+@Mapper(
+    componentModel = "spring",
+    uses = { DisciplinaEventoMapper.class },
+    builder = @Builder(disableBuilder = true) // ⬅️ evitar usar Lombok Builder
+)
+public interface EventoMapper {
 
-public final class EventoMapper {
-    private EventoMapper(){}
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "superEvento", ignore = true)
+    @Mapping(target = "tipoInscripcionEvento", ignore = true)
+    @Mapping(target = "modoEvento", ignore = true)
+    @Mapping(target = "administradorEvento", ignore = true)
+    @Mapping(target = "espacio", ignore = true)
+    @Mapping(target = "disciplinasEvento", ignore = true)
+    @Mapping(target = "inscripciones", ignore = true)
+    @Mapping(target = "eventosModoEvento", ignore = true)
+    @Mapping(target = "porcentajesReintegroCancelacion", ignore = true)
+    @Mapping(target = "denunciasEvento", ignore = true)
+    @Mapping(target = "fechaBaja", ignore = true)
+    Evento toEntity(DTOEventoCreate dto);
 
-    public static DTOResultadoBusquedaEventos toResultadoBusqueda(Evento e) {
-        boolean esSuperevento = e.getSuperEvento() != null
-                && e.getFechaHoraInicio() == null && e.getFechaHoraFin() == null;
-
-        return new DTOResultadoBusquedaEventos(
-                esSuperevento,
-                e.getId(),
-                e.getNombre(),
-                TimeUtil.toMillis(e.getFechaHoraInicio()),
-                e.getPrecioInscripcion() == null ? null : e.getPrecioInscripcion().doubleValue(),
-                e.getEspacio() == null ? null : e.getEspacio().getNombre(),
-                e.getDisciplinasEvento() == null ? List.of()
-                        : e.getDisciplinasEvento().stream().map(d -> d.getNombre()).toList(),
-                null // fechaHoraProximoEvento (si querés, la calculamos del hijo más próximo del superEvento)
-        );
-    }
-
-    public static DTOResultadoBusquedaMisEventos toResultadoBusquedaMis(Evento e) {
-        return new DTOResultadoBusquedaMisEventos(
-                e.getId(),
-                e.getNombre(),
-                TimeUtil.toMillis(e.getFechaHoraInicio()),
-                TimeUtil.toMillis(e.getFechaHoraFin()),
-                e.getEspacio() == null ? "" : e.getEspacio().getNombre(),
-                "participante", // luego lo calculamos según tu usuario actual
-                e.getInscripciones() == null ? null : e.getInscripciones().size()
-        );
-    }
-
-    public static DTOEvento toDTOEvento(Evento e, boolean inscripto, boolean administrador) {
-        DTOEvento.Espacio espacio = e.getEspacio() == null ? null :
-                new DTOEvento.Espacio(e.getEspacio().getId(), e.getEspacio().getNombre());
-
-        var modos =
-            (e.getEventosModoEvento() != null && !e.getEventosModoEvento().isEmpty())
-                ? e.getEventosModoEvento().stream().map(eme -> eme.getModoEvento().getNombre()).toList()
-                : (e.getModoEvento() != null ? List.of(e.getModoEvento().getNombre()) : List.<String>of());
-
-        var disciplinas = e.getDisciplinasEvento() == null ? List.<String>of()
-                : e.getDisciplinasEvento().stream().map(d -> d.getNombre()).toList();
-
-        var inscriptos = e.getInscripciones() == null ? List.<DTOEvento.Inscripto>of()
-                : e.getInscripciones().stream()
-                    .filter(i -> i.getUsuario() != null)
-                    .map(i -> new DTOEvento.Inscripto(
-                            i.getUsuario().getUsername(),
-                            i.getUsuario().getNombre(),
-                            i.getUsuario().getApellido()))
-                    .toList();
-
-        DTOEvento.Ubicacion ubic = new DTOEvento.Ubicacion(
-                e.getLatitudUbicacion() == null ? null : e.getLatitudUbicacion().doubleValue(),
-                e.getLongitudUbicacion() == null ? null : e.getLongitudUbicacion().doubleValue()
-        );
-
-        DTOEvento.Superevento sup = (e.getSuperEvento() == null) ? null
-                : new DTOEvento.Superevento(e.getSuperEvento().getId(), e.getSuperEvento().getNombre());
-
-        return new DTOEvento(
-                e.getNombre(),
-                e.getDescripcion(),
-                TimeUtil.toMillis(e.getFechaHoraInicio()),
-                TimeUtil.toMillis(e.getFechaHoraFin()),
-                e.getPrecioInscripcion() == null ? 0d : e.getPrecioInscripcion().doubleValue(),
-                modos,
-                disciplinas,
-                espacio,
-                e.getDireccionUbicacion(),
-                ubic,
-                sup,
-                inscripto,
-                inscriptos,
-                administrador,
-                null // idChat: no está en Evento
-        );
-    }
+    @Mapping(target = "superEventoId", source = "superEvento.id")
+    @Mapping(target = "tipoInscripcionEventoId", source = "tipoInscripcionEvento.id")
+    @Mapping(target = "modoEventoId", source = "modoEvento.id")
+    @Mapping(target = "administradorEventoId", source = "administradorEvento.id")
+    @Mapping(target = "espacioId", source = "espacio.id")
+    DTOEventoResponse toResponse(Evento entity);
 }
-

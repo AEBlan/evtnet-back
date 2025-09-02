@@ -38,8 +38,9 @@ public class EventoController {
         return ResponseEntity.ok(service.obtenerDatosCreacionEvento(espacioId));
     }
 
+    // 🔹 Ahora recibe DTOEventoCreate
     @PostMapping("/crearEvento")
-    public ResponseEntity<IdResponse> crearEvento(@RequestBody DTOCrearEvento req) {
+    public ResponseEntity<IdResponse> crearEvento(@RequestBody DTOEventoCreate req) {
         long id = service.crearEvento(req);
         return ResponseEntity.ok(new IdResponse(id));
     }
@@ -53,4 +54,3 @@ public class EventoController {
         return ResponseEntity.ok(new CantidadResponse(cantidad));
     }
 }
-

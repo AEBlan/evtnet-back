@@ -10,19 +10,19 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "ComisionPorOrganizacion")
+@Table(name = "comision_por_organizacion")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ComisionPorOrganizacion extends Base {
 
-    @Column(name = "fechaHasta")
+    @Column(name = "fecha_hasta")
     private LocalDateTime fechaHasta;
     
-    @Column(name = "fechaDesde")
+    @Column(name = "fecha_desde")
     private LocalDateTime fechaDesde;
     
-    @Column(name = "montoLimite")
+    @Column(name = "monto_limite")
     private BigDecimal montoLimite;
     
     @Column(name = "porcentaje")

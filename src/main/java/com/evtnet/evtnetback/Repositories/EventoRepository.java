@@ -13,6 +13,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     @Query("""
         SELECT e FROM Evento e
         LEFT JOIN FETCH e.disciplinasEvento de
+        LEFT JOIN FETCH de.disciplina d
         LEFT JOIN FETCH e.modoEvento me
         LEFT JOIN FETCH e.eventosModoEvento eme
         LEFT JOIN FETCH e.inscripciones ins
@@ -38,4 +39,3 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     """)
     boolean existsByEventoIdAndAdministradorUsername(Long eventoId, String username);
 }
-
