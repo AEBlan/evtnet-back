@@ -20,5 +20,5 @@ public class Permiso extends Base {
 
     // 1 permiso -> 0..n rol_permiso
     @OneToMany(mappedBy = "permiso")
-    private List<RolPermiso> rol_permisos;
+    private List<RolPermiso> rolPermisos;
 }

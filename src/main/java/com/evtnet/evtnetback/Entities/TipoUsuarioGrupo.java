@@ -19,9 +19,9 @@ public class TipoUsuarioGrupo extends Base {
     private String nombre;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // 1 tipo_usuario_grupo -> 0..n usuario_grupo
-    @OneToMany(mappedBy = "tipo_usuario_grupo", fetch = FetchType.EAGER)
-    private List<UsuarioGrupo> usuario_grupos;
+    @OneToMany(mappedBy = "tipoUsuarioGrupo", fetch = FetchType.EAGER)
+    private List<UsuarioGrupo> usuarioGrupos;
 }

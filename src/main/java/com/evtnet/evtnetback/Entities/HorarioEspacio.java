@@ -18,19 +18,19 @@ import java.time.LocalTime;
 public class HorarioEspacio extends Base {
 
     @Column(name = "dia_semana")
-    private String dia_semana;
+    private String diaSemana;
 
     @Column(name = "hora_desde")
-    private LocalTime hora_desde;
+    private LocalTime horaDesde;
 
     @Column(name = "hora_hasta")
-    private LocalTime hora_hasta;
+    private LocalTime horaHasta;
 
     @Column(name = "precio_organizacion")
-    private BigDecimal precio_organizacion;
+    private BigDecimal precioOrganizacion;
 
     // relación con configuración 
     @ManyToOne
     @JoinColumn(name = "configuracion_horario_espacio_id")
-    private ConfiguracionHorarioEspacio configuracion_horario_espacio;
+    private ConfiguracionHorarioEspacio configuracionHorarioEspacio;
 }

@@ -18,7 +18,7 @@ public class Mensaje extends Base {
     private String texto;
 
     @Column(name = "fecha_hora", nullable = false)
-    private LocalDateTime fecha_hora;
+    private LocalDateTime fechaHora;
 
     // --- Relaciones ---
 

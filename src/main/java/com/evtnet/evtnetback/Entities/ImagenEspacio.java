@@ -26,7 +26,7 @@ public class ImagenEspacio extends Base {
     private Integer orden;
 
     @Column(name = "fecha_hora_alta")
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     @ManyToOne
     @JoinColumn(name = "espacio_id", nullable = false)

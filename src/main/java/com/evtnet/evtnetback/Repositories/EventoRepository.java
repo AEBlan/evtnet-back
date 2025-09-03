@@ -3,7 +3,7 @@ package com.evtnet.evtnetback.Repositories;
 import com.evtnet.evtnetback.Entities.Evento;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-
+import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -33,9 +33,13 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     int contarSuperpuestosPorEspacio(long idEspacio, LocalDateTime desde, LocalDateTime hasta);
 
     @Query("""
-        SELECT COUNT(e) > 0 FROM Evento e
-        WHERE e.id = :eventoId
-          AND e.administradorEvento.responsable.username = :username
+        select (count(e) > 0)
+        from Evento e
+        join e.administradoresEvento ae
+        join ae.usuario u
+        where e.id = :eventoId
+          and u.username = :username
     """)
-    boolean existsByEventoIdAndAdministradorUsername(Long eventoId, String username);
+    boolean existsByEventoIdAndAdministradorUsername(@Param("eventoId") Long eventoId,
+                                                     @Param("username") String username);
 }

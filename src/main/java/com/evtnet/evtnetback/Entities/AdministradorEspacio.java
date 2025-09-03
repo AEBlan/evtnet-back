@@ -9,15 +9,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(
-    name = "administrador_espacio",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_admin_espacio_propietario",
-            columnNames = {"espacio_id", "propietario_id"}
-        )
-    }
-)
+@Table(name = "administrador_espacio")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -31,8 +23,8 @@ public class AdministradorEspacio extends Base {
 
     // muchos administradores -> un usuario
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "propietario_id", nullable = false)
-    private Usuario propietario;
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
 
     // muchos administradores -> un espacio
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

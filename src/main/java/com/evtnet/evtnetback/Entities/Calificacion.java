@@ -28,14 +28,12 @@ public class Calificacion extends Base {
     @JoinColumn(name = "calificacion_tipo_id")
     private CalificacionTipo calificacionTipo;
 
-    // Usuario que emite la calificación
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "autor_id")
+    @JoinColumn(name = "autor_id", nullable = false)
     private Usuario autor;
 
-    // Usuario que recibe la calificación
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "calificado_id")
+    @JoinColumn(name = "calificado_id", nullable = false)
     private Usuario calificado;
 
     // 1 Calificacion -> N CalificacionMotivoCalificacion

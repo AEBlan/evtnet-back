@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 public class PorcentajeReintegroCancelacionInscripcion extends Base {
 
     @Column(name = "minutos_limite", nullable = false)
-    private Integer minutos_limite;             // minutos antes del evento
+    private Integer minutosLimite;             // minutos antes del evento
 
     @Column(name = "porcentaje", nullable = false, precision = 5, scale = 2)
     private BigDecimal porcentaje;              // ej: 100.00, 50.00

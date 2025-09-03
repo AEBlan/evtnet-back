@@ -15,7 +15,7 @@ import com.evtnet.evtnetback.Entities.*;
 public class UsuarioInstanciaMascota extends Base {
 
     @Column(name = "fecha_hora", nullable = false)
-    private LocalDateTime fecha_hora;
+    private LocalDateTime fechaHora;
 
     // n..1: muchas filas -> un usuario
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
@@ -25,5 +25,5 @@ public class UsuarioInstanciaMascota extends Base {
     // n..1: muchas filas -> una instancia_mascota
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "instancia_mascota_id", nullable = false)
-    private InstanciaMascota instancia_mascota;
+    private InstanciaMascota instanciaMascota;
 }

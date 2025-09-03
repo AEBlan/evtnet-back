@@ -8,6 +8,8 @@ import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -40,6 +42,7 @@ public class SecurityConfig {
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
             .authorizeHttpRequests(auth -> auth
+               
                 // CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
@@ -49,6 +52,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/usuarios/ingresarCodigo").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/loginGoogle").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/recuperarContrasena").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/usuarios/enviarCodigo").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/usuarios/definirContrasena").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/usuarios/enviarCodigoRecuperarContrasena").permitAll()
+                .requestMatchers(HttpMethod.GET, "/usuarios/obtenerImagenDeCalificacion").permitAll()
+                .requestMatchers(HttpMethod.GET, "/usuarios/verificarUsernameDisponible").permitAll()
+                .requestMatchers(HttpMethod.POST, "/eventos/crearEvento").permitAll()
                 .requestMatchers(HttpMethod.PUT,  "/usuarios/enviarCodigo").permitAll()
                 .requestMatchers(HttpMethod.PUT,  "/usuarios/definirContrasena").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/enviarCodigoRecuperarContrasena").permitAll()

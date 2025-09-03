@@ -1,4 +1,7 @@
 package com.evtnet.evtnetback.Entities;
+import com.evtnet.evtnetback.Entities.Base;
+import com.evtnet.evtnetback.Entities.Espacio;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,13 +25,13 @@ public class Caracteristica extends Base {
     @Column(name = "nombre", nullable = false)
     private String nombre;
 
+
     // muchas características -> un espacio (FK vive aquí)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "espacio_id", nullable = false)
     private Espacio espacio;
 
-    // 1 característica -> 1 ícono
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "icono_caracteristica_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "icono_caracteristica_id") // FK en BD (snake_case)
     private IconoCaracteristica iconoCaracteristica;
 }

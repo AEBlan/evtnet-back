@@ -9,16 +9,7 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(
-    name = "comprobante_pago",
-    indexes = {
-        @Index(name = "ix_cp_inscripcion", columnList = "inscripcion_id"),
-        @Index(name = "ix_cp_evento", columnList = "evento_id"),
-        @Index(name = "ix_cp_paga", columnList = "paga_id"),
-        @Index(name = "ix_cp_cobro", columnList = "cobro_id"),
-        @Index(name = "ix_cp_medio_pago", columnList = "medio_de_pago_id")
-    }
-)
+@Table(name = "comprobante_pago")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -57,15 +48,13 @@ public class ComprobantePago extends Base {
     @JoinColumn(name = "evento_id")
     private Evento evento;
 
-    // Quien PAGA (usuario emisor del dinero)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "paga_id")
-    private Usuario paga;
-
-    // Quien COBRA (usuario receptor del dinero)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cobro_id")
+    @JoinColumn(name = "cobro_id", nullable = false)
     private Usuario cobro;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pago_id", nullable = false)
+    private Usuario pago;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "medio_de_pago_id")

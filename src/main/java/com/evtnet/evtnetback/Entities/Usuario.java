@@ -31,10 +31,10 @@ public class Usuario extends Base {
     @Column(name = "mail")
     private String mail;
 
-    @Column(name = "fechaNacimiento")
+    @Column(name = "fecha_nacimiento")
     private LocalDateTime fechaNacimiento;
 
-    @Column(name = "fotoPerfil")
+    @Column(name = "foto_perfil")
     private String fotoPerfil;
 
     @Column(name = "contrasena")
@@ -43,10 +43,10 @@ public class Usuario extends Base {
     @Column(name = "CBU")
     private String CBU;
 
-    @Column(name = "fechaHoraAlta")
+    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
 
-    @Column(name = "fechaHoraBaja")
+    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
 
     // Relaciones (las existentes que ya tenías)
@@ -54,35 +54,43 @@ public class Usuario extends Base {
     private List<RolUsuario> rolesUsuario;
 
     @OneToMany(mappedBy = "autor")
-    private List<Calificacion> calificacionesComoAutor;
+    private List<Calificacion> calificacionesAutores;
 
     @OneToMany(mappedBy = "denunciante")
     private List<DenunciaEvento> denunciasEvento;
 
     @OneToMany(mappedBy = "usuario")
-    private List<ReseñaEspacio> reseñasEspacio;
+    private List<ResenaEspacio> resenasEspacio;
 
     @OneToMany(mappedBy = "solicitante")
     private List<SolicitudEspacioPublico> solicitudesEspacioPublico;
 
-    // ❌ Antes: @OneToOne(mappedBy = "responsable")
-    // ✅ Ahora: un usuario puede administrar muchos eventos
-    @OneToMany(mappedBy = "responsable")
+    @OneToMany(mappedBy = "usuario")
     private List<AdministradorEvento> administracionesEvento;
 
-    @OneToOne(mappedBy = "propietario")
-    private AdministradorEspacio administradorEspacio;
+    @OneToMany(mappedBy = "usuario")
+    private List<AdministradorEspacio> administradorEspacio;
 
-    @OneToOne(mappedBy = "organizador")
+    @OneToOne(mappedBy = "usuario")
     private AdministradorSuperEvento administradorSuperEvento;
 
-    // Auto-referencia (como estaba)
-    @ManyToOne
-    @JoinColumn(name = "usuario1_id")
-    private Usuario usuario1;
-
     @OneToMany(mappedBy = "usuario1")
-    private List<Usuario> usuarios2;
+    private List<Chat> usuarios1;
+
+    @OneToMany(mappedBy = "usuario2")
+    private List<Chat> usuarios2;
+
+    @OneToMany(mappedBy = "usuario")
+    private List<UsuarioGrupo> usuarioGrupo;
+
+    @OneToMany(mappedBy = "usuario")
+    private List<UsuarioInstanciaMascota> usuarioInstanciaMascota;
+
+    @OneToMany(mappedBy = "cobro")
+    private List<ComprobantePago> comprobantePagosCobro;
+
+    @OneToMany(mappedBy = "pago")
+    private List<ComprobantePago> comprobantePagosPago;
 
     @OneToMany(mappedBy = "usuario")
     private List<Mensaje> mensajes;
@@ -91,11 +99,20 @@ public class Usuario extends Base {
     private List<Inscripcion> inscripciones;
 
     @OneToMany(mappedBy = "calificado")
-    private List<Calificacion> calificacionesComoCalificado;
+    private List<Calificacion> calificacionesClasificado;
 
-    @OneToMany(mappedBy = "usuario")
+    @OneToMany(mappedBy = "responsable")
     private List<DenunciaEventoEstado> denunciasEventoEstado;
 
-    @OneToMany(mappedBy = "usuario")
+    @OneToMany(mappedBy = "responsable")
     private List<SEPEstado> sepEstados;
+
+    @OneToMany(mappedBy = "usuario")
+    private List<SuperEvento> superEvento;
+
+    @OneToMany(mappedBy = "propietario")
+    private List<Espacio> espacio;
+
+    @OneToMany(mappedBy = "organizador")
+    private List<Evento> evento;
 }

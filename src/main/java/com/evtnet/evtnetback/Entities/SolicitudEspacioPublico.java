@@ -18,22 +18,22 @@ public class SolicitudEspacioPublico extends Base {
 
     // -------- Atributos --------
     @Column(name = "nombre_espacio", nullable = false)
-    private String nombre_espacio;
+    private String nombreEspacio;
 
     @Column(name = "descripcion")
     private String descripcion;
 
     @Column(name = "latitud_ubicacion")
-    private BigDecimal latitud_ubicacion;
+    private BigDecimal latitudUbicacion;
 
     @Column(name = "longitud_ubicacion")
-    private BigDecimal longitud_ubicacion;
+    private BigDecimal longitudUbicacion;
 
     @Column(name = "direccion_ubicacion")
-    private String direccion_ubicacion;
+    private String direccionUbicacion;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     @Column(name = "justificacion")
     private String justificacion;
@@ -46,10 +46,10 @@ public class SolicitudEspacioPublico extends Base {
     private Usuario solicitante;
 
     // 1..n: una solicitud puede derivar en 0..n espacios creados a partir de ella
-    @OneToMany(mappedBy = "solicitud_espacio_publico", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "solicitudEspacioPublico", fetch = FetchType.EAGER)
     private List<Espacio> espacios;
 
     // 1..n: una solicitud tiene 0..n estados SEP (historial)
-    @OneToMany(mappedBy = "solicitud_espacio_publico", fetch = FetchType.EAGER)
-    private List<SEPEstado> sep_estados;
+    @OneToMany(mappedBy = "solicitudEspacioPublico", fetch = FetchType.EAGER)
+    private List<SEPEstado> sepEstados;
 }

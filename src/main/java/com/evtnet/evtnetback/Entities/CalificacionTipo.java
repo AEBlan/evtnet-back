@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.evtnet.evtnetback.Entities.Calificacion;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -24,6 +25,6 @@ public class CalificacionTipo extends Base {
     @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
 
-    @OneToMany(mappedBy = "calificacion_tipo")
+    @OneToMany(mappedBy = "calificacionTipo")
     private List<Calificacion> calificaciones;
 }

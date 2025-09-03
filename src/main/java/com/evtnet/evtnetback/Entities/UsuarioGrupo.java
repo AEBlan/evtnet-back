@@ -15,7 +15,7 @@ import com.evtnet.evtnetback.Entities.*;
 public class UsuarioGrupo extends Base {
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // n..1: muchos registros -> un usuario
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
@@ -30,5 +30,5 @@ public class UsuarioGrupo extends Base {
     // n..1: muchos registros -> un tipo de usuario dentro del grupo (Miembro/Administrador)
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "tipo_usuario_grupo_id", nullable = false)
-    private TipoUsuarioGrupo tipo_usuario_grupo;
+    private TipoUsuarioGrupo tipoUsuarioGrupo;
 }

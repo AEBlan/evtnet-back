@@ -18,15 +18,15 @@ public class Inscripcion extends Base {
 
     // --- Atributos (respeta DER) ---
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // NO agrego fecha_hora_baja: ya heredás fecha_baja en Base
 
     @Column(name = "precio_inscripcion", precision = 15, scale = 2)
-    private BigDecimal precio_inscripcion;
+    private BigDecimal precioInscripcion;
 
     @Column(name = "permitir_devolucion_completa", nullable = false)
-    private Boolean permitir_devolucion_completa;
+    private Boolean permitirDevolucionCompleta;
 
     // --- Relaciones ---
     // muchas inscripciones pertenecen a un usuario
@@ -45,5 +45,5 @@ public class Inscripcion extends Base {
 
     // una inscripción puede tener 0..n comprobantes de pago
     @OneToMany(mappedBy = "inscripcion")
-    private List<ComprobantePago> comprobante_pagos;
+    private List<ComprobantePago> comprobantePagos;
 }

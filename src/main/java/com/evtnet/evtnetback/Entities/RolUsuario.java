@@ -15,7 +15,7 @@ import com.evtnet.evtnetback.Entities.*;
 public class RolUsuario extends Base {
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // muchas asignaciones -> un rol
     @ManyToOne(optional = false, fetch = FetchType.EAGER)

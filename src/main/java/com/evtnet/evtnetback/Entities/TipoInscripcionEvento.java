@@ -22,9 +22,9 @@ public class TipoInscripcionEvento extends Base {
     private String descripcion;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // 1 tipo -> 0..n eventos
-    @OneToMany(mappedBy = "tipo_inscripcion_evento", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "tipoInscripcionEvento", fetch = FetchType.EAGER)
     private List<Evento> eventos;
 }
