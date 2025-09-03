@@ -26,7 +26,7 @@ public class IconoCaracteristica extends Base {
     @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fecha_hora_alta;
 
-    // 1 icono -> muchas características
-    @OneToMany(mappedBy = "icono_caracteristica")
+    // 1 ícono -> muchas características
+    @OneToMany(mappedBy = "iconoCaracteristica", fetch = FetchType.LAZY)
     private List<Caracteristica> caracteristicas;
 }

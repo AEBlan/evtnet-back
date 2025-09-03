@@ -2,6 +2,7 @@ package com.evtnet.evtnetback.security;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.security.config.Customizer;
 import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;

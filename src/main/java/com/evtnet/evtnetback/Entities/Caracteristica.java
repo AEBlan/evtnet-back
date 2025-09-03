@@ -27,7 +27,8 @@ public class Caracteristica extends Base {
     @JoinColumn(name = "espacio_id", nullable = false)
     private Espacio espacio;
 
-    // 1 característica -> N íconos
-    @OneToMany(mappedBy = "caracteristica", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<IconoCaracteristica> iconosCaracteristica;
+    // 1 característica -> 1 ícono
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "icono_caracteristica_id")
+    private IconoCaracteristica iconoCaracteristica;
 }
