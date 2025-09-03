@@ -1,4 +1,4 @@
-package com.evtnet.evtnetback.Services.imagenes;
+package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.Espacio;
 import com.evtnet.evtnetback.Entities.ImagenEspacio;
@@ -6,7 +6,7 @@ import com.evtnet.evtnetback.Repositories.EspacioRepository;
 import com.evtnet.evtnetback.Repositories.ImagenEspacioRepository;
 import com.evtnet.evtnetback.Services.BaseServiceImpl;
 import com.evtnet.evtnetback.Services.ImagenEspacioService;
-import com.evtnet.evtnetback.services.UploadsService; // ¡ojo: paquete lowercase!
+import com.evtnet.evtnetback.Services.UploadsService; // ¡ojo: paquete lowercase!
 import com.evtnet.evtnetback.dto.imagenes.DTOImagenEspacio;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -152,5 +152,5 @@ public class ImagenEspacioServiceImpl extends BaseServiceImpl<ImagenEspacio, Lon
         ImagenEspacio e = this.findById(id);
         uploads.deleteByPublicUrl(e.getImagen());
         return super.delete(id);
-    }
+ }
 }
