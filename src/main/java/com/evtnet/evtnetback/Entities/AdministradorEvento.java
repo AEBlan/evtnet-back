@@ -23,9 +23,9 @@ public class AdministradorEvento extends Base {
     private LocalDateTime fechaHoraBaja;
 
     // 🔹 MUCHOS administradores → UN mismo usuario (quién administra)
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "responsable_id", nullable = false)
-    private Usuario responsable;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
 
     // 🔹 MUCHOS administradores → UN mismo evento (qué evento administra)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

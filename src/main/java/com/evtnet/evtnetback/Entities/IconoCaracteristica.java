@@ -24,9 +24,9 @@ public class IconoCaracteristica extends Base {
     private String imagen;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // 1 icono -> muchas características
-    @OneToMany(mappedBy = "icono_caracteristica")
+    @OneToMany(mappedBy = "iconoCaracteristica")
     private List<Caracteristica> caracteristicas;
 }

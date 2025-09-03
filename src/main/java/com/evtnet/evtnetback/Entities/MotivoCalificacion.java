@@ -20,9 +20,9 @@ public class MotivoCalificacion extends Base {
     // n..1: muchos motivos pertenecen a un tipo
     @ManyToOne(optional = false)
     @JoinColumn(name = "tipo_calificacion_id", nullable = false)
-    private TipoCalificacion tipo_calificacion;
+    private TipoCalificacion tipoCalificacion;
 
     // 1 motivo -> 0..n filas puente
-    @OneToMany(mappedBy = "motivo_calificacion")
-    private List<CalificacionMotivoCalificacion> calificacion_motivo_calificaciones;
+    @OneToMany(mappedBy = "motivoCalificacion")
+    private List<CalificacionMotivoCalificacion> calificacionMotivoCalificaciones;
 }

@@ -24,13 +24,13 @@ public class Rol extends Base {
     private String descripcion;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // 1 rol -> 0..n rol_permiso
     @OneToMany(mappedBy = "rol")
-    private List<RolPermiso> rol_permisos;
+    private List<RolPermiso> rolPermisos;
 
     // 1 rol -> 0..n rol_usuario
     @OneToMany(mappedBy = "rol")
-    private List<RolUsuario> rol_usuarios;
+    private List<RolUsuario> rolUsuarios;
 }

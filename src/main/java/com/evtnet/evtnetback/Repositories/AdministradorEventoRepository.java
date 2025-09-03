@@ -8,6 +8,6 @@ import com.evtnet.evtnetback.Entities.AdministradorEvento;
 public interface AdministradorEventoRepository extends BaseRepository <AdministradorEvento, Long>{
 
     // Método corregido: buscar por el username del responsable
-    boolean existsByResponsableUsername(String username);
+    // boolean existsByIdAndAdministradoresEventoUsuarioUsername(Long eventoId, String username);
     
 }

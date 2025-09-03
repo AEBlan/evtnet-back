@@ -20,15 +20,15 @@ public class InstanciaMascotaSecuencia extends Base {
     private Integer orden;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // muchas secuencias -> una instancia_mascota
     @ManyToOne(optional = false)
     @JoinColumn(name = "instancia_mascota_id", nullable = false)
-    private InstanciaMascota instancia_mascota;
+    private InstanciaMascota instanciaMascota;
 
     // muchas secuencias -> una imagen_mascota (reutilizable)
     @ManyToOne(optional = false)
     @JoinColumn(name = "imagen_mascota_id", nullable = false)
-    private ImagenMascota imagen_mascota;
+    private ImagenMascota imagenMascota;
 }

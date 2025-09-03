@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "ReseñaEspacio")
+@Table(name = "Resena_Espacio")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReseñaEspacio extends Base {
+public class ResenaEspacio extends Base {
 
     @Column(name = "titulo")
     private String titulo;
@@ -33,8 +33,8 @@ public class ReseñaEspacio extends Base {
     @JoinColumn(name = "espacio_id")
     private Espacio espacio;
     
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false) 
     private Usuario usuario;
     
     @ManyToOne

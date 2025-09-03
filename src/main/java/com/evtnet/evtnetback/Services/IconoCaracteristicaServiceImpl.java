@@ -40,17 +40,16 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
         // si preferís sin Lombok.builder() para evitar dependencia:
         IconoCaracteristica icono = new IconoCaracteristica();
         icono.setImagen(url);
-        icono.setFecha_hora_alta(LocalDateTime.now());
+        icono.setFechaHoraAlta(LocalDateTime.now());
         icono = iconoRepo.save(icono);
 
-        // setter camelCase (no con guión bajo):
-        car.setIcono_caracteristica(icono);
+        car.setIconoCaracteristica(icono);
         carRepo.save(car);
 
         return new DTOIconoCaracteristica(
         icono.getId(),
         icono.getImagen(),
-        icono.getFecha_hora_alta().toString()
+        icono.getFechaHoraAlta().toString()
         );
     }
 

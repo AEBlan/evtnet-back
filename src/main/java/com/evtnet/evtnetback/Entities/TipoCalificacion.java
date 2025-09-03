@@ -19,6 +19,6 @@ public class TipoCalificacion extends Base {
     private String imagen;
 
     // 1 tipo -> 1..n motivos
-    @OneToMany(mappedBy = "tipo_calificacion", fetch = FetchType.EAGER)
-    private List<MotivoCalificacion> motivo_calificaciones;
+    @OneToMany(mappedBy = "tipoCalificacion", fetch = FetchType.EAGER)
+    private List<MotivoCalificacion> motivoCalificaciones;
 }

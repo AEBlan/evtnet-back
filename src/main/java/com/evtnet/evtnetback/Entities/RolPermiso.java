@@ -13,7 +13,7 @@ import com.evtnet.evtnetback.Entities.*;
 public class RolPermiso extends Base {
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // n..1 -> rol
     @ManyToOne(optional = false)

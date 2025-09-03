@@ -91,5 +91,7 @@ public class Evento extends Base {
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<ComprobantePago> comprobantesPago;
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organizador_id", nullable = false)
+    private Usuario organizador;
 }

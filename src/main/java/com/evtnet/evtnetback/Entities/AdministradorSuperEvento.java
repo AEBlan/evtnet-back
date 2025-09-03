@@ -37,4 +37,8 @@ public class AdministradorSuperEvento extends Base {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "super_evento_id", nullable = false)
     private SuperEvento superEvento;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
 }

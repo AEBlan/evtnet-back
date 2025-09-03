@@ -24,23 +24,14 @@ public class Caracteristica extends Base {
 
     @Column(name = "nombre", nullable = false)
     private String nombre;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "icono_caracteristica_id")
-    private IconoCaracteristica icono_caracteristica;
-    
-    @ManyToOne
-    @JoinColumn(name = "espacio_id")
-    private Espacio espacio;
-} 
+
 
     // muchas características -> un espacio (FK vive aquí)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "espacio_id", nullable = false)
     private Espacio espacio;
 
-    // 1 característica -> N íconos
-    @OneToMany(mappedBy = "caracteristica", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<IconoCaracteristica> iconosCaracteristica;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "icono_caracteristica_id") // FK en BD (snake_case)
+    private IconoCaracteristica iconoCaracteristica;
 }

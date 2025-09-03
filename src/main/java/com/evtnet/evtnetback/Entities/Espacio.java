@@ -1,4 +1,6 @@
 package com.evtnet.evtnetback.Entities;
+import com.evtnet.evtnetback.Entities.*;
+
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -46,7 +48,7 @@ public class Espacio extends Base {
     private List<ConfiguracionHorarioEspacio> configuracionesHorario;
 
     @OneToMany(mappedBy = "espacio")
-    private List<ReseñaEspacio> reseñasEspacio;
+    private List<ResenaEspacio> resenasEspacio;
 
     @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DisciplinaEspacio> disciplinasEspacio;
@@ -64,6 +66,10 @@ public class Espacio extends Base {
 
     @OneToOne(mappedBy = "espacio", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Chat chat;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "propietario_id", nullable = false)
+    private Usuario propietario;
 
 
 }

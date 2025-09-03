@@ -22,9 +22,9 @@ public class TipoEspacio extends Base {
     private String descripcion;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // 1 tipo_espacio -> 0..n espacios
-    @OneToMany(mappedBy = "tipo_espacio", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "tipoEspacio", fetch = FetchType.EAGER)
     private List<Espacio> espacios;
 }

@@ -30,13 +30,13 @@ public class InstanciaMascota extends Base {
     private String selector;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // 1 -> 0..n secuencias
-    @OneToMany(mappedBy = "instancia_mascota", fetch = FetchType.EAGER)
-    private List<InstanciaMascotaSecuencia> instancia_mascota_secuencias;
+    @OneToMany(mappedBy = "instanciaMascota", fetch = FetchType.EAGER)
+    private List<InstanciaMascotaSecuencia> instanciaMascotaSecuencias;
 
     // 1 -> 0..n usuario_instancia_mascota
-    @OneToMany(mappedBy = "instancia_mascota", fetch = FetchType.EAGER)
-    private List<UsuarioInstanciaMascota> usuario_instancia_mascotas;
+    @OneToMany(mappedBy = "instanciaMascota", fetch = FetchType.EAGER)
+    private List<UsuarioInstanciaMascota> usuarioInstanciaMascotas;
 }

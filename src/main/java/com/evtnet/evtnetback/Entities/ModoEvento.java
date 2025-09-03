@@ -22,9 +22,9 @@ public class ModoEvento extends Base {
     private String descripcion;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // 1 modo_evento -> 0..n evento_modo_evento
-    @OneToMany(mappedBy = "modo_evento")
-    private List<EventoModoEvento> evento_modo_eventos;
+    @OneToMany(mappedBy = "modoEvento")        
+    private List<EventoModoEvento> eventoModoEventos;
 }

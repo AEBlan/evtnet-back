@@ -21,9 +21,9 @@ public class ImagenMascota extends Base {
     private String imagen;
 
     @Column(name = "fecha_hora_alta")
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // 1 imagen -> 0..n secuencias (FK en InstanciaMascotaSecuencia: imagen_mascota_id)
-    @OneToMany(mappedBy = "imagen_mascota")
-    private List<InstanciaMascotaSecuencia> instancia_mascota_secuencias;
+    @OneToMany(mappedBy = "imagenMascota")
+    private List<InstanciaMascotaSecuencia> instanciaMascotaSecuencias;
 }

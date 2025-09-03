@@ -18,23 +18,23 @@ public class SEPEstado extends Base {
     private String descripcion;
 
     @Column(name = "fecha_hora_hasta")
-    private LocalDateTime fecha_hora_hasta;
+    private LocalDateTime fechaHoraHasta;
 
     @Column(name = "fecha_hora_desde", nullable = false)
-    private LocalDateTime fecha_hora_desde;
+    private LocalDateTime fechaHoraDesde;
 
     // n..1: muchas filas -> un EstadoSEP
     @ManyToOne(optional = false)
     @JoinColumn(name = "estado_sep_id", nullable = false)
-    private EstadoSEP estado_sep;
+    private EstadoSEP estadoSEP;
 
     // n..1: muchas filas -> un Usuario (quien registró el estado)
     @ManyToOne(optional = false)
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
+    @JoinColumn(name = "responsable_id", nullable = false)
+    private Usuario responsable;
 
     // n..1: muchas filas -> una SolicitudEspacioPublico (objeto al que pertenece el estado)
     @ManyToOne(optional = false)
     @JoinColumn(name = "solicitud_espacio_publico_id", nullable = false)
-    private SolicitudEspacioPublico solicitud_espacio_publico;
+    private SolicitudEspacioPublico solicitudEspacioPublico;
 }

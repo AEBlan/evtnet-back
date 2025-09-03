@@ -21,18 +21,18 @@ public class SuperEvento extends Base {
     private String descripcion;
 
     // 1 super_evento -> 0..n eventos
-    @OneToMany(mappedBy = "super_evento", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "superEvento", fetch = FetchType.EAGER)
     private List<Evento> eventos;
 
     // 1 super_evento -> 0..n administradores de super evento
-    @OneToMany(mappedBy = "super_evento", fetch = FetchType.EAGER)
-    private List<AdministradorSuperEvento> administrador_super_eventos;
+    @OneToMany(mappedBy = "superEvento", fetch = FetchType.EAGER)
+    private List<AdministradorSuperEvento> administradorSuperEventos;
 
     // 1 super_evento -> 1 chat (FK está en Chat)
-    @OneToOne(mappedBy = "super_evento", fetch = FetchType.EAGER)
+    @OneToOne(mappedBy = "superEvento", fetch = FetchType.EAGER)
     private Chat chat;
 
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
-    @JoinColumn(name = "organizador_id", nullable = false)
-    private Usuario organizador;
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
 }

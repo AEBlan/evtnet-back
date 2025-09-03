@@ -19,9 +19,9 @@ public class TipoExcepcionHorarioEspacio extends Base {
     private String nombre;
 
     @Column(name = "fecha_hora_alta", nullable = false)
-    private LocalDateTime fecha_hora_alta;
+    private LocalDateTime fechaHoraAlta;
 
     // 1 tipo -> 0..n excepciones
-    @OneToMany(mappedBy = "tipo_excepcion_horario_espacio", fetch = FetchType.EAGER)
-    private List<ExcepcionHorarioEspacio> excepcion_horario_espacios;
+    @OneToMany(mappedBy = "tipoExcepcionHorarioEspacio", fetch = FetchType.EAGER)
+    private List<ExcepcionHorarioEspacio> excepcionHorarioEspacios;
 }
