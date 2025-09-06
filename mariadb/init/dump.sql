@@ -1,6 +1,8 @@
 USE `evtnet_db`;
 
--- ParametroSistema
+-- =========================
+-- ParametroSistema (sin fecha en tu entidad: lo dejo igual)
+-- =========================
 INSERT INTO parametro_sistema (nombre, valor)
   SELECT 'longitudPagina', '20' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE nombre='longitudPagina');
 INSERT INTO parametro_sistema (nombre, valor)
@@ -16,68 +18,138 @@ INSERT INTO parametro_sistema (nombre, valor)
 INSERT INTO parametro_sistema (nombre, valor)
   SELECT 'dias_previos_resenas_orden', '365' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE nombre='dias_previos_resenas_orden');
 
--- MedioDePago
+-- =========================
+-- MedioDePago (no pegaste entidad; asumo solo nombre)
+-- =========================
 INSERT INTO medio_de_pago (nombre)
   SELECT 'Mercado Pago' WHERE NOT EXISTS (SELECT 1 FROM medio_de_pago WHERE nombre='Mercado Pago');
 
--- ConfiguracionCPI (asumo 1 sola config)
-INSERT INTO comision_por_inscripcion (monto_limite, porcentaje)
-  SELECT 100000.00, 5.00
-  WHERE NOT EXISTS (SELECT 1 FROM comision_por_inscripcion);
+-- =========================
+-- Comisiones (tienen fecha_desde/fecha_hasta, monto_limite, porcentaje)
+-- =========================
+INSERT INTO comision_por_inscripcion (fecha_desde, fecha_hasta, monto_limite, porcentaje)
+SELECT NOW(), NULL, 100000.00, 5.00
+WHERE NOT EXISTS (SELECT 1 FROM comision_por_inscripcion);
 
--- ConfiguracionCPO (asumo 1 sola config)
-INSERT INTO comision_por_organizacion (monto_limite, porcentaje)
-  SELECT 250000.00, 7.50
-  WHERE NOT EXISTS (SELECT 1 FROM comision_por_organizacion);
+INSERT INTO comision_por_organizacion (fecha_desde, fecha_hasta, monto_limite, porcentaje)
+SELECT NOW(), NULL, 250000.00, 7.50
+WHERE NOT EXISTS (SELECT 1 FROM comision_por_organizacion);
 
--- Disciplina
-INSERT INTO disciplina (nombre) SELECT 'Futbol'  WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Futbol');
-INSERT INTO disciplina (nombre) SELECT 'Padel'   WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Padel');
-INSERT INTO disciplina (nombre) SELECT 'Metegol' WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Metegol');
+-- =========================
+-- Disciplina (tiene fecha_hora_alta/baja opcionales)
+-- =========================
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Futbol', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Futbol');
 
--- ModoEvento
-INSERT INTO modo_evento (nombre) SELECT 'Por equipos'  WHERE NOT EXISTS (SELECT 1 FROM modo_evento WHERE nombre='Por equipos');
-INSERT INTO modo_evento (nombre) SELECT 'Cooperativo'  WHERE NOT EXISTS (SELECT 1 FROM modo_evento WHERE nombre='Cooperativo');
-INSERT INTO modo_evento (nombre) SELECT 'Individual'   WHERE NOT EXISTS (SELECT 1 FROM modo_evento WHERE nombre='Individual');
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Padel', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Padel');
 
--- TipoInscripcion
-INSERT INTO tipo_inscripcion_evento (nombre) SELECT 'Inscripción por Usuario'         WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripción por Usuario');
-INSERT INTO tipo_inscripcion_evento (nombre) SELECT 'Inscripcion por Administrador'   WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripcion por Administrador');
-INSERT INTO tipo_inscripcion_evento (nombre) SELECT 'Inscripcion Usuario/Administrador' WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripcion Usuario/Administrador');
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Metegol', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Metegol');
 
--- EstadoDenunciaEvento
-INSERT INTO estado_denuncia_evento (nombre) SELECT 'Ingresado'  WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Ingresado');
-INSERT INTO estado_denuncia_evento (nombre) SELECT 'Finalizado' WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Finalizado');
+-- =========================
+-- ModoEvento (fecha_hora_alta NOT NULL)
+-- =========================
+INSERT INTO modo_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Por equipos', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM modo_evento WHERE nombre='Por equipos');
 
--- CalificacionTipo
-INSERT INTO calificacion_tipo (nombre) SELECT 'Normal'  WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Normal');
-INSERT INTO calificacion_tipo (nombre) SELECT 'Denuncia' WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Denuncia');
+INSERT INTO modo_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Cooperativo', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM modo_evento WHERE nombre='Cooperativo');
 
+INSERT INTO modo_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Individual', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM modo_evento WHERE nombre='Individual');
 
--- TipoUsuarioGrupo
-INSERT INTO tipo_usuario_grupo (nombre) SELECT 'Miembro'       WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Miembro');
-INSERT INTO tipo_usuario_grupo (nombre) SELECT 'Administrador' WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Administrador');
+-- =========================
+-- TipoInscripcionEvento (fecha_hora_alta NOT NULL)
+-- =========================
+INSERT INTO tipo_inscripcion_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Inscripción por Usuario', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripción por Usuario');
 
--- EstadoSEP
-INSERT INTO estadosep (nombre) SELECT 'Pendiente' WHERE NOT EXISTS (SELECT 1 FROM estadosep WHERE nombre='Pendiente');
-INSERT INTO estadosep (nombre) SELECT 'Aprobada'  WHERE NOT EXISTS (SELECT 1 FROM estadosep WHERE nombre='Aprobada');
-INSERT INTO estadosep (nombre) SELECT 'Rechazada' WHERE NOT EXISTS (SELECT 1 FROM estadosep WHERE nombre='Rechazada');
+INSERT INTO tipo_inscripcion_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Inscripcion por Administrador', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripcion por Administrador');
 
--- TipoEspacio
-INSERT INTO tipo_espacio (nombre) SELECT 'Privado' WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE nombre='Privado');
-INSERT INTO tipo_espacio (nombre) SELECT 'Público' WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE nombre='Público');
+INSERT INTO tipo_inscripcion_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Inscripcion Usuario/Administrador', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripcion Usuario/Administrador');
 
--- IconoCaracteristica
+-- =========================
+-- EstadoDenunciaEvento (fecha_hora_alta nullable)
+-- =========================
+INSERT INTO estado_denuncia_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Ingresado', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Ingresado');
 
--- TipoExcepcionHorarioEspacio
-INSERT INTO tipo_excepcion_horario_espacio (nombre) SELECT 'Completa'
-  WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Completa');
-INSERT INTO tipo_excepcion_horario_espacio (nombre) SELECT 'Externa'
-  WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Externa');
+INSERT INTO estado_denuncia_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Finalizado', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Finalizado');
 
--- -------------------------
--- Permisos base (todos los que listaste)
--- -------------------------
+-- =========================
+-- CalificacionTipo (tiene fechas opcionales)
+-- =========================
+INSERT INTO calificacion_tipo (nombre, fecha_hora_alta)
+SELECT 'Normal', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Normal');
+
+INSERT INTO calificacion_tipo (nombre, fecha_hora_alta)
+SELECT 'Denuncia', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Denuncia');
+
+-- =========================
+-- TipoUsuarioGrupo (fecha_hora_alta NOT NULL)
+-- =========================
+INSERT INTO tipo_usuario_grupo (nombre, fecha_hora_alta)
+SELECT 'Miembro', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Miembro');
+
+INSERT INTO tipo_usuario_grupo (nombre, fecha_hora_alta)
+SELECT 'Administrador', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Administrador');
+
+-- =========================
+-- EstadoSEP  (¡OJO! tu entidad usa @Table(name = "EstadoSEP"))
+-- =========================
+INSERT INTO estadosep (nombre)
+SELECT 'Pendiente'
+WHERE NOT EXISTS (SELECT 1 FROM estadosep WHERE nombre='Pendiente');
+
+INSERT INTO estadosep (nombre)
+SELECT 'Aprobada'
+WHERE NOT EXISTS (SELECT 1 FROM estadosep WHERE nombre='Aprobada');
+
+INSERT INTO estadosep (nombre)
+SELECT 'Rechazada'
+WHERE NOT EXISTS (SELECT 1 FROM estadosep WHERE nombre='Rechazada');
+
+-- =========================
+-- TipoEspacio (fecha_hora_alta NOT NULL)
+-- =========================
+INSERT INTO tipo_espacio (nombre, descripcion, fecha_hora_alta)
+SELECT 'Privado', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE nombre='Privado');
+
+INSERT INTO tipo_espacio (nombre, descripcion, fecha_hora_alta)
+SELECT 'Público', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE nombre='Público');
+
+-- =========================
+-- TipoExcepcionHorarioEspacio (fecha_hora_alta NOT NULL)
+-- =========================
+INSERT INTO tipo_excepcion_horario_espacio (nombre, fecha_hora_alta)
+SELECT 'Completa', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Completa');
+
+INSERT INTO tipo_excepcion_horario_espacio (nombre, fecha_hora_alta)
+SELECT 'Externa', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Externa');
+
+-- =========================
+-- Permiso (tu entidad no tiene fecha)
+-- =========================
 INSERT INTO permiso (nombre) SELECT 'HabilitarCuenta' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='HabilitarCuenta');
 INSERT INTO permiso (nombre) SELECT 'InicioSesion' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='InicioSesion');
 INSERT INTO permiso (nombre) SELECT 'VisionPerfilPropio' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='VisionPerfilPropio');
@@ -114,30 +186,44 @@ INSERT INTO permiso (nombre) SELECT 'VisionLogEspacios' WHERE NOT EXISTS (SELECT
 INSERT INTO permiso (nombre) SELECT 'VisionLogPagos' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='VisionLogPagos');
 INSERT INTO permiso (nombre) SELECT 'VisionLogParametros' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='VisionLogParametros');
 
--- -------------------------
--- Roles
--- -------------------------
-INSERT INTO rol (nombre) SELECT 'PendienteConfirmación' WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='PendienteConfirmación');
-INSERT INTO rol (nombre) SELECT 'Usuario' WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='Usuario');
-INSERT INTO rol (nombre) SELECT 'Administrador' WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='Administrador');
-INSERT INTO rol (nombre) SELECT 'SuperAdministrador' WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='SuperAdministrador');
-INSERT INTO rol (nombre) SELECT 'Perito' WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='Perito');
+-- =========================
+-- Rol (fecha_hora_alta NOT NULL en tu entidad nueva)
+-- =========================
+INSERT INTO rol (nombre, descripcion, fecha_hora_alta)
+SELECT 'PendienteConfirmación', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='PendienteConfirmación');
 
--- -------------------------
--- Rol-Permiso mapping
--- -------------------------
+INSERT INTO rol (nombre, descripcion, fecha_hora_alta)
+SELECT 'Usuario', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='Usuario');
+
+INSERT INTO rol (nombre, descripcion, fecha_hora_alta)
+SELECT 'Administrador', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='Administrador');
+
+INSERT INTO rol (nombre, descripcion, fecha_hora_alta)
+SELECT 'SuperAdministrador', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='SuperAdministrador');
+
+INSERT INTO rol (nombre, descripcion, fecha_hora_alta)
+SELECT 'Perito', NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='Perito');
+
+-- =========================
+-- Rol-Permiso (rol_permiso ahora exige fecha_hora_alta NOT NULL)
+-- =========================
 
 -- 1) PendienteConfirmación -> solo HabilitarCuenta
-SET @rol = (SELECT id FROM rol WHERE nombre='PendienteConfirmación');
-INSERT INTO rol_permiso (rol_id, permiso_id)
-SELECT @rol, p.id FROM permiso p
+SET @rol := (SELECT id FROM rol WHERE nombre='PendienteConfirmación');
+INSERT INTO rol_permiso (rol_id, permiso_id, fecha_hora_alta)
+SELECT @rol, p.id, NOW() FROM permiso p
 WHERE p.nombre='HabilitarCuenta'
 AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
 
 -- 2) Usuario -> permisos básicos
-SET @rol = (SELECT id FROM rol WHERE nombre='Usuario');
-INSERT INTO rol_permiso (rol_id, permiso_id)
-SELECT @rol, p.id FROM permiso p
+SET @rol := (SELECT id FROM rol WHERE nombre='Usuario');
+INSERT INTO rol_permiso (rol_id, permiso_id, fecha_hora_alta)
+SELECT @rol, p.id, NOW() FROM permiso p
 WHERE p.nombre IN (
   'InicioSesion','VisionPerfilPropio','ModificacionPerfilPropio','VisionPerfilTercero',
   'InscripcionEventos','VisionEventos','OrganizacionEventos','AdministracionEventos',
@@ -148,9 +234,9 @@ WHERE p.nombre IN (
 AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
 
 -- 3) Administrador -> permisos avanzados
-SET @rol = (SELECT id FROM rol WHERE nombre='Administrador');
-INSERT INTO rol_permiso (rol_id, permiso_id)
-SELECT @rol, p.id FROM permiso p
+SET @rol := (SELECT id FROM rol WHERE nombre='Administrador');
+INSERT INTO rol_permiso (rol_id, permiso_id, fecha_hora_alta)
+SELECT @rol, p.id, NOW() FROM permiso p
 WHERE p.nombre IN (
   'InicioSesion','VisionPerfilPropio','ModificacionPerfilPropio','VisionPerfilTerceroCompleta',
   'VisionEventos','VisionEspacios','ParticipacionGrupos','CreacionGrupos','AdministracionGrupos',
@@ -161,18 +247,18 @@ WHERE p.nombre IN (
 AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
 
 -- 4) SuperAdministrador -> permisos globales
-SET @rol = (SELECT id FROM rol WHERE nombre='SuperAdministrador');
-INSERT INTO rol_permiso (rol_id, permiso_id)
-SELECT @rol, p.id FROM permiso p
+SET @rol := (SELECT id FROM rol WHERE nombre='SuperAdministrador');
+INSERT INTO rol_permiso (rol_id, permiso_id, fecha_hora_alta)
+SELECT @rol, p.id, NOW() FROM permiso p
 WHERE p.nombre IN (
   'VisionLogPagos','VisionLogParametros','AdministracionRolesReservados','VisionReportesGenerales'
 )
 AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
 
--- 5) Perito -> solo visión de logs
-SET @rol = (SELECT id FROM rol WHERE nombre='Perito');
-INSERT INTO rol_permiso (rol_id, permiso_id)
-SELECT @rol, p.id FROM permiso p
+-- 5) Perito -> visión de logs
+SET @rol := (SELECT id FROM rol WHERE nombre='Perito');
+INSERT INTO rol_permiso (rol_id, permiso_id, fecha_hora_alta)
+SELECT @rol, p.id, NOW() FROM permiso p
 WHERE p.nombre IN (
   'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios','VisionLogPagos','VisionLogParametros'
 )

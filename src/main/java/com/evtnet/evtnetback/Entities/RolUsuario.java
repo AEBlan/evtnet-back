@@ -26,4 +26,9 @@ public class RolUsuario extends Base {
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
+
+    @PrePersist
+    void prePersist() {
+        if (fechaHoraAlta == null) fechaHoraAlta = LocalDateTime.now();
+    }
 }

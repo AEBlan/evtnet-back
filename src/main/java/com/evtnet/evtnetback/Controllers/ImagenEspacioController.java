@@ -1,7 +1,7 @@
 package com.evtnet.evtnetback.Controllers;
 
 import com.evtnet.evtnetback.Entities.ImagenEspacio;
-import com.evtnet.evtnetback.Services.imagenes.ImagenEspacioServiceImpl;
+import com.evtnet.evtnetback.Services.ImagenEspacioServiceImpl;
 import com.evtnet.evtnetback.dto.imagenes.DTOImagenEspacio;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;

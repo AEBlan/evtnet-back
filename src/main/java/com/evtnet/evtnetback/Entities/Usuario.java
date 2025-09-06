@@ -115,4 +115,6 @@ public class Usuario extends Base {
 
     @OneToMany(mappedBy = "organizador")
     private List<Evento> evento;
+
+    
 }

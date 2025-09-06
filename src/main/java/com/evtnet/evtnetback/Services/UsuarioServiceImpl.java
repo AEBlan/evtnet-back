@@ -4,6 +4,7 @@ import com.evtnet.evtnetback.Entities.Rol;
 import com.evtnet.evtnetback.Entities.RolUsuario;
 import com.evtnet.evtnetback.Entities.Usuario;
 import com.evtnet.evtnetback.Repositories.BaseRepository;
+import com.evtnet.evtnetback.Repositories.CalificacionRepository;
 import com.evtnet.evtnetback.Repositories.RolRepository;
 import com.evtnet.evtnetback.Repositories.RolUsuarioRepository;
 import com.evtnet.evtnetback.Repositories.UsuarioRepository;
@@ -27,9 +28,13 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;                         // <<< IMPORT NECESARIO
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.net.URLConnection;
 
 @Service
 public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implements UsuarioService {
@@ -39,7 +44,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final RolUsuarioRepository rolUsuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final MailService mailService; // ✅ inyectado para enviar el mail
+    private final MailService mailService; // inyectado para enviar el mail
+    private final CalificacionRepository calificacionRepository;
 
     // Directorio para fotos de perfil (montá un volumen)
     @Value("${app.storage.perfiles:/app/uploads/perfiles}")
@@ -49,6 +55,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     @Value("${app.google.clientId:}")
     private String googleClientId;
 
+    @Value("${app.storage.calificaciones:/app/uploads/calificaciones}")
+    private String calificacionesDir;
+
     public UsuarioServiceImpl(
             BaseRepository<Usuario, Long> baseRepository,
             UsuarioRepository usuarioRepository,
@@ -56,7 +65,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             RolUsuarioRepository rolUsuarioRepository,
             PasswordEncoder passwordEncoder,
             JwtUtil jwtUtil,
-            MailService mailService
+            MailService mailService,
+            CalificacionRepository calificacionRepository
     ) {
         super(baseRepository);
         this.usuarioRepository = usuarioRepository;
@@ -65,6 +75,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.mailService = mailService;
+        this.calificacionRepository = calificacionRepository;
     }
 
     // ===== Config (recupero por mail) =====
@@ -115,6 +126,17 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         return String.format("%06d", secureRandom.nextInt(1_000_000)); // 000000..999999
     }
 
+    private LocalDateTime parseFechaNacimiento(String maybeIsoOrMillis) {
+        if (maybeIsoOrMillis == null || maybeIsoOrMillis.isBlank()) return null;
+        try {
+            long ms = Long.parseLong(maybeIsoOrMillis); // millis
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(ms), ZoneId.systemDefault());
+        } catch (NumberFormatException ignore) {
+            Instant inst = Instant.parse(maybeIsoOrMillis); // ISO-8601
+            return LocalDateTime.ofInstant(inst, ZoneId.systemDefault());
+        }
+    }
+
     // ================== ENVIAR CÓDIGO (RECUPERO) ==================
     @Override
     public void enviarCodigoRecuperarContrasena(String mail) {
@@ -151,15 +173,13 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
     // ---------- AUTH LOCAL ----------
     private DTOAuth authFromUser(Usuario u) {
-        List<String> roles = (u.getRolesUsuario() == null) ? List.of()
-                : u.getRolesUsuario().stream()
-                .map(ru -> ru.getRol().getNombre())
-                .collect(Collectors.toList());
-
-        String token = jwtUtil.generateToken(u.getUsername(), roles);
+        List<String> permisos = rolUsuarioRepository.findPermisosByUsername(u.getUsername());
+        if (permisos == null) permisos = List.of(); // por las dudas
+    
+        String token = jwtUtil.generateToken(u.getUsername(), permisos);
         return DTOAuth.builder()
                 .token(token)
-                .roles(roles)
+                .permisos(permisos)
                 .username(u.getUsername())
                 .build();
     }
@@ -186,6 +206,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .mail(body.getMail())
                 .nombre(body.getNombre())
                 .apellido(body.getApellido())
+                .dni(body.getDni())
+                .fechaNacimiento(parseFechaNacimiento(body.getFechaNacimiento()))
                 .contrasena(passwordEncoder.encode(body.getPassword()))
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
@@ -194,15 +216,15 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Rol rolPend = rolRepository.findByNombre("PendienteConfirmación")
                 .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmación"));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolPend)) {
-            rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolPend).build());
+            rolUsuarioRepository.save(
+                    RolUsuario.builder().usuario(u).rol(rolPend).fechaHoraAlta(LocalDateTime.now()).build()
+            );
         }
-
-        // Enviar código de registro (simple en memoria)
+        
         enviarCodigo(body.getMail());
-
         return authFromUser(u);
     }
-    
+
     @Override
     @Transactional
     public DTOAuth registerConFoto(DTORegistrarse body, byte[] foto, String nombreArchivo, String contentType) throws Exception {
@@ -211,21 +233,13 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         if (usuarioRepository.existsByUsername(body.getUsername()))
             throw new Exception("Username no disponible");
 
-        LocalDateTime fnac = null;
-        if (body.getFechaNacimiento() != null) {
-            fnac = LocalDateTime.ofInstant(
-                    Instant.ofEpochMilli(body.getFechaNacimiento()),
-                    java.time.ZoneId.systemDefault()
-            );
-        }
-
         Usuario u = Usuario.builder()
                 .username(body.getUsername())
                 .mail(body.getMail())
                 .nombre(body.getNombre())
                 .apellido(body.getApellido())
                 .dni(body.getDni())
-                .fechaNacimiento(fnac)
+                .fechaNacimiento(parseFechaNacimiento(body.getFechaNacimiento())) // <<< unificado
                 .contrasena(passwordEncoder.encode(body.getPassword()))
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
@@ -236,11 +250,11 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         // 2) Guardar foto (si vino)
         if (foto != null && foto.length > 0) {
             Files.createDirectories(Paths.get(perfilesDir)); // ej: ./uploads/perfiles
-            String ext = getExtension(nombreArchivo);        // ya lo tenés implementado
+            String ext = getExtension(nombreArchivo);
             String filename = u.getUsername() + "_" + System.currentTimeMillis() + (ext.isEmpty() ? "" : "." + ext);
             Path destino = Paths.get(perfilesDir).resolve(filename).toAbsolutePath().normalize();
             Files.write(destino, foto, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            u.setFotoPerfil(destino.toString());            // seguís usando ruta absoluta en BD
+            u.setFotoPerfil(destino.toString());
             usuarioRepository.save(u);
         }
 
@@ -248,13 +262,15 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Rol rolPend = rolRepository.findByNombre("PendienteConfirmación")
                 .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmación"));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolPend)) {
-            rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolPend).build());
+            RolUsuario ru = RolUsuario.builder().usuario(u).rol(rolPend).build();
+            ru.setFechaHoraAlta(LocalDateTime.now());
+            rolUsuarioRepository.save(ru);
         }
 
         // 4) Enviar código (igual que antes)
         enviarCodigo(body.getMail());
 
-        // 5) Devolver DTOAuth igual que register(...)
+        // 5) Devolver DTOAuth
         return authFromUser(u);
     }
 
@@ -267,7 +283,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         String code = generateCode();
         codigosRegistroPorMail.put(mail, code);
         System.out.println("[REGISTRO] Código para " + mail + ": " + code);
-        // Si querés enviar por mail: mailService.enviar(mail, "Código de registro", "Tu código es: " + code);
+        // Si querés: mailService.enviar(mail, "Código de registro", "Tu código es: " + code);
     }
 
     @Override
@@ -290,7 +306,13 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         rolUsuarioRepository.findByUsuarioAndRol(u, rolPend)
                 .ifPresent(ru -> rolUsuarioRepository.deleteByUsuarioAndRol(u, rolPend));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolUsr)) {
-            rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolUsr).build());
+            rolUsuarioRepository.save(
+                    RolUsuario.builder()
+                            .usuario(u)
+                            .rol(rolUsr)
+                            .fechaHoraAlta(LocalDateTime.now())
+                            .build()
+            );
         }
 
         codigosRegistroPorMail.remove(mail);
@@ -372,7 +394,6 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         return !usuarioRepository.existsByUsername(username);
     }
 
-    // ✅ ARREGLADO: usa CodeMeta con TTL para validar el código y resetear
     @Override
     public DTOAuth recuperarContrasena(String mail, String password, String codigo) throws Exception {
         String m = normalizeMail(mail);
@@ -417,30 +438,44 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     public DTOPerfil obtenerPerfil(String username) throws Exception {
         Usuario u = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+        Long fnac = (u.getFechaNacimiento() == null) ? null
+                : u.getFechaNacimiento().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+        // 1) Traer conteos por tipo
+        var rows = calificacionRepository.conteoPorTipo(username);
+        long total = rows.stream().mapToLong(r -> (Long) r[1]).sum();
+
+        // 2) Armar lista para el front (mismos nombres que íconos)
+        List<DTOPerfil.ItemCalificacion> items = null; // si querés ocultar el bloque cuando no hay nada
+        if (total > 0) {
+            var map = new java.util.HashMap<String, Long>();
+            for (Object[] r : rows) map.put((String) r[0], (Long) r[1]);
+
+            items = new java.util.ArrayList<>();
+            String[] tipos = {"Buena", "Media", "Mala"};
+            for (String t : tipos) {
+                long cnt = map.getOrDefault(t.toLowerCase(), 0L);
+                int pct = (int) Math.round(cnt * 100.0 / total);
+                items.add(new DTOPerfil.ItemCalificacion(t, pct));
+            }
+        }
+        // Si preferís mostrar íconos con 0%, en lugar de null, descomentá:
+        // if (items == null) items = java.util.List.of(
+        //     new DTOPerfil.ItemCalificacion("Buena", 0),
+        //     new DTOPerfil.ItemCalificacion("Media", 0),
+        //     new DTOPerfil.ItemCalificacion("Mala", 0)
+        // );
+
         return DTOPerfil.builder()
                 .username(u.getUsername())
+                .nombre(u.getNombre())
+                .apellido(u.getApellido())
                 .mail(u.getMail())
-                .nombreCompleto(
-                        ((u.getNombre() != null) ? u.getNombre() : "") + " " +
-                        ((u.getApellido() != null) ? u.getApellido() : ""))
-                .fotoUrl(u.getFotoPerfil())
+                .dni(u.getDni())
+                .fechaNacimiento(fnac)
+                .calificaciones(items)          // <- ahora sí
                 .build();
-    }
-
-    @Override
-    public byte[] obtenerFotoDePerfil(String username) throws Exception {
-        Usuario u = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new Exception("Usuario no encontrado"));
-        if (u.getFotoPerfil() == null || u.getFotoPerfil().isBlank()) return null;
-
-        Path p = Paths.get(u.getFotoPerfil());
-        if (!Files.exists(p)) return null;
-        return Files.readAllBytes(p);
-    }
-
-    @Override
-    public byte[] obtenerImagenDeCalificacion(String username) {
-        return null; // TODO
     }
 
     @Override
@@ -448,13 +483,15 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Usuario u = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
+        Long fnac = (u.getFechaNacimiento() == null) ? null
+                : u.getFechaNacimiento().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
         return DTOEditarPerfil.builder()
                 .nombre(u.getNombre())
                 .apellido(u.getApellido())
                 .dni(u.getDni())
                 .cbu(u.getCBU())
-                .telefono(null)
-                .bio(null)
+                .fechaNacimiento(fnac)
                 .build();
     }
 
@@ -470,12 +507,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             if (datos.getApellido() != null) u.setApellido(datos.getApellido());
             if (datos.getDni() != null) u.setDni(datos.getDni());
             if (datos.getCbu() != null) u.setCBU(datos.getCbu());
-
-            if (datos.getNewPassword() != null && !datos.getNewPassword().isBlank()) {
-                if (datos.getCurrentPassword() == null ||
-                        !passwordEncoder.matches(datos.getCurrentPassword(), u.getContrasena()))
-                    throw new Exception("Contraseña actual incorrecta");
-                u.setContrasena(passwordEncoder.encode(datos.getNewPassword()));
+            if (datos.getFechaNacimiento() != null) {
+                u.setFechaNacimiento(LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(datos.getFechaNacimiento()), ZoneId.systemDefault()));
             }
         }
 
@@ -489,6 +523,57 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         }
 
         usuarioRepository.save(u);
+    }
+
+    @Override
+    public FotoResponse obtenerFotoDePerfil(String username) throws Exception {
+        var u = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+        Path path = (u.getFotoPerfil() == null || u.getFotoPerfil().isBlank()) ? null : Paths.get(u.getFotoPerfil());
+        if (path == null || !Files.exists(path)) {
+            // devolvé null y que el controller aplique fallback, o devolvé el fallback aquí
+            return null;
+        }
+        String ct = Files.probeContentType(path);
+        return new FotoResponse(Files.readAllBytes(path), ct);
+    }
+
+
+    @Override
+    public FotoResponse obtenerImagenDeCalificacion(String username) throws Exception {
+        // En el front este parámetro es el "nombre de la calificación" (Buena/Media/Mala)
+        if (username == null || username.isBlank()) return null;
+
+        // normalizo y valido
+        String tipo = username.trim().toLowerCase(Locale.ROOT);
+        switch (tipo) {
+            case "buena":
+            case "media":
+            case "mala":
+                break;
+            default:
+                // si te interesa, podrías mapear sinónimos aquí (p.ej. "baja" -> "mala")
+                return null;
+        }
+
+        // carpeta base (agregá arriba en la clase: @Value("${app.storage.calificaciones:/app/uploads/calificaciones}") private String calificacionesDir;)
+        Path base = Paths.get(calificacionesDir);
+        Files.createDirectories(base);
+
+        // solo PNG
+        Path img = base.resolve(tipo + ".png").toAbsolutePath().normalize();
+        if (Files.exists(img)) {
+            return new FotoResponse(Files.readAllBytes(img), "image/png");
+        }
+
+        // fallback si no existe el específico
+        Path def = base.resolve("_default.png").toAbsolutePath().normalize();
+        if (Files.exists(def)) {
+            return new FotoResponse(Files.readAllBytes(def), "image/png");
+        }
+
+        // si no hay nada, que el front use su placeholder
+        return null;
     }
 
     // ---------- Helpers ----------

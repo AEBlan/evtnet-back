@@ -1,4 +1,4 @@
-package com.evtnet.evtnetback.Controllers;
+/*package com.evtnet.evtnetback.Controllers;
 
 import com.evtnet.evtnetback.dto.comunes.CantidadResponse;
 import com.evtnet.evtnetback.dto.comunes.IdResponse;
@@ -53,4 +53,4 @@ public class EventoController {
         int cantidad = service.obtenerCantidadEventosSuperpuestos(idEspacio, fechaHoraDesde, fechaHoraHasta);
         return ResponseEntity.ok(new CantidadResponse(cantidad));
     }
-}
+}*/
