@@ -4,7 +4,6 @@ import com.evtnet.evtnetback.Entities.Usuario;
 import com.evtnet.evtnetback.Services.UsuarioService;
 import com.evtnet.evtnetback.Services.UsuarioServiceImpl;
 import com.evtnet.evtnetback.dto.usuarios.*;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
-import java.net.URI;
-import org.springframework.http.HttpStatus;
 
 import com.evtnet.evtnetback.dto.comunes.BlobJson;
 import java.nio.charset.StandardCharsets;
@@ -89,7 +86,7 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     }
 
     // --- Recupero de contraseña ---
-    @PutMapping("/enviarCodigoRecuperarContrasena")
+    @PostMapping("/enviarCodigoRecuperarContrasena")
     public ResponseEntity<Void> enviarCodigoRecuperarContrasena(@RequestParam String mail) throws Exception {
         service.enviarCodigoRecuperarContrasena(mail);
         return ResponseEntity.noContent().build();

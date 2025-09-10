@@ -1,6 +1,5 @@
 package com.evtnet.evtnetback.Services;
 
-import com.evtnet.evtnetback.Entities.Disciplina;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinas;
 import java.util.List;
 

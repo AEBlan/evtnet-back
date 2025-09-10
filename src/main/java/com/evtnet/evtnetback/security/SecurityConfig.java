@@ -11,7 +11,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -50,7 +49,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/usuarios/iniciarSesion").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/ingresarCodigo").permitAll()
                 .requestMatchers(HttpMethod.POST, "/usuarios/loginGoogle").permitAll()
-                .requestMatchers(HttpMethod.POST, "/usuarios/recuperarContrasena").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/usuarios/recuperarContrasena").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/usuarios/enviarCodigo").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/usuarios/definirContrasena").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/usuarios/enviarCodigoRecuperarContrasena").permitAll()

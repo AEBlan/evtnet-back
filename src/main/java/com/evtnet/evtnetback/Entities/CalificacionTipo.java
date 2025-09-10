@@ -5,7 +5,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.evtnet.evtnetback.Entities.Calificacion;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

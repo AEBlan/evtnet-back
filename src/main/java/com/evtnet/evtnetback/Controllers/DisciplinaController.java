@@ -1,16 +1,11 @@
 package com.evtnet.evtnetback.Controllers;
 
-import com.evtnet.evtnetback.Entities.Disciplina;
-import com.evtnet.evtnetback.Entities.DisciplinaEspacio;
-import com.evtnet.evtnetback.Services.DisciplinaEspacioServiceImpl;
-import com.evtnet.evtnetback.Services.DisciplinaServiceImpl;
 import com.evtnet.evtnetback.Services.DisciplinaService;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinas;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/disciplinas")

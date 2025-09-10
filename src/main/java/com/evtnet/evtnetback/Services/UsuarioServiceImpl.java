@@ -31,10 +31,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;                         // <<< IMPORT NECESARIO
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.net.URLConnection;
+
 
 @Service
 public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implements UsuarioService {
@@ -277,13 +274,26 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     // ---------- CÓDIGOS (registro/verificación) ----------
     @Override
     public void enviarCodigo(String mail) throws Exception {
+        // 1) Validar que el usuario exista
         usuarioRepository.findByMail(mail)
                 .orElseThrow(() -> new Exception("Usuario no encontrado para " + mail));
 
+        // 2) Generar y guardar el código (como ya hacías)
         String code = generateCode();
         codigosRegistroPorMail.put(mail, code);
-        System.out.println("[REGISTRO] Código para " + mail + ": " + code);
-        // Si querés: mailService.enviar(mail, "Código de registro", "Tu código es: " + code);
+
+        // 3) Enviar el correo (igual estilo que recuperación)
+        String subject = "Código de verificación de cuenta";
+        String body = """
+                Hola,
+
+                Tu código de verificación es: %s
+                Este código expira en %d minutos.
+
+                Si no solicitaste este código, podés ignorar este mensaje.
+                """.formatted(code, RESET_TTL.toMinutes()); // podés usar otro TTL si querés
+
+        mailService.enviar(mail, subject, body);
     }
 
     @Override
@@ -442,23 +452,25 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Long fnac = (u.getFechaNacimiento() == null) ? null
                 : u.getFechaNacimiento().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
-        // 1) Traer conteos por tipo
-        var rows = calificacionRepository.conteoPorTipo(username);
-        long total = rows.stream().mapToLong(r -> (Long) r[1]).sum();
+            // --- Conteo por tipo (Buena/Media/Mala) ---
+        List<Object[]> rows = calificacionRepository.conteoPorTipo(username);
+        long total = rows.stream()
+                .mapToLong(r -> ((Number) r[1]).longValue())
+                .sum();
 
-        // 2) Armar lista para el front (mismos nombres que íconos)
-        List<DTOPerfil.ItemCalificacion> items = null; // si querés ocultar el bloque cuando no hay nada
-        if (total > 0) {
-            var map = new java.util.HashMap<String, Long>();
-            for (Object[] r : rows) map.put((String) r[0], (Long) r[1]);
+        // armamos siempre los 3 tipos; si total=0 → 0%
+        List<DTOPerfil.ItemCalificacion> items = new ArrayList<>();
+        String[] tipos = { "Buena", "Media", "Mala" };
 
-            items = new java.util.ArrayList<>();
-            String[] tipos = {"Buena", "Media", "Mala"};
-            for (String t : tipos) {
-                long cnt = map.getOrDefault(t.toLowerCase(), 0L);
-                int pct = (int) Math.round(cnt * 100.0 / total);
-                items.add(new DTOPerfil.ItemCalificacion(t, pct));
-            }
+        for (String t : tipos) {
+            long cnt = rows.stream()
+                    .filter(r -> t.equalsIgnoreCase((String) r[0]))
+                    .mapToLong(r -> ((Number) r[1]).longValue())
+                    .findFirst()
+                    .orElse(0L);
+
+            int pct = (total == 0) ? 0 : (int) Math.round(cnt * 100.0 / total);
+            items.add(new DTOPerfil.ItemCalificacion(t, pct));
         }
         // Si preferís mostrar íconos con 0%, en lugar de null, descomentá:
         // if (items == null) items = java.util.List.of(

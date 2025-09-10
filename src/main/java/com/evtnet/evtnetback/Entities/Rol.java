@@ -4,10 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.evtnet.evtnetback.Entities.*;
-
-import com.evtnet.evtnetback.Entities.RolUsuario;
-import com.evtnet.evtnetback.Entities.RolPermiso;
 
 
 @Data
