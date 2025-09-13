@@ -1,32 +1,44 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
-import java.util.List;
+
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "AdministradorSuperEvento")
+@Table(
+    name = "administrador_super_evento",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_admin_superevento_organizador",
+            columnNames = {"super_evento_id", "organizador_id"}
+        )
+    }
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class AdministradorSuperEvento extends Base {
 
-    @Column(name = "fechaHoraAlta")
+    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
+
+    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
-    @OneToOne
-    @JoinColumn(name = "organizador_id")
+
+    // muchos administradores -> un usuario (organizador)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "organizador_id", nullable = false)
     private Usuario organizador;
-    
-    @OneToMany(mappedBy = "administradorSuperEvento")
-    private List<SuperEvento> superEventos;
-} 
+
+    // muchos administradores -> un super evento
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "super_evento_id", nullable = false)
+    private SuperEvento superEvento;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
+}

@@ -163,3 +163,4 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, msg);
     }
 }
+

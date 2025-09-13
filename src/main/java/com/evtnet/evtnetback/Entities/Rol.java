@@ -1,38 +1,33 @@
 package com.evtnet.evtnetback.Entities;
 
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
+
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "Rol")
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Table(name = "rol")
+@NoArgsConstructor @AllArgsConstructor @Builder
 public class Rol extends Base {
 
-    @Column(name = "nombre")
+    @Column(name = "nombre", nullable = false)
     private String nombre;
 
     @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(name = "fechaHoraAlta")
+    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
 
-    @Column(name = "fechaHoraBaja")
-    private LocalDateTime fechaHoraBaja;
 
-    // Relaciones
+    // 1 rol -> 0..n rol_permiso
     @OneToMany(mappedBy = "rol")
-    private List<RolPermiso> rolesPermiso;
+    private List<RolPermiso> rolPermisos;
 
-    @OneToMany(mappedBy = "rol") // <- cambiado aquí
-    private List<RolUsuario> rolesUsuario;
+    // 1 rol -> 0..n rol_usuario
+    @OneToMany(mappedBy = "rol")
+    private List<RolUsuario> rolUsuarios;
 }

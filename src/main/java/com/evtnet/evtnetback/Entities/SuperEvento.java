@@ -1,34 +1,37 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "SuperEvento")
+@Table(name = "super_evento")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class SuperEvento extends Base {
 
-    @Column(name = "nombre")
+    @Column(name = "nombre", nullable = false)
     private String nombre;
-    
+
     @Column(name = "descripcion")
     private String descripcion;
-    
-    @Column(name = "fechaHoraBaja")
-    private LocalDateTime fechaHoraBaja;
-    
-    @OneToMany(mappedBy = "superEvento")
+
+    // 1 super_evento -> 0..n eventos
+    @OneToMany(mappedBy = "superEvento", fetch = FetchType.EAGER)
     private List<Evento> eventos;
-    
-    @ManyToOne
-    @JoinColumn(name = "administrador_super_evento_id")
-    private AdministradorSuperEvento administradorSuperEvento;
-} 
+
+    // 1 super_evento -> 0..n administradores de super evento
+    @OneToMany(mappedBy = "superEvento", fetch = FetchType.EAGER)
+    private List<AdministradorSuperEvento> administradorSuperEventos;
+
+    // 1 super_evento -> 1 chat (FK está en Chat)
+    @OneToOne(mappedBy = "superEvento", fetch = FetchType.EAGER)
+    private Chat chat;
+
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
+}

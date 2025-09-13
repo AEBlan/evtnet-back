@@ -1,38 +1,31 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-
+import jakarta.validation.constraints.Pattern;  // para @Pattern
 import java.time.LocalDateTime;
 
-@Data
+
+@Data 
 @EqualsAndHashCode(callSuper = true)
-@Entity
-@Table(name = "ImagenEspacio")
-@NoArgsConstructor
-@AllArgsConstructor
+@Entity 
+@Table(name = "imagen_espacio")
+@NoArgsConstructor 
+@AllArgsConstructor 
 @Builder
 public class ImagenEspacio extends Base {
 
-    @Column(name = "imagen")
+    @Column(name = "imagen", nullable = false, length = 512)
+    @Pattern(regexp = "(?i).*\\.(png|svg)$",
+             message = "La imagen debe ser .png o .svg")
     private String imagen;
-    
+
     @Column(name = "orden")
     private Integer orden;
-    
-    @Column(name = "fechaHoraAlta")
+
+    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
-    private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
+
     @ManyToOne
-    @JoinColumn(name = "espacio_id")
+    @JoinColumn(name = "espacio_id", nullable = false)
     private Espacio espacio;
-    
-    @ManyToOne
-    @JoinColumn(name = "solicitud_espacio_publico_id")
-    private SolicitudEspacioPublico solicitudEspacioPublico;
-} 
+}

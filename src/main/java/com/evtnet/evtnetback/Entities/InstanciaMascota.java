@@ -1,49 +1,41 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "InstanciaMascota")
+@Table(name = "instancia_mascota")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class InstanciaMascota extends Base {
 
-    @Column(name = "nombre")
+    @Column(name = "nombre", nullable = false)
     private String nombre;
-    
+
     @Column(name = "descripcion")
     private String descripcion;
-    
-    @Column(name = "pageRegex")
-    private String pageRegex;
-    
+
+    @Column(name = "page_regex")
+    private String page_regex;
+
     @Column(name = "events")
     private String events;
-    
+
     @Column(name = "selector")
     private String selector;
-    
-    @Column(name = "fechaHoraAlta")
+
+    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
-    private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
-    @OneToMany(mappedBy = "instanciaMascota")
-    private List<UsuarioInstanciaMascota> usuariosInstanciaMascota;
-    
-    @OneToMany(mappedBy = "instanciaMascota")
-    private List<InstanciaMascotaSecuencia> secuencias;
-    
-    @OneToMany(mappedBy = "instanciaMascota")
-    private List<ImagenMascota> imagenesMascota;
-} 
+
+    // 1 -> 0..n secuencias
+    @OneToMany(mappedBy = "instanciaMascota", fetch = FetchType.EAGER)
+    private List<InstanciaMascotaSecuencia> instanciaMascotaSecuencias;
+
+    // 1 -> 0..n usuario_instancia_mascota
+    @OneToMany(mappedBy = "instanciaMascota", fetch = FetchType.EAGER)
+    private List<UsuarioInstanciaMascota> usuarioInstanciaMascotas;
+}

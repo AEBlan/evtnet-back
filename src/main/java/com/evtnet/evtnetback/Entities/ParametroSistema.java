@@ -1,21 +1,21 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "ParametroSistema")
+@Table(name = "parametro_sistema")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ParametroSistema extends Base {
 
-    @Column(name = "nombre")
+    @Column(name = "nombre", nullable = false, unique = true, length = 100)
     private String nombre;
-    
-    @Column(name = "valor")
+
+    // Lo guardamos como texto para admitir números, booleanos o listas (según el caso)
+    @Column(name = "valor", nullable = false, length = 512)
     private String valor;
-} 
+}

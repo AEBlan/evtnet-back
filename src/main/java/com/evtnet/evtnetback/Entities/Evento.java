@@ -1,17 +1,16 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@ToString(exclude = {"disciplinasEvento", "inscripciones", "eventosModoEvento", "porcentajesReintegroCancelacion", "denunciasEvento"})
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "Evento")
+@Table(name = "evento")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -19,74 +18,78 @@ public class Evento extends Base {
 
     @Column(name = "nombre")
     private String nombre;
-    
+
     @Column(name = "descripcion")
     private String descripcion;
-    
-    @Column(name = "fechaHoraInicio")
+
+    @Column(name = "fecha_hora_inicio") // antes: fechaHoraInicio
     private LocalDateTime fechaHoraInicio;
-    
-    @Column(name = "fechaHoraFin")
+
+    @Column(name = "fecha_hora_fin") // antes: fechaHoraFin
     private LocalDateTime fechaHoraFin;
-    
-    @Column(name = "direccionUbicacion")
+
+    @Column(name = "direccion_ubicacion")
     private String direccionUbicacion;
-    
-    @Column(name = "longitudUbicacion")
+
+    @Column(name = "longitud_ubicacion")
     private BigDecimal longitudUbicacion;
-    
-    @Column(name = "latitudUbicacion")
+
+    @Column(name = "latitud_ubicacion")
     private BigDecimal latitudUbicacion;
-    
-    @Column(name = "precioInscripcion")
+
+    @Column(name = "precio_inscripcion")
     private BigDecimal precioInscripcion;
-    
-    @Column(name = "cantidadMaximaInvitados")
+
+    @Column(name = "cantidad_maxima_invitados")
     private Integer cantidadMaximaInvitados;
-    
-    @Column(name = "cantidadMaximaParticipantes")
+
+    @Column(name = "cantidad_maxima_participantes")
     private Integer cantidadMaximaParticipantes;
-    
-    @Column(name = "precioOrganizacion")
+
+    @Column(name = "precio_organizacion")
     private BigDecimal precioOrganizacion;
-    
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "super_evento_id")
     private SuperEvento superEvento;
-    
-    @ManyToMany
-    @JoinTable(
-        name = "evento_disciplina",
-        joinColumns = @JoinColumn(name = "evento_id"),
-        inverseJoinColumns = @JoinColumn(name = "disciplina_evento_id")
-    )
+
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DisciplinaEvento> disciplinasEvento;
-    
-    @OneToMany(mappedBy = "evento")
+
+    @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<Inscripcion> inscripciones;
-    
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tipo_inscripcion_evento_id")
     private TipoInscripcionEvento tipoInscripcionEvento;
-    
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "modo_evento_id")
     private ModoEvento modoEvento;
-    
-    @ManyToOne
-    @JoinColumn(name = "disciplina_evento_id")
-    private DisciplinaEvento disciplinaEvento;
-    
-    @ManyToOne
-    @JoinColumn(name = "administrador_evento_id")
-    private AdministradorEvento administradorEvento;
-    
-    @OneToMany(mappedBy = "evento")
+
+    @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AdministradorEvento> administradoresEvento;
+
+    @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<EventoModoEvento> eventosModoEvento;
-    
-    @OneToMany(mappedBy = "evento")
+
+    @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<PorcentajeReintegroCancelacionInscripcion> porcentajesReintegroCancelacion;
-    
-    @OneToMany(mappedBy = "evento")
+
+    @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<DenunciaEvento> denunciasEvento;
-} 
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "espacio_id")
+    private Espacio espacio;
+
+    @OneToOne(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Chat chat;
+
+    @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
+    private List<ComprobantePago> comprobantesPago;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organizador_id")
+    private Usuario organizador;
+}

@@ -1,31 +1,29 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-
+import jakarta.validation.constraints.Pattern;  // para @Pattern
+import java.util.List;
 import java.time.LocalDateTime;
+
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "IconoCaracteristica")
+@Table(name = "icono_caracteristica")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class IconoCaracteristica extends Base {
 
-    @Column(name = "imagen")
+    @Column(name = "imagen", nullable = false, length = 512)
+    @Pattern(regexp = "(?i).*\\.(png|svg)$",
+             message = "La imagen debe tener extensión .png o .svg")
     private String imagen;
-    
-    @Column(name = "fechaHoraAlta")
+
+    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
-    
-    @Column(name = "fechaHoraBaja")
-    private LocalDateTime fechaHoraBaja;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "caracteristica_id")
-    private Caracteristica caracteristica;
-} 
+
+    // 1 icono -> muchas características
+    @OneToMany(mappedBy = "iconoCaracteristica")
+    private List<Caracteristica> caracteristicas;
+}

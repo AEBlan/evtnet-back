@@ -48,3 +48,4 @@ private Long currentUserId() {
 public class EspacioController extends BaseControllerImpl <Espacio, EspacioServiceImpl> {
     
 }
+

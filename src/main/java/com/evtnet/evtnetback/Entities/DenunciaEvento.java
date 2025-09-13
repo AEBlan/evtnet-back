@@ -1,15 +1,13 @@
 package com.evtnet.evtnetback.Entities;
-import com.evtnet.evtnetback.Entities.Base;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "DenunciaEvento")
+@Table(name = "denuncia_evento")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -17,27 +15,27 @@ public class DenunciaEvento extends Base {
 
     @Column(name = "titulo")
     private String titulo;
-    
-    @Column(name = "descripcion")
+
+    @Column(name = "descripcion", length = 2000)
     private String descripcion;
-    
-    // Relaciones
-    @ManyToOne
-    @JoinColumn(name = "denunciante_id")
-    private Usuario denunciante;
-    
-    @ManyToOne
-    @JoinColumn(name = "evento_id")
+
+    // -------- Relaciones --------
+
+    // N -> 1 Evento
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "evento_id", nullable = false)
     private Evento evento;
-    
-    @ManyToOne
+
+    // (opcional) la denuncia puede estar asociada a una inscripción concreta
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inscripcion_id")
     private Inscripcion inscripcion;
-    
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "denunciante_id", nullable = false)
+    private Usuario denunciante;
+
+    // 1 -> N Estados de la denuncia
     @OneToMany(mappedBy = "denunciaEvento")
-    private List<DenunciaEventoEstado> denunciasEventoEstado;
-    
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
-    private Usuario usuario;
-} 
+    private List<DenunciaEventoEstado> estados;
+}
