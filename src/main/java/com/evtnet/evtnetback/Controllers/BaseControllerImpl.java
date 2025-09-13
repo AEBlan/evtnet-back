@@ -29,7 +29,7 @@ public abstract class BaseControllerImpl<E extends Base, S extends BaseServiceIm
         }
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/getOne/{id}")
     public ResponseEntity<?> getOne(@PathVariable Long id){
         try{
             return ResponseEntity.status(HttpStatus.OK).body(servicio.findById(id));
@@ -48,7 +48,7 @@ public abstract class BaseControllerImpl<E extends Base, S extends BaseServiceIm
         }
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/update/{id}")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody E entity){
         try{
             return ResponseEntity.status(HttpStatus.OK).body(servicio.update(id, entity));
@@ -57,7 +57,7 @@ public abstract class BaseControllerImpl<E extends Base, S extends BaseServiceIm
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id){
         try{
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(servicio.delete(id));
