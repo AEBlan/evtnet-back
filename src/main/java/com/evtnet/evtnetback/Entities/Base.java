@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @MappedSuperclass
 @Getter
@@ -19,5 +18,9 @@ public class Base implements Serializable {
     private Long id;
 
     @Column(name = "fecha_baja")
-  private LocalDateTime fechaBaja;
+    private LocalDateTime fechaBaja;
+
+    @Column(name = "fecha_hora_baja")
+    private LocalDateTime fechaHoraBaja;
+    
 }

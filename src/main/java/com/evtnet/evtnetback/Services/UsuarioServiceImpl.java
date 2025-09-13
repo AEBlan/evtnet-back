@@ -1,12 +1,7 @@
 package com.evtnet.evtnetback.Services;
 
-import com.evtnet.evtnetback.Entities.Rol;
-import com.evtnet.evtnetback.Entities.RolUsuario;
-import com.evtnet.evtnetback.Entities.Usuario;
-import com.evtnet.evtnetback.Repositories.BaseRepository;
-import com.evtnet.evtnetback.Repositories.RolRepository;
-import com.evtnet.evtnetback.Repositories.RolUsuarioRepository;
-import com.evtnet.evtnetback.Repositories.UsuarioRepository;
+import com.evtnet.evtnetback.Entities.*;
+import com.evtnet.evtnetback.Repositories.*;
 import com.evtnet.evtnetback.dto.usuarios.*;
 import com.evtnet.evtnetback.security.JwtUtil;
 import com.evtnet.evtnetback.util.CurrentUser;
@@ -18,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,6 +23,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;                         // <<< IMPORT NECESARIO
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -39,7 +36,15 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final RolUsuarioRepository rolUsuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final MailService mailService; // ✅ inyectado para enviar el mail
+    private final MailService mailService; // inyectado para enviar el mail
+    private final CalificacionRepository calificacionRepository;
+    private final CalificacionTipoRepository calificacionTipoRepository;
+    private final MotivoCalificacionRepository motivoCalificacionRepository;
+    private final CalificacionMotivoCalificacionRepository calificacionMotivoCalificacionRepository;
+    private final TipoCalificacionRepository tipoCalificacionRepository;
+    private final PermisoRepository permisoRepository;
+    private final RolPermisoRepository rolPermisoRepository;
+
 
     // Directorio para fotos de perfil (montá un volumen)
     @Value("${app.storage.perfiles:/app/uploads/perfiles}")
@@ -49,6 +54,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     @Value("${app.google.clientId:}")
     private String googleClientId;
 
+    @Value("${app.storage.calificaciones:/app/uploads/calificaciones}")
+    private String calificacionesDir;
+
     public UsuarioServiceImpl(
             BaseRepository<Usuario, Long> baseRepository,
             UsuarioRepository usuarioRepository,
@@ -56,8 +64,15 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             RolUsuarioRepository rolUsuarioRepository,
             PasswordEncoder passwordEncoder,
             JwtUtil jwtUtil,
-            MailService mailService
-    ) {
+            MailService mailService,
+            CalificacionRepository calificacionRepository,
+            CalificacionTipoRepository calificacionTipoRepository,
+            MotivoCalificacionRepository motivoCalificacionRepository,
+            CalificacionMotivoCalificacionRepository calificacionMotivoCalificacionRepository,
+            TipoCalificacionRepository tipoCalificacionRepository,
+            PermisoRepository permisoRepository,
+            RolPermisoRepository rolPermisoRepository
+) {
         super(baseRepository);
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
@@ -65,7 +80,15 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.mailService = mailService;
-    }
+        this.calificacionRepository = calificacionRepository;
+        this.calificacionTipoRepository = calificacionTipoRepository;
+        this.motivoCalificacionRepository = motivoCalificacionRepository;
+        this.calificacionMotivoCalificacionRepository = calificacionMotivoCalificacionRepository;
+        this.tipoCalificacionRepository = tipoCalificacionRepository;
+        this.permisoRepository = permisoRepository;
+        this.rolPermisoRepository = rolPermisoRepository;
+
+}
 
     // ===== Config (recupero por mail) =====
     private static final Duration RESET_TTL = Duration.ofMinutes(15);         // vence a los 15 min
@@ -115,6 +138,17 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         return String.format("%06d", secureRandom.nextInt(1_000_000)); // 000000..999999
     }
 
+    private LocalDateTime parseFechaNacimiento(String maybeIsoOrMillis) {
+        if (maybeIsoOrMillis == null || maybeIsoOrMillis.isBlank()) return null;
+        try {
+            long ms = Long.parseLong(maybeIsoOrMillis); // millis
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(ms), ZoneId.systemDefault());
+        } catch (NumberFormatException ignore) {
+            Instant inst = Instant.parse(maybeIsoOrMillis); // ISO-8601
+            return LocalDateTime.ofInstant(inst, ZoneId.systemDefault());
+        }
+    }
+
     // ================== ENVIAR CÓDIGO (RECUPERO) ==================
     @Override
     public void enviarCodigoRecuperarContrasena(String mail) {
@@ -151,15 +185,13 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
     // ---------- AUTH LOCAL ----------
     private DTOAuth authFromUser(Usuario u) {
-        List<String> roles = (u.getRolesUsuario() == null) ? List.of()
-                : u.getRolesUsuario().stream()
-                .map(ru -> ru.getRol().getNombre())
-                .collect(Collectors.toList());
-
-        String token = jwtUtil.generateToken(u.getUsername(), roles);
+        List<String> permisos = rolUsuarioRepository.findPermisosByUsername(u.getUsername());
+        if (permisos == null) permisos = List.of(); // por las dudas
+    
+        String token = jwtUtil.generateToken(u.getUsername(), permisos);
         return DTOAuth.builder()
                 .token(token)
-                .roles(roles)
+                .permisos(permisos)
                 .username(u.getUsername())
                 .build();
     }
@@ -186,6 +218,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .mail(body.getMail())
                 .nombre(body.getNombre())
                 .apellido(body.getApellido())
+                .dni(body.getDni())
+                .fechaNacimiento(parseFechaNacimiento(body.getFechaNacimiento()))
                 .contrasena(passwordEncoder.encode(body.getPassword()))
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
@@ -194,15 +228,15 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Rol rolPend = rolRepository.findByNombre("PendienteConfirmación")
                 .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmación"));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolPend)) {
-            rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolPend).build());
+            rolUsuarioRepository.save(
+                    RolUsuario.builder().usuario(u).rol(rolPend).fechaHoraAlta(LocalDateTime.now()).build()
+            );
         }
-
-        // Enviar código de registro (simple en memoria)
+        
         enviarCodigo(body.getMail());
-
         return authFromUser(u);
     }
-    
+
     @Override
     @Transactional
     public DTOAuth registerConFoto(DTORegistrarse body, byte[] foto, String nombreArchivo, String contentType) throws Exception {
@@ -211,21 +245,13 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         if (usuarioRepository.existsByUsername(body.getUsername()))
             throw new Exception("Username no disponible");
 
-        LocalDateTime fnac = null;
-        if (body.getFechaNacimiento() != null) {
-            fnac = LocalDateTime.ofInstant(
-                    Instant.ofEpochMilli(body.getFechaNacimiento()),
-                    java.time.ZoneId.systemDefault()
-            );
-        }
-
         Usuario u = Usuario.builder()
                 .username(body.getUsername())
                 .mail(body.getMail())
                 .nombre(body.getNombre())
                 .apellido(body.getApellido())
                 .dni(body.getDni())
-                .fechaNacimiento(fnac)
+                .fechaNacimiento(parseFechaNacimiento(body.getFechaNacimiento())) // <<< unificado
                 .contrasena(passwordEncoder.encode(body.getPassword()))
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
@@ -236,11 +262,11 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         // 2) Guardar foto (si vino)
         if (foto != null && foto.length > 0) {
             Files.createDirectories(Paths.get(perfilesDir)); // ej: ./uploads/perfiles
-            String ext = getExtension(nombreArchivo);        // ya lo tenés implementado
+            String ext = getExtension(nombreArchivo);
             String filename = u.getUsername() + "_" + System.currentTimeMillis() + (ext.isEmpty() ? "" : "." + ext);
             Path destino = Paths.get(perfilesDir).resolve(filename).toAbsolutePath().normalize();
             Files.write(destino, foto, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            u.setFotoPerfil(destino.toString());            // seguís usando ruta absoluta en BD
+            u.setFotoPerfil(destino.toString());
             usuarioRepository.save(u);
         }
 
@@ -248,26 +274,41 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Rol rolPend = rolRepository.findByNombre("PendienteConfirmación")
                 .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmación"));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolPend)) {
-            rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolPend).build());
+            RolUsuario ru = RolUsuario.builder().usuario(u).rol(rolPend).build();
+            ru.setFechaHoraAlta(LocalDateTime.now());
+            rolUsuarioRepository.save(ru);
         }
 
         // 4) Enviar código (igual que antes)
         enviarCodigo(body.getMail());
 
-        // 5) Devolver DTOAuth igual que register(...)
+        // 5) Devolver DTOAuth
         return authFromUser(u);
     }
 
     // ---------- CÓDIGOS (registro/verificación) ----------
     @Override
     public void enviarCodigo(String mail) throws Exception {
+        // 1) Validar que el usuario exista
         usuarioRepository.findByMail(mail)
                 .orElseThrow(() -> new Exception("Usuario no encontrado para " + mail));
 
+        // 2) Generar y guardar el código (como ya hacías)
         String code = generateCode();
         codigosRegistroPorMail.put(mail, code);
-        System.out.println("[REGISTRO] Código para " + mail + ": " + code);
-        // Si querés enviar por mail: mailService.enviar(mail, "Código de registro", "Tu código es: " + code);
+
+        // 3) Enviar el correo (igual estilo que recuperación)
+        String subject = "Código de verificación de cuenta";
+        String body = """
+                Hola,
+
+                Tu código de verificación es: %s
+                Este código expira en %d minutos.
+
+                Si no solicitaste este código, podés ignorar este mensaje.
+                """.formatted(code, RESET_TTL.toMinutes()); // podés usar otro TTL si querés
+
+        mailService.enviar(mail, subject, body);
     }
 
     @Override
@@ -290,7 +331,13 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         rolUsuarioRepository.findByUsuarioAndRol(u, rolPend)
                 .ifPresent(ru -> rolUsuarioRepository.deleteByUsuarioAndRol(u, rolPend));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolUsr)) {
-            rolUsuarioRepository.save(RolUsuario.builder().usuario(u).rol(rolUsr).build());
+            rolUsuarioRepository.save(
+                    RolUsuario.builder()
+                            .usuario(u)
+                            .rol(rolUsr)
+                            .fechaHoraAlta(LocalDateTime.now())
+                            .build()
+            );
         }
 
         codigosRegistroPorMail.remove(mail);
@@ -372,7 +419,6 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         return !usuarioRepository.existsByUsername(username);
     }
 
-    // ✅ ARREGLADO: usa CodeMeta con TTL para validar el código y resetear
     @Override
     public DTOAuth recuperarContrasena(String mail, String password, String codigo) throws Exception {
         String m = normalizeMail(mail);
@@ -417,30 +463,46 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     public DTOPerfil obtenerPerfil(String username) throws Exception {
         Usuario u = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+        Long fnac = (u.getFechaNacimiento() == null) ? null
+                : u.getFechaNacimiento().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+            // --- Conteo por tipo (Buena/Media/Mala) ---
+        List<Object[]> rows = calificacionRepository.conteoPorTipo(username);
+        long total = rows.stream()
+                .mapToLong(r -> ((Number) r[1]).longValue())
+                .sum();
+
+        // armamos siempre los 3 tipos; si total=0 → 0%
+        List<DTOPerfil.ItemCalificacion> items = new ArrayList<>();
+        String[] tipos = { "Buena", "Media", "Mala" };
+
+        for (String t : tipos) {
+            long cnt = rows.stream()
+                    .filter(r -> t.equalsIgnoreCase((String) r[0]))
+                    .mapToLong(r -> ((Number) r[1]).longValue())
+                    .findFirst()
+                    .orElse(0L);
+
+            int pct = (total == 0) ? 0 : (int) Math.round(cnt * 100.0 / total);
+            items.add(new DTOPerfil.ItemCalificacion(t, pct));
+        }
+        // Si preferís mostrar íconos con 0%, en lugar de null, descomentá:
+        // if (items == null) items = java.util.List.of(
+        //     new DTOPerfil.ItemCalificacion("Buena", 0),
+        //     new DTOPerfil.ItemCalificacion("Media", 0),
+        //     new DTOPerfil.ItemCalificacion("Mala", 0)
+        // );
+
         return DTOPerfil.builder()
                 .username(u.getUsername())
+                .nombre(u.getNombre())
+                .apellido(u.getApellido())
                 .mail(u.getMail())
-                .nombreCompleto(
-                        ((u.getNombre() != null) ? u.getNombre() : "") + " " +
-                        ((u.getApellido() != null) ? u.getApellido() : ""))
-                .fotoUrl(u.getFotoPerfil())
+                .dni(u.getDni())
+                .fechaNacimiento(fnac)
+                .calificaciones(items)          // <- ahora sí
                 .build();
-    }
-
-    @Override
-    public byte[] obtenerFotoDePerfil(String username) throws Exception {
-        Usuario u = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new Exception("Usuario no encontrado"));
-        if (u.getFotoPerfil() == null || u.getFotoPerfil().isBlank()) return null;
-
-        Path p = Paths.get(u.getFotoPerfil());
-        if (!Files.exists(p)) return null;
-        return Files.readAllBytes(p);
-    }
-
-    @Override
-    public byte[] obtenerImagenDeCalificacion(String username) {
-        return null; // TODO
     }
 
     @Override
@@ -448,13 +510,15 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Usuario u = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
+        Long fnac = (u.getFechaNacimiento() == null) ? null
+                : u.getFechaNacimiento().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
         return DTOEditarPerfil.builder()
                 .nombre(u.getNombre())
                 .apellido(u.getApellido())
                 .dni(u.getDni())
                 .cbu(u.getCBU())
-                .telefono(null)
-                .bio(null)
+                .fechaNacimiento(fnac)
                 .build();
     }
 
@@ -470,12 +534,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             if (datos.getApellido() != null) u.setApellido(datos.getApellido());
             if (datos.getDni() != null) u.setDni(datos.getDni());
             if (datos.getCbu() != null) u.setCBU(datos.getCbu());
-
-            if (datos.getNewPassword() != null && !datos.getNewPassword().isBlank()) {
-                if (datos.getCurrentPassword() == null ||
-                        !passwordEncoder.matches(datos.getCurrentPassword(), u.getContrasena()))
-                    throw new Exception("Contraseña actual incorrecta");
-                u.setContrasena(passwordEncoder.encode(datos.getNewPassword()));
+            if (datos.getFechaNacimiento() != null) {
+                u.setFechaNacimiento(LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(datos.getFechaNacimiento()), ZoneId.systemDefault()));
             }
         }
 
@@ -489,6 +550,57 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         }
 
         usuarioRepository.save(u);
+    }
+
+    @Override
+    public FotoResponse obtenerFotoDePerfil(String username) throws Exception {
+        var u = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+        Path path = (u.getFotoPerfil() == null || u.getFotoPerfil().isBlank()) ? null : Paths.get(u.getFotoPerfil());
+        if (path == null || !Files.exists(path)) {
+            // devolvé null y que el controller aplique fallback, o devolvé el fallback aquí
+            return null;
+        }
+        String ct = Files.probeContentType(path);
+        return new FotoResponse(Files.readAllBytes(path), ct);
+    }
+
+
+    @Override
+    public FotoResponse obtenerImagenDeCalificacion(String username) throws Exception {
+        // En el front este parámetro es el "nombre de la calificación" (Buena/Media/Mala)
+        if (username == null || username.isBlank()) return null;
+
+        // normalizo y valido
+        String tipo = username.trim().toLowerCase(Locale.ROOT);
+        switch (tipo) {
+            case "buena":
+            case "media":
+            case "mala":
+                break;
+            default:
+                // si te interesa, podrías mapear sinónimos aquí (p.ej. "baja" -> "mala")
+                return null;
+        }
+
+        // carpeta base (agregá arriba en la clase: @Value("${app.storage.calificaciones:/app/uploads/calificaciones}") private String calificacionesDir;)
+        Path base = Paths.get(calificacionesDir);
+        Files.createDirectories(base);
+
+        // solo PNG
+        Path img = base.resolve(tipo + ".png").toAbsolutePath().normalize();
+        if (Files.exists(img)) {
+            return new FotoResponse(Files.readAllBytes(img), "image/png");
+        }
+
+        // fallback si no existe el específico
+        Path def = base.resolve("_default.png").toAbsolutePath().normalize();
+        if (Files.exists(def)) {
+            return new FotoResponse(Files.readAllBytes(def), "image/png");
+        }
+
+        // si no hay nada, que el front use su placeholder
+        return null;
     }
 
     // ---------- Helpers ----------
@@ -507,4 +619,501 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         int i = nombreArchivo.lastIndexOf('.');
         return i >= 0 ? nombreArchivo.substring(i + 1) : "";
     }
+
+    // ================== CALIFICACIONES ==================
+    @Override
+    @Transactional
+    public List<DTOCalificacionTipoSimple> obtenerCalificacionTiposPara(String usernameDestino) throws Exception {
+        // Validar usuario destino
+        var destino = usuarioRepository.findByUsername(usernameDestino)
+                .orElseThrow(() -> new Exception("Usuario destino no encontrado"));
+
+        // Usuario actual (autor de la calificación)
+        var autorUsername = CurrentUser.getUsername()
+                .orElseThrow(() -> new Exception("No hay usuario autenticado"));
+        var autor = usuarioRepository.findByUsername(autorUsername)
+                .orElseThrow(() -> new Exception("Usuario origen no encontrado"));
+
+        // 1) No te podés calificar a vos mismo
+        if (Objects.equals(autor.getId(), destino.getId())) {
+            return List.of();
+        }
+
+        // 2) Traer tipos activos
+        var tiposBase = calificacionTipoRepository.findByFechaHoraBajaIsNullOrderByNombreAsc();
+        if (tiposBase == null || tiposBase.isEmpty()) return List.of();
+
+        // 3) Si el destino está dado de baja → solo Denuncia
+        boolean destinoDadoDeBaja = destino.getFechaHoraBaja() != null;
+
+        List<DTOCalificacionTipoSimple> result = new ArrayList<>();
+        for (var t : tiposBase) {
+            String nombre = t.getNombre() == null ? "" : t.getNombre().trim();
+
+            if (destinoDadoDeBaja && !nombre.equalsIgnoreCase("Denuncia")) {
+                continue;
+            }
+
+            result.add(DTOCalificacionTipoSimple.builder()
+                    .id(t.getId())
+                    .nombre(t.getNombre())
+                    .build());
+        }
+
+        return result;
+    }
+
+    @Override
+    public List<DTOTipoCalificacion> obtenerTiposYMotivosCalificacion() throws Exception {
+        var tipos = tipoCalificacionRepository.findAllByOrderByNombreAsc();
+
+        return tipos.stream().map(t -> {
+            var motivos = (t.getMotivoCalificaciones() == null)
+                    ? java.util.List.<com.evtnet.evtnetback.Entities.MotivoCalificacion>of()
+                    : t.getMotivoCalificaciones();
+
+            var motivosDTO = motivos.stream()
+                    // si Base tiene fechaHoraBaja, filtramos así:
+                    .map(m -> DTOMotivoCalificacionSimple.builder()
+                            .id(m.getId())
+                            .nombre(m.getNombre())
+                            .build())
+                    .toList();
+
+            return DTOTipoCalificacion.builder()
+                    .id(t.getId())
+                    .nombre(t.getNombre())
+                    .motivos(motivosDTO)
+                    .build();
+        }).toList();
+    }
+
+    @Override
+    @Transactional
+    public void calificarUsuario(DTOCalificacionRequest body) throws Exception {
+        if (body == null) throw new IllegalArgumentException("Body requerido");
+        if (body.getUsuarioCalificado() == null || body.getUsuarioCalificado().isBlank())
+            throw new IllegalArgumentException("usuarioCalificado requerido");
+        if (body.getCalificacionTipo() == null)
+            throw new IllegalArgumentException("calificacionTipo requerido");
+
+        // 1) Origen y destino
+        var destino = usuarioRepository.findByUsername(body.getUsuarioCalificado())
+                .orElseThrow(() -> new Exception("Usuario destino no encontrado"));
+
+        var origenUsername = CurrentUser.getUsername()
+                .orElseThrow(() -> new Exception("No hay usuario autenticado"));
+        var origen = usuarioRepository.findByUsername(origenUsername)
+                .orElseThrow(() -> new Exception("Usuario origen no encontrado"));
+
+        if (Objects.equals(origen.getId(), destino.getId()))
+            throw new IllegalArgumentException("No podés calificarte a vos mismo");
+
+        // 2) Tipo de calificación (rosa): "Normal" | "Denuncia"
+        var califTipo = calificacionTipoRepository.findById(body.getCalificacionTipo())
+                .orElseThrow(() -> new Exception("Tipo de calificación inválido"));
+
+        // 3) Crear la calificación base (siempre)
+        var cal = new Calificacion();
+        cal.setAutor(origen);
+        cal.setCalificado(destino);
+        cal.setCalificacionTipo(califTipo);
+        cal.setDescripcion(body.getDescripcion());
+        cal.setFechaHora(java.time.LocalDateTime.now());
+        cal = calificacionRepository.save(cal);
+
+        // 4) Bifurcación: si es "Denuncia" → terminamos SIN motivos
+        String nombreTipo = (califTipo.getNombre() == null) ? "" : califTipo.getNombre().trim().toLowerCase();
+        boolean esDenuncia = nombreTipo.equals("denuncia");
+
+        if (esDenuncia) {
+            // Nada más que hacer: no hay motivos ni tipo verde
+            return;
+        }
+
+        // 5) Si es "Normal": opcionalmente vínculos a MotivoCalificacion
+        //    (los motivos pertenecen a un TipoCalificacion verde, inferimos ese tipo por los mismos motivos)
+        if (body.getMotivos() != null && !body.getMotivos().isEmpty()) {
+            // Regla opcional: todos los motivos deberían pertenecer al MISMO TipoCalificacion (verde)
+            Long tipoVerdeId = null;
+
+            for (Long motivoId : body.getMotivos()) {
+                var motivo = motivoCalificacionRepository.findById(motivoId)
+                        .orElseThrow(() -> new Exception("Motivo no encontrado: " + motivoId));
+
+                // Si querés forzar consistencia: todos los motivos del mismo tipo verde
+                Long thisTipoVerdeId = motivo.getTipoCalificacion() != null ? motivo.getTipoCalificacion().getId() : null;
+                if (tipoVerdeId == null) tipoVerdeId = thisTipoVerdeId;
+                else if (!java.util.Objects.equals(tipoVerdeId, thisTipoVerdeId)) {
+                    throw new IllegalArgumentException("Todos los motivos deben pertenecer al mismo TipoCalificacion.");
+                }
+
+                var link = new CalificacionMotivoCalificacion();
+                link.setCalificacion(cal);
+                link.setMotivoCalificacion(motivo);
+                calificacionMotivoCalificacionRepository.save(link);
+            }
+        }
+    }
+    // ================== ROLES ==================
+    @Override
+    public List<DTORolSimple> obtenerRoles() throws Exception {
+        String usernameActual = CurrentUser.getUsername()
+                .orElseThrow(() -> new Exception("No hay usuario autenticado"));
+
+        Usuario actual = usuarioRepository.findByUsername(usernameActual)
+                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+        List<Rol> roles = rolRepository.findByFechaHoraBajaIsNullOrderByNombreAsc();
+
+        return roles.stream()
+                .map(r -> DTORolSimple.builder()
+                        .id(r.getId())
+                        .nombre(r.getNombre())
+                        .checked(
+                            actual.getRolesUsuario() != null && actual.getRolesUsuario().stream()
+                                    .anyMatch(ru -> ru.getRol().getId().equals(r.getId())
+                                            && ru.getFechaHoraBaja() == null)
+                        )
+                        .build())
+                .toList();
+    }
+
+
+    @Override
+    public List<DTOPermisoSimple> obtenerPermisos() {
+        return permisoRepository.findAllByOrderByNombreAsc().stream()
+                .map(p -> DTOPermisoSimple.builder()
+                        .nombre(p.getNombre())
+                        .reservado(false) // si tu entidad Permiso tiene 'reservado', mapealo aquí
+                        .build())
+                .toList();
+    }
+
+    
+    @Override
+    public Page<DTORol> obtenerRolesCompletos(Pageable pageable) {
+        return rolRepository.findAll(pageable)
+                .map(rol -> {
+                    List<RolPermiso> rps = rolPermisoRepository.findByRolIdOrderByFechaHoraAltaAsc(rol.getId());
+
+                    Map<String, List<DTORol.Periodo>> porPermiso = new LinkedHashMap<>();
+                    for (RolPermiso rp : rps) {
+                        String nom = rp.getPermiso().getNombre();
+                        porPermiso.computeIfAbsent(nom, k -> new ArrayList<>())
+                                .add(DTORol.Periodo.builder()
+                                        .desde(rp.getFechaHoraAlta())
+                                        .hasta(rp.getFechaHoraBaja())
+                                        .build());
+                    }
+
+                    List<DTORol.PermisoEnRol> permisosDTO = porPermiso.entrySet().stream()
+                            .map(e -> DTORol.PermisoEnRol.builder()
+                                    .nombre(e.getKey())
+                                    .reservado(false) // si tu Permiso tiene 'reservado', mapealo aquí
+                                    .periodos(e.getValue())
+                                    .build())
+                            .toList();
+
+                    return DTORol.builder()
+                            .id(rol.getId())
+                            .nombre(rol.getNombre())
+                            .descripcion(rol.getDescripcion())
+                            .reservado(false) // si tu Rol tiene 'reservado', mapealo aquí
+                            .fechaAlta(rol.getFechaHoraAlta())
+                            .fechaBaja(rol.getFechaHoraBaja())
+                            .permisos(permisosDTO)
+                            .build();
+                });
+    }
+
+    @Override
+    public DTORol obtenerRolCompleto(Long id) throws Exception {
+        Rol rol = rolRepository.findById(id)
+                .orElseThrow(() -> new Exception("Rol no encontrado"));
+
+        // Traigo todo el historial de permisos del rol
+        List<RolPermiso> rps = rolPermisoRepository.findByRolIdOrderByFechaHoraAltaAsc(rol.getId());
+
+        // Agrupo por nombre de permiso y construyo Periodos
+        Map<String, List<DTORol.Periodo>> porPermiso = new LinkedHashMap<>();
+        for (RolPermiso rp : rps) {
+            String nom = rp.getPermiso().getNombre();
+            porPermiso.computeIfAbsent(nom, k -> new ArrayList<>())
+                    .add(DTORol.Periodo.builder()
+                            .desde(rp.getFechaHoraAlta())
+                            .hasta(rp.getFechaHoraBaja())
+                            .build());
+        }
+
+        // Armo lista de permisos con períodos
+        List<DTORol.PermisoEnRol> permisosDTO = porPermiso.entrySet().stream()
+                .map(e -> DTORol.PermisoEnRol.builder()
+                        .nombre(e.getKey())
+                        .reservado(false) // si tu Permiso tiene 'reservado', mapealo aquí
+                        .periodos(e.getValue())
+                        .build())
+                .toList();
+
+        // Devuelvo DTORol final
+        return DTORol.builder()
+                .id(rol.getId())
+                .nombre(rol.getNombre())
+                .descripcion(rol.getDescripcion())
+                .reservado(false) // si tu Rol tiene 'reservado', mapealo aquí
+                .fechaAlta(rol.getFechaHoraAlta())
+                .fechaBaja(rol.getFechaHoraBaja())
+                .permisos(permisosDTO)
+                .build();
+    }
+
+
+    @Override
+    @Transactional
+    public void altaRol(DTOAltaRol dto) throws Exception {
+        // 1) Validación de nombre duplicado (solo roles activos)
+        if (rolRepository.existsByNombreIgnoreCaseAndFechaHoraBajaIsNull(dto.getNombre())) {
+        throw new IllegalArgumentException("Ya existe un rol activo con ese nombre");
+        }
+        LocalDateTime now = LocalDateTime.now();
+
+        Rol rol = Rol.builder()
+                .nombre(dto.getNombre())
+                .descripcion(dto.getDescripcion())
+                .fechaHoraAlta(now)
+                // .reservado(dto.isReservado()) // si existe el campo en la entidad
+                .build();
+        rol = rolRepository.save(rol);
+
+        if (dto.getPermisos() != null) {
+            for (String nombrePermiso : dto.getPermisos()) {
+                Permiso permiso = permisoRepository.findByNombreIgnoreCase(nombrePermiso)
+                        .orElseThrow(() -> new Exception("Permiso inexistente: " + nombrePermiso));
+
+                RolPermiso rp = RolPermiso.builder()
+                        .rol(rol)
+                        .permiso(permiso)
+                        .fechaHoraAlta(now)
+                        .build();
+                rolPermisoRepository.save(rp);
+            }
+        }
+    }
+
+
+    @Override
+    @Transactional
+    public void modificarRol(DTOModificarRol dto) throws Exception {
+        Rol rol = rolRepository.findById(dto.getId())
+                .orElseThrow(() -> new Exception("Rol no encontrado"));
+
+        // Si cambia el nombre, validar que no exista otro activo con ese nombre
+        String nombreNuevo = dto.getNombre();
+        if (nombreNuevo != null && !nombreNuevo.equalsIgnoreCase(rol.getNombre())) {
+            boolean existeOtroActivo = rolRepository.existsByNombreIgnoreCaseAndFechaHoraBajaIsNull(nombreNuevo);
+            if (existeOtroActivo) {
+                throw new IllegalArgumentException("Ya existe un rol activo con ese nombre");
+            }
+        }
+
+        rol.setNombre(dto.getNombre());
+        rol.setDescripcion(dto.getDescripcion());
+        // rol.setReservado(dto.isReservado()); // si existe el campo
+        rolRepository.save(rol);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // permisos vigentes actuales
+        List<RolPermiso> vigentes = rolPermisoRepository.findByRolAndFechaHoraBajaIsNull(rol);
+        Set<String> actuales = vigentes.stream()
+                .map(rp -> rp.getPermiso().getNombre().toLowerCase())
+                .collect(java.util.stream.Collectors.toSet());
+
+        Set<String> nuevos = (dto.getPermisos() == null) ? Set.of()
+                : dto.getPermisos().stream().map(String::toLowerCase).collect(java.util.stream.Collectors.toSet());
+
+        // cerrar los que ya no están
+        for (RolPermiso rp : vigentes) {
+            if (!nuevos.contains(rp.getPermiso().getNombre().toLowerCase())) {
+                rp.setFechaHoraBaja(now);
+                rolPermisoRepository.save(rp);
+            }
+        }
+
+        // agregar los nuevos
+        for (String pNom : nuevos) {
+            if (!actuales.contains(pNom)) {
+                Permiso permiso = permisoRepository.findByNombreIgnoreCase(pNom)
+                        .orElseThrow(() -> new Exception("Permiso inexistente: " + pNom));
+                RolPermiso nuevoRp = RolPermiso.builder()
+                        .rol(rol)
+                        .permiso(permiso)
+                        .fechaHoraAlta(now)
+                        .build();
+                rolPermisoRepository.save(nuevoRp);
+            }
+        }
+    }
+
+
+    @Override
+    @Transactional
+    public void bajaRol(Long id) throws Exception {
+        Rol rol = rolRepository.findById(id)
+                .orElseThrow(() -> new Exception("Rol no encontrado"));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        rol.setFechaHoraBaja(now);
+        rolRepository.save(rol);
+
+        List<RolPermiso> vigentes = rolPermisoRepository.findByRolAndFechaHoraBajaIsNull(rol);
+        for (RolPermiso rp : vigentes) {
+            rp.setFechaHoraBaja(now);
+            rolPermisoRepository.save(rp);
+        }
+    }
+
+    // Alta usuario
+    // -------------------------
+    @Override
+    @Transactional
+    public void altaUsuario(DTOAltaUsuario dto) throws Exception {
+        if (usuarioRepository.existsByUsername(dto.getUsername())) {
+            throw new IllegalArgumentException("Ya existe un usuario con ese username");
+        }
+        if (usuarioRepository.existsByMail(dto.getMail())) {
+            throw new IllegalArgumentException("Ya existe un usuario con ese mail");
+        }
+        if (usuarioRepository.existsByDni(dto.getDni())) {
+            throw new IllegalArgumentException("Ya existe un usuario con ese DNI");
+        }
+
+        Usuario u = Usuario.builder()
+        .nombre(dto.getNombre())
+        .apellido(dto.getApellido())
+        .username(dto.getUsername())
+        .dni(dto.getDni())
+        .mail(dto.getMail())
+        .fechaNacimiento(dto.getFechaNacimiento() != null ? dto.getFechaNacimiento().atStartOfDay() : null)
+        .fechaHoraAlta(LocalDateTime.now())
+        .build();
+
+        usuarioRepository.save(u);
+
+        for (Long rolId : dto.getRoles()) {
+            Rol rol = rolRepository.findById(rolId)
+                    .orElseThrow(() -> new Exception("Rol no encontrado con id " + rolId));
+
+            if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rol)) {
+                rolUsuarioRepository.save(
+                        RolUsuario.builder()
+                                .usuario(u)
+                                .rol(rol)
+                                .fechaHoraAlta(LocalDateTime.now())
+                                .build()
+                );
+            }
+        }
+    }
+
+    // -------------------------
+    // Modificar usuario
+    // -------------------------
+    @Override
+    @Transactional
+    public void modificarUsuario(DTOModificarUsuario dto) throws Exception {
+        // 1) Buscar usuario
+        Usuario u = usuarioRepository.findByUsername(dto.getUsername())
+                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+        // 2) Validaciones de unicidad (si cambia)
+        if (!u.getUsername().equals(dto.getUsernameNuevo()) &&
+            usuarioRepository.existsByUsername(dto.getUsernameNuevo())) {
+            throw new Exception("Username no disponible");
+        }
+        if (!Objects.equals(u.getMail(), dto.getMail()) &&
+            usuarioRepository.existsByMail(dto.getMail())) {
+            throw new Exception("Mail ya registrado");
+        }
+        if (!Objects.equals(u.getDni(), dto.getDni())) {
+            // si tenés existsByDni, usarlo; si no, crear uno en el repo de Usuario
+            boolean existeDni = usuarioRepository.existsByDni(dto.getDni());
+            if (existeDni) throw new Exception("DNI ya registrado");
+        }
+
+        // 3) Datos básicos
+        u.setUsername(dto.getUsernameNuevo());
+        u.setNombre(dto.getNombre());
+        u.setApellido(dto.getApellido());
+        u.setMail(dto.getMail());
+        u.setDni(dto.getDni());
+        u.setFechaNacimiento(dto.getFechaNacimiento() != null ? dto.getFechaNacimiento().atStartOfDay() : null);
+
+        usuarioRepository.save(u); // por si querés persistir antes de roles
+
+        // 4) Sincronizar roles
+        // 4.1 Actuales activos
+        List<RolUsuario> actuales = rolUsuarioRepository.findByUsuarioAndFechaHoraBajaIsNull(u);
+        Map<Long, RolUsuario> actualesPorRolId = new HashMap<>();
+        for (RolUsuario ru : actuales) {
+            actualesPorRolId.put(ru.getRol().getId(), ru);
+        }
+
+        // 4.2 Conjunto de roles que deben quedar activos (desde DTO)
+        Set<Long> nuevosIds = new HashSet<>(dto.getRoles()); // ids de Rol del DTO
+
+        // 4.3 Dar de baja los que ya no vienen en el DTO
+        LocalDateTime ahora = LocalDateTime.now();
+        for (RolUsuario ru : actuales) {
+            if (!nuevosIds.contains(ru.getRol().getId())) {
+                ru.setFechaHoraBaja(ahora);
+                rolUsuarioRepository.save(ru);
+            }
+        }
+
+        // 4.4 Activar / crear los que faltan
+        for (Long idRol : nuevosIds) {
+            Rol rol = rolRepository.findById(idRol)
+                    .orElseThrow(() -> new Exception("Rol no encontrado: " + idRol));
+
+            // si ya está activo, no toco
+            if (actualesPorRolId.containsKey(idRol)) continue;
+
+            // si existe histórico dado de baja y querés "reabrir", podrías buscar el último y limpiar baja.
+            // En este diseño, creamos un nuevo registro activo:
+            RolUsuario nuevo = RolUsuario.builder()
+                    .usuario(u)
+                    .rol(rol)
+                    .fechaHoraAlta(ahora)
+                    .build();
+            rolUsuarioRepository.save(nuevo);
+        }
+    }
+
+    // -------------------------
+    // Baja usuario
+    // -------------------------
+    @Override
+    @Transactional
+    public void bajaUsuario(String username) throws Exception {
+        Usuario u = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+        if (u.getFechaHoraBaja() != null) {
+            throw new IllegalStateException("El usuario ya está dado de baja");
+        }
+
+        u.setFechaHoraBaja(LocalDateTime.now());
+        usuarioRepository.save(u);
+
+        List<RolUsuario> relaciones = rolUsuarioRepository.findByUsuario(u);
+        for (RolUsuario ru : relaciones) {
+            ru.setFechaHoraBaja(LocalDateTime.now());
+            rolUsuarioRepository.save(ru);
+        }
+    }
 }
+
+
+

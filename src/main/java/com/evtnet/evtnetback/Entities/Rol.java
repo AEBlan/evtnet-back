@@ -4,10 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.evtnet.evtnetback.Entities.*;
-
-import com.evtnet.evtnetback.Entities.RolUsuario;
-import com.evtnet.evtnetback.Entities.RolPermiso;
 
 
 @Data
@@ -25,6 +21,7 @@ public class Rol extends Base {
 
     @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
+
 
     // 1 rol -> 0..n rol_permiso
     @OneToMany(mappedBy = "rol")

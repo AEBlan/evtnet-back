@@ -4,9 +4,9 @@ import lombok.*;
 
 import java.util.List;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data @Builder @NoArgsConstructor @AllArgsConstructor 
 public class DTOAuth {
     private String token;
-    private List<String> roles;
+    private List<String> permisos;
     private String username;
 }

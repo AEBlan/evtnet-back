@@ -3,7 +3,6 @@ package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -26,4 +25,9 @@ public class RolUsuario extends Base {
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
+
+    @PrePersist
+    void prePersist() {
+        if (fechaHoraAlta == null) fechaHoraAlta = LocalDateTime.now();
+    }
 }
