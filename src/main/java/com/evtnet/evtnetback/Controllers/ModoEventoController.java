@@ -1,0 +1,27 @@
+package com.evtnet.evtnetback.Controllers;
+
+import com.evtnet.evtnetback.Entities.ModoEvento;
+import com.evtnet.evtnetback.Services.ModoEventoServiceImpl;
+import com.evtnet.evtnetback.dto.modoEvento.DTOModoEvento;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/modosDeEvento")
+public class ModoEventoController extends BaseControllerImpl<ModoEvento, ModoEventoServiceImpl> {
+
+    private final ModoEventoServiceImpl service;
+
+    public ModoEventoController(ModoEventoServiceImpl service) {
+        this.service = service;
+    }
+
+    // GET /modosDeEvento/buscar?text=...
+    @GetMapping("/buscar")
+    public ResponseEntity<List<DTOModoEvento>> buscar(@RequestParam String text) {
+        try { return ResponseEntity.ok(service.buscarPorNombre(text)); 
+        }catch (Exception e) { return ResponseEntity.badRequest().build(); }
+}
+}
