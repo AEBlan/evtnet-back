@@ -1,8 +1,10 @@
 package com.evtnet.evtnetback.Services;
 
+import com.evtnet.evtnetback.Entities.AdministradorEspacio;
 import com.evtnet.evtnetback.Entities.Disciplina;
 import com.evtnet.evtnetback.Entities.DisciplinaEspacio;
 import com.evtnet.evtnetback.Entities.Espacio;
+import com.evtnet.evtnetback.Repositories.AdministradorEspacioRepository;
 import com.evtnet.evtnetback.Repositories.BaseRepository;
 import com.evtnet.evtnetback.Repositories.DisciplinaEspacioRepository;
 import com.evtnet.evtnetback.Repositories.DisciplinaRepository;
@@ -17,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import com.evtnet.evtnetback.Entities.TipoEspacio;
 import com.evtnet.evtnetback.Repositories.TipoEspacioRepository;
+import com.evtnet.evtnetback.Repositories.UsuarioRepository;
+
 import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
@@ -62,10 +66,10 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         final String dir = dto.direccion().trim();
 
         // Antiduplicado por nombre + dirección (no se usa lat/lon)
-        if (espacioRepository.existsByNombreIgnoreCaseAndDireccionUbicacionIgnoreCase(nombre, dir)) {
+        /*if (espacioRepository.existsByNombreIgnoreCaseAndDireccionUbicacionIgnoreCase(nombre, dir)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Ya existe un espacio con el mismo nombre y dirección");
-        }
+        }*/
 
         Espacio e = new Espacio();
         e.setNombre(nombre);
@@ -79,20 +83,20 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no válido"));
 
         // 2) Buscar (o crear) el AdministradorEspacio de ese usuario
-        var admin = administradorEspacioRepository.findByPropietario_Id(usuario.getId())
+        /*var admin = administradorEspacioRepository.findByPropietario_Id(usuario.getId());
         .orElseGet(() -> administradorEspacioRepository.save(
                 AdministradorEspacio.builder()
                         .propietario(usuario)
                         .fechaHoraAlta(java.time.LocalDateTime.now())
                         .build()
-        ));
+        ));*/
 
         // TipoEspacio PRIVADO
         TipoEspacio tipoPrivado = resolveTipoEspacioPrivado();
         e.setTipoEspacio(tipoPrivado);
 
         // 3) Setear propietario del espacio
-        e.setAdministradorEspacio(admin);
+        //e.setAdministradorEspacio(admin);
 
         // Privado por defecto: no asociar solicitud pública
         e.setSolicitudEspacioPublico(null);
