@@ -34,59 +34,73 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults())
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .formLogin(form -> form.disable())
-            .httpBasic(basic -> basic.disable())
-            .authorizeHttpRequests(auth -> auth
-               
-                // CORS preflight
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        .csrf(csrf -> csrf.disable())
+        .cors(Customizer.withDefaults())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .formLogin(form -> form.disable())
+        .httpBasic(basic -> basic.disable())
+        .authorizeHttpRequests(auth -> auth
+            // CORS preflight
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // PÚBLICOS (existentes)
-                .requestMatchers(HttpMethod.POST, "/usuarios/registrarse").permitAll()
-                .requestMatchers(HttpMethod.POST, "/usuarios/iniciarSesion").permitAll()
-                .requestMatchers(HttpMethod.POST, "/usuarios/ingresarCodigo").permitAll()
-                .requestMatchers(HttpMethod.POST, "/usuarios/loginGoogle").permitAll()
-                .requestMatchers(HttpMethod.POST, "/usuarios/recuperarContrasena").permitAll()
-                .requestMatchers(HttpMethod.PUT, "/usuarios/enviarCodigo").permitAll()
-                .requestMatchers(HttpMethod.PUT, "/usuarios/definirContrasena").permitAll()
-                .requestMatchers(HttpMethod.PUT, "/usuarios/enviarCodigoRecuperarContrasena").permitAll()
-                .requestMatchers(HttpMethod.GET, "/usuarios/obtenerImagenDeCalificacion").permitAll()
-                .requestMatchers(HttpMethod.GET, "/usuarios/verificarUsernameDisponible").permitAll()
-                .requestMatchers(HttpMethod.POST, "/eventos/crearEvento").permitAll()
-                .requestMatchers(HttpMethod.PUT,  "/usuarios/enviarCodigo").permitAll()
-                .requestMatchers(HttpMethod.PUT,  "/usuarios/definirContrasena").permitAll()
-                .requestMatchers(HttpMethod.POST, "/usuarios/enviarCodigoRecuperarContrasena").permitAll()
-                .requestMatchers(HttpMethod.GET,  "/usuarios/obtenerImagenDeCalificacion").permitAll()
-                .requestMatchers(HttpMethod.GET,  "/usuarios/verificarUsernameDisponible").permitAll()
-                .requestMatchers(HttpMethod.POST, "/usuarios/registrarseConFoto").permitAll()
+            // ===== Eventos (públicos SOLO para pruebas) =====
+            .requestMatchers(HttpMethod.GET,
+                "/eventos/obtenerEvento",
+                "/eventos/obtenerDatosCreacionEvento",
+                "/eventos/obtenerCantidadEventosSuperpuestos",
+                "/eventos/obtenerEventoParaInscripcion",
+                "/eventos/obtenerMontoDevolucionCancelacionInscripcion",
+                "/eventos/obtenerDatosModificacionEvento"
+            ).permitAll()
+            .requestMatchers(HttpMethod.PUT,
+                "/eventos/buscar",
+                "/eventos/buscarMisEventos",
+                "/eventos/verificarDatosPrePago"
+            ).permitAll()
+            .requestMatchers(HttpMethod.POST,
+                "/eventos/crearEvento",
+                "/eventos/inscribirse",
+                "/eventos/desinscribirse",
+                "/eventos/modificarEvento"
+            ).permitAll()
 
+            // ===== Endpoints de usuarios públicos que ya tenías (compactado) =====
+            .requestMatchers(HttpMethod.POST,
+                "/usuarios/registrarse",
+                "/usuarios/iniciarSesion",
+                "/usuarios/ingresarCodigo",
+                "/usuarios/loginGoogle",
+                "/usuarios/recuperarContrasena",
+                "/usuarios/enviarCodigoRecuperarContrasena",
+                "/usuarios/registrarseConFoto"
+            ).permitAll()
+            .requestMatchers(HttpMethod.PUT,
+                "/usuarios/enviarCodigo",
+                "/usuarios/definirContrasena"
+            ).permitAll()
+            .requestMatchers(HttpMethod.GET,
+                "/usuarios/obtenerImagenDeCalificacion",
+                "/usuarios/verificarUsernameDisponible"
+            ).permitAll()
 
-                // ARCHIVOS ESTÁTICOS DE SUBIDAS (públicos)
-                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+            // Archivos/imagenes públicas de prueba
+            .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/imagenes-espacio/espacios/**").permitAll()
+            .requestMatchers(HttpMethod.POST, "/imagenes-espacio/espacios/*/upload").permitAll()
+            .requestMatchers(HttpMethod.POST, "/iconos-caracteristica/caracteristicas/*/upload").permitAll()
 
-                // Imágenes de espacios:
-                // GET listar por espacio (público)
-                .requestMatchers(HttpMethod.GET, "/imagenes-espacio/espacios/**").permitAll()
-                // POST subir imagen (déjalo authenticated en prod; PERMITALL solo si querés probar rápido)
-                .requestMatchers(HttpMethod.POST, "/imagenes-espacio/espacios/*/upload").permitAll()
+            // Todo lo demás, autenticado
+            .anyRequest().authenticated()
+        )
 
-                // Iconos de característica (si querés probar subidas sin token)
-                .requestMatchers(HttpMethod.POST, "/iconos-caracteristica/caracteristicas/*/upload").permitAll()
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+                .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), BasicAuthenticationFilter.class);
 
-                // EL RESTO AUTENTICADO
-                .anyRequest().authenticated()
-            )
-            .cors(withDefaults())
-            .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), BasicAuthenticationFilter.class);
+            return http.build();
+        }
 
-        return http.build();
-    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
