@@ -10,7 +10,7 @@ import java.util.List;
 @ToString(exclude = {"disciplinasEvento", "inscripciones", "eventosModoEvento", "porcentajesReintegroCancelacion", "denunciasEvento"})
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "Evento")
+@Table(name = "evento")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -22,38 +22,37 @@ public class Evento extends Base {
     @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(name = "fechaHoraInicio")
+    @Column(name = "fecha_hora_inicio") // antes: fechaHoraInicio
     private LocalDateTime fechaHoraInicio;
 
-    @Column(name = "fechaHoraFin")
+    @Column(name = "fecha_hora_fin") // antes: fechaHoraFin
     private LocalDateTime fechaHoraFin;
 
-    @Column(name = "direccionUbicacion")
+    @Column(name = "direccion_ubicacion")
     private String direccionUbicacion;
 
-    @Column(name = "longitudUbicacion")
+    @Column(name = "longitud_ubicacion")
     private BigDecimal longitudUbicacion;
 
-    @Column(name = "latitudUbicacion")
+    @Column(name = "latitud_ubicacion")
     private BigDecimal latitudUbicacion;
 
-    @Column(name = "precioInscripcion")
+    @Column(name = "precio_inscripcion")
     private BigDecimal precioInscripcion;
 
-    @Column(name = "cantidadMaximaInvitados")
+    @Column(name = "cantidad_maxima_invitados")
     private Integer cantidadMaximaInvitados;
 
-    @Column(name = "cantidadMaximaParticipantes")
+    @Column(name = "cantidad_maxima_participantes")
     private Integer cantidadMaximaParticipantes;
 
-    @Column(name = "precioOrganizacion")
+    @Column(name = "precio_organizacion")
     private BigDecimal precioOrganizacion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "super_evento_id")
     private SuperEvento superEvento;
 
-    // 1 Evento -> N DisciplinaEvento (como ya lo tenías)
     @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DisciplinaEvento> disciplinasEvento;
 
@@ -68,7 +67,6 @@ public class Evento extends Base {
     @JoinColumn(name = "modo_evento_id")
     private ModoEvento modoEvento;
 
-    
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AdministradorEvento> administradoresEvento;
 
@@ -92,6 +90,6 @@ public class Evento extends Base {
     private List<ComprobantePago> comprobantesPago;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organizador_id", nullable = false)
+    @JoinColumn(name = "organizador_id")
     private Usuario organizador;
 }

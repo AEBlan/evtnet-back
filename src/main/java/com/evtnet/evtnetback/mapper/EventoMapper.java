@@ -11,8 +11,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(
     componentModel = "spring",
     uses = { DisciplinaEventoMapper.class },
-    builder = @Builder(disableBuilder = true),
-    unmappedTargetPolicy = ReportingPolicy.IGNORE // ⬅️ ignora lo no mapeado
+    builder = @Builder(disableBuilder = true) 
 )
 public interface EventoMapper {
 

@@ -5,6 +5,7 @@ import com.evtnet.evtnetback.Entities.IconoCaracteristica;
 import com.evtnet.evtnetback.Repositories.IconoCaracteristicaRepository;
 import com.evtnet.evtnetback.Repositories.CaracteristicaRepository;
 import com.evtnet.evtnetback.dto.iconos.DTOIconoCaracteristica;   // <-- DTO
+import com.evtnet.evtnetback.Services.UploadsService;            // <-- paquete lowercase
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;

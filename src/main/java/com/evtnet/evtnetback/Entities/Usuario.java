@@ -9,7 +9,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "Usuario")
+@Table(name = "usuario")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

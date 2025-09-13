@@ -1,14 +1,23 @@
-// package com.evtnet.evtnetback.Services;
-//
-// import com.evtnet.evtnetback.Entities.Evento;
-// import com.evtnet.evtnetback.dto.eventos.*;
-// import java.util.List;
-//
-// public interface EventoService extends BaseService<Evento, Long> {
-//     List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro);
-//     List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro);
-//     DTOEvento obtenerEventoDetalle(long idEvento);
-//     DTODatosCreacionEvento obtenerDatosCreacionEvento(Long idEspacioOrNull);
-//     long crearEvento(DTOEventoCreate req);
-//     int obtenerCantidadEventosSuperpuestos(long idEspacio, long fechaDesdeMillis, long fechaHastaMillis);
-// }
+package com.evtnet.evtnetback.Services;
+
+import com.evtnet.evtnetback.Entities.Evento;
+import com.evtnet.evtnetback.dto.eventos.*;
+import java.util.List;
+
+public interface EventoService extends BaseService<Evento, Long> {
+    List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro);
+    List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro);
+    DTOEvento obtenerEventoDetalle(long idEvento);
+    DTODatosCreacionEvento obtenerDatosCreacionEvento(Long idEspacioOrNull);
+    long crearEvento(DTOEventoCreate req);
+    int obtenerCantidadEventosSuperpuestos(long idEspacio, long fechaDesdeMillis, long fechaHastaMillis);
+
+    // 👇 NUEVOS (para que @Override sea válido)
+    DTOEventoParaInscripcion obtenerEventoParaInscripcion(long id);
+    boolean verificarDatosPrePago(DTOInscripcion dto);
+    void inscribirse(DTOInscripcion dto);
+    void desinscribirse(long idEvento);
+    Number obtenerMontoDevolucionCancelacion(long idEvento, String username);
+    DTOModificarEvento obtenerDatosModificacionEvento(long id);
+    void modificarEvento(DTOModificarEvento dto);
+}

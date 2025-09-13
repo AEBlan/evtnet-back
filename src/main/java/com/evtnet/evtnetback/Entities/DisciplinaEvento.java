@@ -8,17 +8,17 @@ import lombok.*;
 @ToString(exclude = {"evento", "disciplina"})
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "DisciplinaEvento")
+@Table(name = "disciplina_evento")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class DisciplinaEvento extends Base {
 
-    @Column(name = "nombre")
-    private String nombre;
+    //@Column(name = "nombre")
+    //private String nombre;
 
-    @Column(name = "descripcion")
-    private String descripcion;
+    //@Column(name = "descripcion")
+    //private String descripcion;
 
     // 🔁 N DisciplinaEvento -> 1 Evento
     @ManyToOne(fetch = FetchType.LAZY)

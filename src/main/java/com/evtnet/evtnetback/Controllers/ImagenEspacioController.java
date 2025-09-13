@@ -1,6 +1,7 @@
 package com.evtnet.evtnetback.Controllers;
 
 import com.evtnet.evtnetback.Entities.ImagenEspacio;
+import com.evtnet.evtnetback.Services.ImagenEspacioService;
 import com.evtnet.evtnetback.Services.ImagenEspacioServiceImpl;
 import com.evtnet.evtnetback.dto.imagenes.DTOImagenEspacio;
 import org.springframework.http.MediaType;
@@ -13,8 +14,8 @@ import java.util.List;
 @RequestMapping("/imagenes-espacio")
 public class ImagenEspacioController extends BaseControllerImpl<ImagenEspacio, ImagenEspacioServiceImpl> {
 
-    public ImagenEspacioController(ImagenEspacioServiceImpl servicio) {
-        this.servicio = servicio;
+    public ImagenEspacioController(ImagenEspacioService servicio) {
+        this.servicio = (ImagenEspacioServiceImpl) servicio;
     }
 
     // SUBIR (PNG/SVG) – sin categoría

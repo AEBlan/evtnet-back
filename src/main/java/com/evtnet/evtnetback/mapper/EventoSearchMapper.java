@@ -1,10 +1,15 @@
 package com.evtnet.evtnetback.mapper;
 
 import com.evtnet.evtnetback.Entities.Evento;
+import com.evtnet.evtnetback.Entities.EventoModoEvento;
+import com.evtnet.evtnetback.Entities.ModoEvento;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.utils.TimeUtil;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public final class EventoSearchMapper {
     private EventoSearchMapper(){}
@@ -13,6 +18,13 @@ public final class EventoSearchMapper {
         boolean esSuperevento = e.getSuperEvento() != null
                 && e.getFechaHoraInicio() == null && e.getFechaHoraFin() == null;
 
+        List<String> disciplinas = (e.getDisciplinasEvento() == null)
+                ? List.<String>of()
+                : e.getDisciplinasEvento().stream()
+                    .map(de -> de.getDisciplina() != null ? de.getDisciplina().getNombre() : null)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
         return new DTOResultadoBusquedaEventos(
                 esSuperevento,
                 e.getId(),
@@ -20,8 +32,7 @@ public final class EventoSearchMapper {
                 TimeUtil.toMillis(e.getFechaHoraInicio()),
                 e.getPrecioInscripcion() == null ? null : e.getPrecioInscripcion().doubleValue(),
                 e.getEspacio() == null ? null : e.getEspacio().getNombre(),
-                e.getDisciplinasEvento() == null ? List.of()
-                        : e.getDisciplinasEvento().stream().map(d -> d.getNombre()).toList(),
+                disciplinas,
                 null
         );
     }
@@ -39,32 +50,52 @@ public final class EventoSearchMapper {
     }
 
     public static DTOEvento toDTOEvento(Evento e, boolean inscripto, boolean administrador) {
-        DTOEvento.Espacio espacio = e.getEspacio() == null ? null :
-                new DTOEvento.Espacio(e.getEspacio().getId(), e.getEspacio().getNombre());
+        DTOEvento.Espacio espacio = (e.getEspacio() == null)
+                ? null
+                : new DTOEvento.Espacio(e.getEspacio().getId(), e.getEspacio().getNombre());
 
-        var modos =
-            (e.getEventosModoEvento() != null && !e.getEventosModoEvento().isEmpty())
-                ? e.getEventosModoEvento().stream().map(eme -> eme.getModoEvento().getNombre()).toList()
-                : (e.getModoEvento() != null ? List.of(e.getModoEvento().getNombre()) : List.<String>of());
+        // Modos (principal + adicionales)
+        List<String> modos = new ArrayList<>();
+        if (e.getModoEvento() != null && e.getModoEvento().getNombre() != null) {
+            modos.add(e.getModoEvento().getNombre());
+        }
+        if (e.getEventosModoEvento() != null) {
+            modos.addAll(
+                e.getEventosModoEvento().stream()
+                    .map(EventoModoEvento::getModoEvento)
+                    .filter(Objects::nonNull)
+                    .map(ModoEvento::getNombre)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList())
+            );
+        }
 
-        var disciplinas = e.getDisciplinasEvento() == null ? List.<String>of()
-                : e.getDisciplinasEvento().stream().map(d -> d.getNombre()).toList();
+        // Disciplinas desde DisciplinaEvento -> Disciplina.nombre
+        List<String> disciplinas = (e.getDisciplinasEvento() == null)
+                ? List.<String>of()
+                : e.getDisciplinasEvento().stream()
+                    .map(de -> de.getDisciplina() != null ? de.getDisciplina().getNombre() : null)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
 
-        var inscriptos = e.getInscripciones() == null ? List.<DTOEvento.Inscripto>of()
+        // Inscriptos
+        List<DTOEvento.Inscripto> inscriptos = (e.getInscripciones() == null)
+                ? List.<DTOEvento.Inscripto>of()
                 : e.getInscripciones().stream()
                     .filter(i -> i.getUsuario() != null)
                     .map(i -> new DTOEvento.Inscripto(
                             i.getUsuario().getUsername(),
                             i.getUsuario().getNombre(),
                             i.getUsuario().getApellido()))
-                    .toList();
+                    .collect(Collectors.toList());
 
         DTOEvento.Ubicacion ubic = new DTOEvento.Ubicacion(
                 e.getLatitudUbicacion() == null ? null : e.getLatitudUbicacion().doubleValue(),
                 e.getLongitudUbicacion() == null ? null : e.getLongitudUbicacion().doubleValue()
         );
 
-        DTOEvento.Superevento sup = (e.getSuperEvento() == null) ? null
+        DTOEvento.Superevento sup = (e.getSuperEvento() == null)
+                ? null
                 : new DTOEvento.Superevento(e.getSuperEvento().getId(), e.getSuperEvento().getNombre());
 
         return new DTOEvento(

@@ -218,7 +218,10 @@ SET @rol := (SELECT id FROM rol WHERE nombre='PendienteConfirmación');
 INSERT INTO rol_permiso (rol_id, permiso_id, fecha_hora_alta)
 SELECT @rol, p.id, NOW() FROM permiso p
 WHERE p.nombre='HabilitarCuenta'
-AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
+  AND NOT EXISTS (
+    SELECT 1 FROM rol_permiso rp
+    WHERE rp.rol_id=@rol AND rp.permiso_id=p.id
+  );
 
 -- 2) Usuario -> permisos básicos
 SET @rol := (SELECT id FROM rol WHERE nombre='Usuario');
@@ -231,7 +234,10 @@ WHERE p.nombre IN (
   'ParticipacionGrupos','CreacionGrupos','AdministracionGrupos','SolicitudEspaciosPublicos',
   'CalificacionUsuarios','DenunciaEventos','ResenaEspacios','VisionReportes'
 )
-AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
+  AND NOT EXISTS (
+    SELECT 1 FROM rol_permiso rp
+    WHERE rp.rol_id=@rol AND rp.permiso_id=p.id
+  );
 
 -- 3) Administrador -> permisos avanzados
 SET @rol := (SELECT id FROM rol WHERE nombre='Administrador');
@@ -244,7 +250,10 @@ WHERE p.nombre IN (
   'AdministracionMascota','AdministracionRoles','AdministracionUsuarios','RealizacionBackup',
   'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios'
 )
-AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
+  AND NOT EXISTS (
+    SELECT 1 FROM rol_permiso rp
+    WHERE rp.rol_id=@rol AND rp.permiso_id=p.id
+  );
 
 -- 4) SuperAdministrador -> permisos globales
 SET @rol := (SELECT id FROM rol WHERE nombre='SuperAdministrador');
@@ -253,7 +262,10 @@ SELECT @rol, p.id, NOW() FROM permiso p
 WHERE p.nombre IN (
   'VisionLogPagos','VisionLogParametros','AdministracionRolesReservados','VisionReportesGenerales'
 )
-AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
+  AND NOT EXISTS (
+    SELECT 1 FROM rol_permiso rp
+    WHERE rp.rol_id=@rol AND rp.permiso_id=p.id
+  );
 
 -- 5) Perito -> visión de logs
 SET @rol := (SELECT id FROM rol WHERE nombre='Perito');
@@ -262,7 +274,143 @@ SELECT @rol, p.id, NOW() FROM permiso p
 WHERE p.nombre IN (
   'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios','VisionLogPagos','VisionLogParametros'
 )
-AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
+  AND NOT EXISTS (
+    SELECT 1 FROM rol_permiso rp
+    WHERE rp.rol_id=@rol AND rp.permiso_id=p.id
+  );
+
+-- Saneamos por si había filas antiguas sin fecha
+UPDATE rol_permiso SET fecha_hora_alta = NOW() WHERE fecha_hora_alta IS NULL;
+
+ /* =========================================================================
+    SEMILLAS PARA PROBAR EVENTOS (respeta nombres de tablas/columnas)
+    ========================================================================= */
+
+-- Asegurar fecha_hora_alta en catálogos que la requieren
+UPDATE tipo_espacio            SET fecha_hora_alta = COALESCE(fecha_hora_alta, NOW()) WHERE fecha_hora_alta IS NULL;
+UPDATE modo_evento             SET fecha_hora_alta = COALESCE(fecha_hora_alta, NOW()) WHERE fecha_hora_alta IS NULL;
+UPDATE tipo_inscripcion_evento SET fecha_hora_alta = COALESCE(fecha_hora_alta, NOW()) WHERE fecha_hora_alta IS NULL;
+
+-- =======================
+-- Usuarios
+-- =======================
+INSERT INTO usuario (nombre, apellido, username, dni, mail, fecha_nacimiento, contrasena, cbu, fecha_hora_alta)
+SELECT 'Sergio','Albino','sergioalbino','12345678','sergio@example.com','1990-01-01 00:00:00','password','0000000000000000000000', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE username='sergioalbino');
+
+INSERT INTO usuario (nombre, apellido, username, dni, mail, fecha_nacimiento, contrasena, cbu, fecha_hora_alta)
+SELECT 'Admin','Eventos','adminevt','99999999','admin@example.com','1985-05-05 00:00:00','admin','2222222222222222222222', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE username='adminevt');
+
+SET @u_org   := (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1);
+SET @u_admin := (SELECT id FROM usuario WHERE username='adminevt'      LIMIT 1);
+
+-- Roles de ejemplo
+INSERT INTO rol_usuario (fecha_hora_alta, rol_id, usuario_id)
+SELECT NOW(), (SELECT id FROM rol WHERE nombre='Usuario'       LIMIT 1), @u_org
+WHERE NOT EXISTS (
+  SELECT 1 FROM rol_usuario WHERE usuario_id=@u_org AND rol_id=(SELECT id FROM rol WHERE nombre='Usuario' LIMIT 1)
+);
+
+INSERT INTO rol_usuario (fecha_hora_alta, rol_id, usuario_id)
+SELECT NOW(), (SELECT id FROM rol WHERE nombre='Administrador' LIMIT 1), @u_admin
+WHERE NOT EXISTS (
+  SELECT 1 FROM rol_usuario WHERE usuario_id=@u_admin AND rol_id=(SELECT id FROM rol WHERE nombre='Administrador' LIMIT 1)
+);
+
+-- =======================
+-- Espacios
+-- =======================
+INSERT INTO espacio
+(nombre, descripcion, fecha_hora_alta, direccion_ubicacion, latitud_ubicacion, longitud_ubicacion, tipo_espacio_id, propietario_id)
+SELECT 'Espacio Fantasioso 1', 'Espacio de prueba para eventos', NOW(),
+       'Avenida Siempreviva 742', -34.603722, -58.381592,
+       (SELECT id FROM tipo_espacio WHERE nombre='Privado' LIMIT 1),
+       @u_admin
+WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE nombre='Espacio Fantasioso 1');
+
+INSERT INTO espacio
+(nombre, descripcion, fecha_hora_alta, direccion_ubicacion, latitud_ubicacion, longitud_ubicacion, tipo_espacio_id, propietario_id)
+SELECT 'Polideportivo Centro', 'Polideportivo multiuso', NOW(),
+       'Calle Falsa 123', -34.60, -58.40,
+       (SELECT id FROM tipo_espacio WHERE nombre='Público' LIMIT 1),
+       @u_admin
+WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE nombre='Polideportivo Centro');
+
+SET @esp1 := (SELECT id FROM espacio WHERE nombre='Espacio Fantasioso 1' LIMIT 1);
+
+-- =======================
+-- Evento principal
+-- =======================
+INSERT INTO evento
+(nombre, descripcion, fecha_hora_inicio, fecha_hora_fin,
+ direccion_ubicacion, longitud_ubicacion, latitud_ubicacion,
+ precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes, precio_organizacion,
+ tipo_inscripcion_evento_id, modo_evento_id, espacio_id, organizador_id)
+SELECT
+ 'Evento Fantástico 1',
+ '¡En este evento conocerás muchas personas y formarás amistades para toda tu vida!',
+ DATE_ADD(NOW(), INTERVAL 3 DAY),
+ DATE_ADD(DATE_ADD(NOW(), INTERVAL 3 DAY), INTERVAL 2 HOUR),
+ 'Avenida Siempreviva 742', -58.381592, -34.603722,
+ 2200.00, 2, 10, 10000.00,
+ (SELECT id FROM tipo_inscripcion_evento WHERE nombre='Inscripción por Usuario' LIMIT 1),
+ (SELECT id FROM modo_evento              WHERE nombre='Individual'              LIMIT 1),
+ @esp1, @u_org
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE nombre='Evento Fantástico 1');
+
+SET @ev1 := (SELECT id FROM evento WHERE nombre='Evento Fantástico 1' LIMIT 1);
+
+-- Administrador del evento
+INSERT INTO administrador_evento (fecha_hora_alta, usuario_id, evento_id)
+SELECT NOW(), @u_admin, @ev1
+WHERE NOT EXISTS (SELECT 1 FROM administrador_evento WHERE usuario_id=@u_admin AND evento_id=@ev1);
+
+-- =======================
+-- Disciplinas del evento (tabla de cruce DisciplinaEvento)
+-- =======================
+INSERT INTO disciplina_evento (evento_id, disciplina_id)
+SELECT @ev1, (SELECT id FROM disciplina WHERE nombre='Futbol' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM disciplina_evento 
+  WHERE evento_id=@ev1 AND disciplina_id=(SELECT id FROM disciplina WHERE nombre='Futbol' LIMIT 1)
+);
+
+INSERT INTO disciplina_evento (evento_id, disciplina_id)
+SELECT @ev1, (SELECT id FROM disciplina WHERE nombre='Padel' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM disciplina_evento 
+  WHERE evento_id=@ev1 AND disciplina_id=(SELECT id FROM disciplina WHERE nombre='Padel' LIMIT 1)
+);
+
+-- =======================
+-- Inscripción de prueba + invitado
+-- =======================
+INSERT INTO inscripcion (fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id)
+SELECT NOW(), 2200.00, TRUE, @u_org, @ev1
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE usuario_id=@u_org AND evento_id=@ev1);
+
+SET @ins1 := (SELECT id FROM inscripcion WHERE usuario_id=@u_org AND evento_id=@ev1 LIMIT 1);
+
+INSERT INTO invitado (nombre, apellido, dni, inscripcion_id)
+SELECT 'Tatiana','Duran','87654321', @ins1
+WHERE NOT EXISTS (SELECT 1 FROM invitado WHERE dni='87654321' AND inscripcion_id=@ins1);
+
+-- =======================
+-- Comprobante de pago de ejemplo
+-- =======================
+INSERT INTO comprobante_pago
+(numero, concepto, fecha_hora_emision, monto_total_bruto, forma_de_pago, comision,
+ inscripcion_id, evento_id, cobro_id, pago_id, medio_de_pago_id, comision_por_inscripcion_id, comision_por_organizacion_id)
+SELECT
+ 'CP-0001',
+ 'Inscripción Evento Fantástico 1',
+ NOW(), 2200.00, 'Online', 0.00,
+ @ins1, @ev1, @u_admin, @u_org,
+ (SELECT id FROM medio_de_pago              WHERE nombre='Mercado Pago' LIMIT 1),
+ (SELECT id FROM comision_por_inscripcion   LIMIT 1),
+ (SELECT id FROM comision_por_organizacion  LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM comprobante_pago WHERE numero='CP-0001');
 
 
 -- TipoCalificacion (verde)
