@@ -5,10 +5,13 @@ import com.evtnet.evtnetback.Services.UsuarioService;
 import com.evtnet.evtnetback.Services.UsuarioServiceImpl;
 import com.evtnet.evtnetback.dto.usuarios.*;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.*;
+
 
 import java.util.Map;
 
@@ -156,6 +159,91 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
         String ct     = (foto != null) ? foto.getContentType() : null;
 
         service.editarPerfil(datos, bytes, nombre, ct);
+        return ResponseEntity.noContent().build();
+    }
+
+    // --- Calificaciones ---
+
+    @GetMapping("/obtenerCalificacionTipos")
+    public ResponseEntity<java.util.List<DTOCalificacionTipoSimple>> obtenerCalificacionTiposPara(
+            @RequestParam String username) throws Exception {
+        return ResponseEntity.ok(service.obtenerCalificacionTiposPara(username));
+    }
+
+    @GetMapping("/obtenerTiposYMotivosCalificacion")
+    public ResponseEntity<java.util.List<DTOTipoCalificacion>> obtenerTiposYMotivosCalificacion() throws Exception {
+        return ResponseEntity.ok(service.obtenerTiposYMotivosCalificacion());
+    }
+
+    @PostMapping(value = "/calificarUsuario", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> calificarUsuario(@RequestBody DTOCalificacionRequest body) throws Exception {
+        service.calificarUsuario(body);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ====== ENDPOINTS DE ROLES ======
+
+    @GetMapping("/obtenerRoles")
+    public ResponseEntity<java.util.List<DTORolSimple>> obtenerRoles() throws Exception {
+        return ResponseEntity.ok(service.obtenerRoles());
+    }
+
+    @GetMapping("/obtenerPermisos")
+    public ResponseEntity<java.util.List<DTOPermisoSimple>> obtenerPermisos() throws Exception {
+        return ResponseEntity.ok(service.obtenerPermisos());
+    }
+
+    @GetMapping("/obtenerRolCompleto")
+    public ResponseEntity<DTORol> obtenerRolCompleto(@RequestParam Long id) throws Exception {
+        return ResponseEntity.ok(service.obtenerRolCompleto(id));
+    }
+
+    @GetMapping("/obtenerRolesCompletos")
+    public ResponseEntity<Page<DTORol>> obtenerRolesCompletos(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) throws Exception {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
+        return ResponseEntity.ok(service.obtenerRolesCompletos(pageable));
+    }
+
+    @PostMapping("/altaRol")
+    public ResponseEntity<Void> altaRol(@RequestBody DTOAltaRol dto) throws Exception {
+        service.altaRol(dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    
+    @PutMapping("/modificarRol")
+    public ResponseEntity<Void> modificarRol(@RequestBody DTOModificarRol dto) throws Exception {
+        service.modificarRol(dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    
+    @DeleteMapping("/bajaRol")
+    public ResponseEntity<Void> bajaRol(@RequestParam Long id) throws Exception {
+        service.bajaRol(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // === USUARIO (gestión directa por admin) ===
+
+    @DeleteMapping("/bajaUsuario")
+    public ResponseEntity<Void> bajaUsuario(@RequestParam String username) throws Exception {
+        service.bajaUsuario(username);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/altaUsuario")
+    public ResponseEntity<Void> altaUsuario(@RequestBody DTOAltaUsuario dto) throws Exception {
+        service.altaUsuario(dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/modificarUsuario")
+    public ResponseEntity<Void> modificarUsuario(@RequestBody DTOModificarUsuario dto) throws Exception {
+        service.modificarUsuario(dto);
         return ResponseEntity.noContent().build();
     }
 }

@@ -2,6 +2,9 @@ package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.Usuario;
 import com.evtnet.evtnetback.dto.usuarios.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import java.util.List;
 
 public interface UsuarioService extends BaseService<Usuario, Long> {
 
@@ -47,4 +50,22 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
     // Perfil editable
     DTOEditarPerfil obtenerPerfilParaEditar(String username) throws Exception;
     void editarPerfil(DTOEditarPerfil datos, byte[] foto, String nombreArchivo, String contentType) throws Exception;
+
+    List<DTOCalificacionTipoSimple> obtenerCalificacionTiposPara(String username) throws Exception;
+    List<DTOTipoCalificacion> obtenerTiposYMotivosCalificacion() throws Exception;
+    void calificarUsuario(DTOCalificacionRequest body) throws Exception;
+
+    // === Roles ===
+    List<DTORolSimple> obtenerRoles() throws Exception;
+    Page<DTORol> obtenerRolesCompletos(Pageable pageable) throws Exception;
+    DTORol obtenerRolCompleto(Long id) throws Exception;
+    List<DTOPermisoSimple> obtenerPermisos() throws Exception;
+    void altaRol(DTOAltaRol dto) throws Exception;
+    void modificarRol(DTOModificarRol dto) throws Exception;
+    void bajaRol(Long id) throws Exception;
+
+    // === Usuarios (admin) ===
+    void bajaUsuario(String username) throws Exception;
+    void altaUsuario(DTOAltaUsuario dto) throws Exception;
+    void modificarUsuario(DTOModificarUsuario dto) throws Exception;
 }

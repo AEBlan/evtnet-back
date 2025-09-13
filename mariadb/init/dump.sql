@@ -263,3 +263,59 @@ WHERE p.nombre IN (
   'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios','VisionLogPagos','VisionLogParametros'
 )
 AND NOT EXISTS (SELECT 1 FROM rol_permiso rp WHERE rp.rol_id=@rol AND rp.permiso_id=p.id);
+
+
+-- TipoCalificacion (verde)
+INSERT INTO tipo_calificacion (nombre) SELECT 'Buena' WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE LOWER(nombre)='buena');
+INSERT INTO tipo_calificacion (nombre) SELECT 'Media' WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE LOWER(nombre)='media');
+INSERT INTO tipo_calificacion (nombre) SELECT 'Mala'  WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE LOWER(nombre)='mala');
+
+-- MotivoCalificacion (verde) usando subselects
+INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
+SELECT 'Puntual', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivo_calificacion 
+  WHERE LOWER(nombre)='puntual' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+);
+
+INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
+SELECT 'Colaborador', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivo_calificacion 
+  WHERE LOWER(nombre)='colaborador' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+);
+
+INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
+SELECT 'Respetuoso', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivo_calificacion 
+  WHERE LOWER(nombre)='respetuoso' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+);
+
+INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
+SELECT 'Neutral', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='media')
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivo_calificacion 
+  WHERE LOWER(nombre)='neutral' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='media')
+);
+
+INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
+SELECT 'Impuntual', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivo_calificacion 
+  WHERE LOWER(nombre)='impuntual' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+);
+
+INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
+SELECT 'Incumplidor', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivo_calificacion 
+  WHERE LOWER(nombre)='incumplidor' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+);
+
+INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
+SELECT 'Grosero', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivo_calificacion 
+  WHERE LOWER(nombre)='grosero' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+);

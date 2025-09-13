@@ -26,4 +26,6 @@ public interface RolUsuarioRepository extends BaseRepository<RolUsuario, Long> {
     Optional<RolUsuario> findByUsuarioAndRol(Usuario usuario, Rol rol);
     void deleteByUsuarioAndRol(Usuario usuario, Rol rol);
     boolean existsByUsuarioAndRol(Usuario usuario, Rol rol);
+    List<RolUsuario> findByUsuarioAndFechaHoraBajaIsNull(Usuario usuario);
+    Optional<RolUsuario> findByUsuarioAndRolAndFechaHoraBajaIsNull(Usuario usuario, Rol rol);
 }
