@@ -70,8 +70,8 @@ public class Usuario extends Base {
     @OneToMany(mappedBy = "usuario")
     private List<AdministradorEspacio> administradorEspacio;
 
-    @OneToOne(mappedBy = "usuario")
-    private AdministradorSuperEvento administradorSuperEvento;
+    @OneToMany(mappedBy = "usuario")
+    private List<AdministradorSuperEvento> administradoresSuperEvento;
 
     @OneToMany(mappedBy = "usuario1")
     private List<Chat> usuarios1;

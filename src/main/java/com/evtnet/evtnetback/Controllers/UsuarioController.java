@@ -27,8 +27,7 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
 
     // --- Auth ---
     @PostMapping("/iniciarSesion")
-    public ResponseEntity<DTOAuth> iniciarSesion(@RequestParam String mail,
-                                                 @RequestParam String password) throws Exception {
+    public ResponseEntity<DTOAuth> iniciarSesion(@RequestParam String mail, @RequestParam String password) throws Exception {
         return ResponseEntity.ok(service.login(mail, password));
     }
 
@@ -96,16 +95,13 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     }
 
     @PutMapping("/recuperarContrasena")
-    public ResponseEntity<DTOAuth> recuperarContrasena(@RequestParam String mail,
-                                                       @RequestParam String password,
-                                                       @RequestParam String codigo) throws Exception {
+    public ResponseEntity<DTOAuth> recuperarContrasena(@RequestParam String mail,@RequestParam String password,@RequestParam String codigo) throws Exception {
         return ResponseEntity.ok(service.recuperarContrasena(mail, password, codigo));
     }
 
     // --- Cambiar contraseña (auth) ---
     @PutMapping("/restablecerContrasena")
-    public ResponseEntity<Void> restablecerContrasena(@RequestParam String currentPassword,
-                                                      @RequestParam String newPassword) throws Exception {
+    public ResponseEntity<Void> restablecerContrasena(@RequestParam String currentPassword,@RequestParam String newPassword) throws Exception {
         service.restablecerContrasena(currentPassword, newPassword);
         return ResponseEntity.noContent().build();
     }
@@ -245,5 +241,40 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     public ResponseEntity<Void> modificarUsuario(@RequestBody DTOModificarUsuario dto) throws Exception {
         service.modificarUsuario(dto);
         return ResponseEntity.noContent().build();
+    }
+
+    // --- Admin: búsqueda de usuarios (paginado) ---
+    @PutMapping("/adminBuscarUsuarios")
+    public ResponseEntity<org.springframework.data.domain.Page<DTOResultadoBusquedaUsuario>> adminBuscarUsuarios(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestBody DTOFiltrosBusquedaUsuarios filtros
+    ) throws Exception {
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                page, 10, org.springframework.data.domain.Sort.by("fechaHoraAlta").descending()
+        );
+        return ResponseEntity.ok(service.adminBuscarUsuarios(filtros, pageable));
+    }
+
+    // --- Admin: usuario completo ---
+    @GetMapping("/adminObtenerUsuarioCompleto")
+    public ResponseEntity<DTOUsuarioCompleto> adminObtenerUsuarioCompleto(
+            @RequestParam String username
+    ) throws Exception {
+        return ResponseEntity.ok(service.adminObtenerUsuarioCompleto(username));
+    }
+    // --- Admin: info adicional del usuario (eventos, espacios, supereventos) ---
+    @GetMapping("/adminObtenerEventosUsuario")
+    public ResponseEntity<DTOEventosUsuario> adminObtenerEventosUsuario(@RequestParam String username) throws Exception {
+        return ResponseEntity.ok(service.adminObtenerEventosUsuario(username));
+    }
+
+    @GetMapping("/adminObtenerEspaciosUsuario")
+    public ResponseEntity<DTOEspaciosUsuario> adminObtenerEspaciosUsuario(@RequestParam String username) throws Exception {
+        return ResponseEntity.ok(service.adminObtenerEspaciosUsuario(username));
+    }
+
+    @GetMapping("/adminObtenerSupereventosUsuario")
+    public ResponseEntity<DTOSupereventosUsuario> adminObtenerSupereventosUsuario(@RequestParam String username) throws Exception {
+        return ResponseEntity.ok(service.adminObtenerSupereventosUsuario(username));
     }
 }

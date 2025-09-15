@@ -70,14 +70,14 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                 "/usuarios/registrarse",
                 "/usuarios/iniciarSesion",
                 "/usuarios/ingresarCodigo",
-                "/usuarios/loginGoogle",
-                "/usuarios/recuperarContrasena",
                 "/usuarios/enviarCodigoRecuperarContrasena",
+                "/usuarios/loginGoogle",
                 "/usuarios/registrarseConFoto"
             ).permitAll()
             .requestMatchers(HttpMethod.PUT,
                 "/usuarios/enviarCodigo",
-                "/usuarios/definirContrasena"
+                "/usuarios/definirContrasena",
+                "/usuarios/recuperarContrasena"
             ).permitAll()
             .requestMatchers(HttpMethod.GET,
                 "/usuarios/obtenerImagenDeCalificacion",
