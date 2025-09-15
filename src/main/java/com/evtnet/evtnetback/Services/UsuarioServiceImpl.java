@@ -49,6 +49,11 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final TipoCalificacionRepository tipoCalificacionRepository;
     private final PermisoRepository permisoRepository;
     private final RolPermisoRepository rolPermisoRepository;
+    private final UsuarioGrupoRepository usuarioGrupoRepository;
+    private final EventoRepository eventoRepository;
+    private final EspacioRepository espacioRepository;
+    private final SuperEventoRepository superEventoRepository;
+    private final ChatRepository chatRepository;
 
 
     // Directorio para fotos de perfil (montá un volumen)
@@ -76,7 +81,14 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             CalificacionMotivoCalificacionRepository calificacionMotivoCalificacionRepository,
             TipoCalificacionRepository tipoCalificacionRepository,
             PermisoRepository permisoRepository,
-            RolPermisoRepository rolPermisoRepository
+            RolPermisoRepository rolPermisoRepository,
+            UsuarioGrupoRepository usuarioGrupoRepository,
+            EventoRepository eventoRepository,
+            EspacioRepository espacioRepository,
+            SuperEventoRepository superEventoRepository,
+            ChatRepository chatRepository
+            
+            
 ) {
         super(baseRepository);
         this.usuarioRepository = usuarioRepository;
@@ -92,6 +104,11 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         this.tipoCalificacionRepository = tipoCalificacionRepository;
         this.permisoRepository = permisoRepository;
         this.rolPermisoRepository = rolPermisoRepository;
+        this.usuarioGrupoRepository = usuarioGrupoRepository;
+        this.eventoRepository = eventoRepository;
+        this.espacioRepository = espacioRepository;
+        this.superEventoRepository = superEventoRepository;
+        this.chatRepository = chatRepository;
 
 }
 
@@ -1364,6 +1381,129 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .organizador(organizador)
                 .administrador(administrador)
                 .build();
+    }
+    // GRupo y interracciones
+    // ================== NUEVOS MÉTODOS PARA GRUPOS E INTERACCIONES ==================
+    @Override
+    public DTOGruposUsuario adminObtenerGruposUsuario(String username) {
+        List<UsuarioGrupo> ugs = usuarioGrupoRepository.findAllForUsername(username);
+
+        Map<Long, List<UsuarioGrupo>> porGrupo = ugs.stream()
+                .filter(ug -> ug.getGrupo() != null)
+                .collect(Collectors.groupingBy(
+                        ug -> ug.getGrupo().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<DTOGruposUsuario.GrupoDTO> grupos = new ArrayList<>();
+
+        for (var entry : porGrupo.entrySet()) {
+            Grupo g = entry.getValue().get(0).getGrupo();
+
+            List<DTOGruposUsuario.RolDTO> roles = entry.getValue().stream()
+                    .map(ug -> new DTOGruposUsuario.RolDTO(
+                            ug.getTipoUsuarioGrupo() != null ? ug.getTipoUsuarioGrupo().getNombre() : "Miembro",
+                            ug.getFechaHoraAlta(),
+                            null // si luego agregan fecha de baja del rol, mapear acá
+                    ))
+                    .collect(Collectors.toList());
+
+            grupos.add(new DTOGruposUsuario.GrupoDTO(g.getId(), g.getNombre(), roles));
+        }
+
+        return new DTOGruposUsuario(grupos);
+    }
+
+    @Override
+    public DTOInteraccionesUsuario adminObtenerInteraccionesUsuario(String username) {
+        List<DTOInteraccionesUsuario.InteraccionDTO> interacciones = new ArrayList<>();
+
+        // 1) Grupos (pertenencias)
+        for (UsuarioGrupo ug : usuarioGrupoRepository.findAllForUsername(username)) {
+            Grupo g = ug.getGrupo();
+            if (g != null) {
+                interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                        g.getId(), g.getNombre(), "Grupo",
+                        ug.getFechaHoraAlta(), null, null
+                ));
+            }
+        }
+
+        // 2) Eventos (organizador.username) -> inicio/fin
+        for (Evento ev : eventoRepository.findAllByOrganizador_Username(username)) {
+            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                    ev.getId(), ev.getNombre(), "Evento",
+                    ev.getFechaHoraInicio(), ev.getFechaHoraFin(), null
+            ));
+        }
+
+        // 3) Espacios (propietario.username) -> alta/baja
+        for (Espacio es : espacioRepository.findAllByPropietario_Username(username)) {
+            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                    es.getId(), es.getNombre(), "Espacio",
+                    es.getFechaHoraAlta(), es.getFechaHoraBaja(), null
+            ));
+        }
+
+        // 4) SuperEventos (usuario.username) -> sin fechas en la entidad
+        for (SuperEvento se : superEventoRepository.findAllByUsuario_Username(username)) {
+            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                    se.getId(), se.getNombre(), "SuperEvento",
+                    null, null, null
+            ));
+        }
+
+        // 5) Directos (chat DIRECTO por username en usuario1 o usuario2) — método con 6 argumentos
+        for (Chat c : chatRepository.findAllByTipoAndUsuario1_UsernameOrTipoAndUsuario2_Username(
+                Chat.Tipo.DIRECTO, username,
+                Chat.Tipo.DIRECTO, username)) {
+
+            Usuario otro = usernameEquals(c.getUsuario1(), username) ? c.getUsuario2() : c.getUsuario1();
+            String otroUsername = (otro != null) ? otro.getUsername() : null;
+            String nombre = (otro != null) ? displayName(otro) : "Chat directo";
+
+            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                    c.getId(), nombre, "Directo",
+                    c.getFechaHoraAlta(), c.getFechaHoraBaja(), otroUsername
+            ));
+        }
+
+        // Deduplicar por (tipo,id) + ordenar por fechaDesde desc (nulls al final)
+        interacciones = interacciones.stream()
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(
+                                it -> it.getTipo() + "#" + it.getId(),
+                                it -> it,
+                                (a, b) -> a,
+                                LinkedHashMap::new
+                        ),
+                        m -> new ArrayList<>(m.values())
+                ));
+
+        interacciones.sort(Comparator
+                .comparing(DTOInteraccionesUsuario.InteraccionDTO::getFechaDesde,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .reversed());
+
+        return new DTOInteraccionesUsuario(interacciones);
+    }
+
+    // ================== HELPERS PRIVADOS (faltaban) ==================
+    private static boolean usernameEquals(Usuario u, String username) {
+        return u != null && username != null && username.equals(u.getUsername());
+    }
+
+    private static String displayName(Usuario u) {
+        if (u == null) return "Usuario";
+        if ((u.getNombre() != null && !u.getNombre().isBlank()) ||
+            (u.getApellido() != null && !u.getApellido().isBlank())) {
+            return (Optional.ofNullable(u.getNombre()).orElse("") + " " +
+                    Optional.ofNullable(u.getApellido()).orElse("")).trim();
+        }
+        if (u.getUsername() != null) return u.getUsername();
+        if (u.getMail() != null) return u.getMail();
+        return "Usuario " + u.getId();
     }
 
 

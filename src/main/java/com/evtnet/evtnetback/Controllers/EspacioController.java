@@ -32,13 +32,6 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         IdResponse id = espacioService.crearEspacioPrivado(dto, usuarioActualId);
         return ResponseEntity.created(URI.create("/api/espacios/" + id.getId())).body(id);
     }
-@RestController
-@RequestMapping("/espacios")
-public class EspacioController extends BaseControllerImpl <Espacio, EspacioServiceImpl> {
-
-    private final EspacioService espacioService;
-    public EspacioController(EspacioService service) { this.espacioService = service; }
-
     /*// #US_ESP_1: Registrar espacio privado
     @PostMapping("crear")
     public ResponseEntity<IdResponse> crear(@Valid @RequestBody DTOCrearEspacio dto) {
@@ -51,7 +44,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
     /*@GetMapping("/{id}")
     public DTOEspacioDetalle detalle(@PathVariable Long id) {
         return espacioService.detalle(id);
-    }*/
+    }
     // detalle (flujo post-crear)
     @GetMapping("/{id}")
     public DTOEspacioDetalle detalle(@PathVariable Long id) {
@@ -76,23 +69,8 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception ignored) {}
         return 1L;
     }
-    // === helper para extraer el userId del contexto de seguridad ===
-    private Long currentUserId() {
-        try {
-            var auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() != null) {
-                Object p = auth.getPrincipal();
-                // Si se usa un CustomUserDetails con getId():
-                try { return (Long) p.getClass().getMethod("getId").invoke(p); }
-                catch (Exception ignored) {}
-                // Si el username es el id:
-                if (p instanceof org.springframework.security.core.userdetails.User u) {
-                    return Long.valueOf(u.getUsername());
-                }
-            }
-        } catch (Exception ignored) {}
-        return 1L;
-    }
+    
 }
+
+
 

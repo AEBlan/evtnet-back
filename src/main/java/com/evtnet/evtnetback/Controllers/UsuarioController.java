@@ -277,4 +277,15 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     public ResponseEntity<DTOSupereventosUsuario> adminObtenerSupereventosUsuario(@RequestParam String username) throws Exception {
         return ResponseEntity.ok(service.adminObtenerSupereventosUsuario(username));
     }
+    // --- Admin: info adicional del usuario (grupos, interacciones) ---
+
+    @GetMapping("/adminObtenerGruposUsuario")
+    public ResponseEntity<DTOGruposUsuario> adminObtenerGruposUsuario(@RequestParam String username) {
+        return ResponseEntity.ok(service.adminObtenerGruposUsuario(username));
+    }
+
+    @GetMapping("/adminObtenerInteraccionesUsuario")
+    public ResponseEntity<DTOInteraccionesUsuario> adminObtenerInteraccionesUsuario(@RequestParam String username) {
+        return ResponseEntity.ok(service.adminObtenerInteraccionesUsuario(username));
+    }
 }

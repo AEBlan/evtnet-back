@@ -467,7 +467,7 @@ WHERE NOT EXISTS (
   SELECT 1 FROM motivo_calificacion 
   WHERE LOWER(nombre)='grosero' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
 );
-
+/*
 -- Recomendado: ejecutar en una transacción para poder revertir si algo falla
 START TRANSACTION;
 
@@ -557,5 +557,59 @@ VALUES
 -- Usualmente: id AI, fecha_hora_alta, fecha_hora_baja, usuario_id, evento_id, etc.
 INSERT INTO inscripcion (fecha_hora_alta, fecha_hora_baja,permitir_devolucion_completa, usuario_id, evento_id)
 VALUES (NOW() - INTERVAL 12 HOUR, NULL, 1,@id_sam, @id_evento1);
+
+COMMIT;*/
+
+START TRANSACTION;
+
+-- ===================== CHATS (obligatorios para los grupos) =====================
+INSERT INTO chat (id, tipo, fecha_hora_alta, fecha_hora_baja, usuario1_id, usuario2_id)
+VALUES
+  (600, 'ESPACIO', '2025-06-01 10:00:00', NULL, NULL, NULL),
+  (601, 'ESPACIO', '2025-06-15 12:00:00', NULL, NULL, NULL)
+ON DUPLICATE KEY UPDATE tipo=VALUES(tipo);
+
+-- ===================== GRUPOS =====================
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+VALUES
+  (100, 'Grupo de Fútbol', 'Grupo sobre fútbol', 600),
+  (101, 'Grupo de Pádel',  'Grupo sobre pádel',  601)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), chat_id=VALUES(chat_id);
+
+-- ===================== TIPOS DE USUARIO-GRUPO =====================
+INSERT INTO tipo_usuario_grupo (id, nombre, fecha_hora_alta)
+VALUES
+  (12, 'Administrador', '2025-01-01 00:00:00'),
+  (13, 'Miembro',       '2025-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+
+-- ===================== USUARIO_GRUPO =====================
+-- ⚠️ Ajusté para usar los IDs correctos de tipo_usuario_grupo (12 y 13, no 10 y 11)
+INSERT INTO usuario_grupo (id, usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+VALUES
+  (1000, 1, 100, 12, '2025-06-01 10:00:00'),  -- luly Admin en Grupo de Fútbol
+  (1001, 1, 101, 13, '2025-07-01 15:00:00'),  -- luly Miembro en Grupo de Pádel
+  (1002, 2, 100, 13, '2025-06-02 11:00:00')   -- juan Miembro en Grupo de Fútbol
+ON DUPLICATE KEY UPDATE tipo_usuario_grupo_id=VALUES(tipo_usuario_grupo_id);
+
+-- ===================== EVENTOS =====================
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, organizador_id)
+VALUES
+  (200, 'Torneo Fútbol 5', 'Evento de fútbol', '2025-07-10 20:00:00', '2025-07-10 22:00:00', 1),
+  (201, 'Partido Pádel',   'Encuentro de pádel','2025-08-05 19:00:00', '2025-08-05 21:00:00', 1)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+
+-- ===================== ESPACIOS =====================
+INSERT INTO espacio (id, nombre, descripcion, fecha_hora_alta, fecha_hora_baja, propietario_id)
+VALUES
+  (300, 'Cancha Techada',        'Cancha indoor',              '2025-06-20 09:00:00', NULL, 1),
+  (301, 'Polideportivo Central', 'Polideportivo municipal',    '2025-06-25 09:00:00', NULL, 1)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+
+-- ===================== SUPER EVENTO =====================
+INSERT INTO super_evento (id, nombre, descripcion, usuario_id)
+VALUES
+  (400, 'Liga UTN', 'Super evento de deportes universitarios', 1)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
 
 COMMIT;

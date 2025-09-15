@@ -2,11 +2,15 @@
 package com.evtnet.evtnetback.Repositories;
 
 import com.evtnet.evtnetback.Entities.Evento;
+
+import com.evtnet.evtnetback.Repositories.BaseRepository;
+
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -44,4 +48,6 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     """)
     boolean existsByEventoIdAndAdministradorUsername(@Param("eventoId") Long eventoId,
                                                      @Param("username") String username);
+    List<Evento> findAllByOrganizador_Username(String username);
+
 }

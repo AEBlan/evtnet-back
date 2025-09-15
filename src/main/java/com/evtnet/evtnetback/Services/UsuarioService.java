@@ -80,4 +80,8 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
     DTOEventosUsuario adminObtenerEventosUsuario(String username) throws Exception;
     DTOEspaciosUsuario adminObtenerEspaciosUsuario(String username) throws Exception;
     DTOSupereventosUsuario adminObtenerSupereventosUsuario(String username) throws Exception;
+
+    // Obtener grupos/interacciones de un usuario (admin)
+    DTOGruposUsuario adminObtenerGruposUsuario(String username);
+    DTOInteraccionesUsuario adminObtenerInteraccionesUsuario(String username);
 }

@@ -63,8 +63,8 @@ public class Espacio extends Base {
     @JoinColumn(name = "solicitud_espacio_publico_id")
     private SolicitudEspacioPublico solicitudEspacioPublico;
 
-    @OneToOne(mappedBy = "espacio", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private Chat chat;
+    @OneToMany(mappedBy = "espacio", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Chat> chats;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "propietario_id", nullable = false)
