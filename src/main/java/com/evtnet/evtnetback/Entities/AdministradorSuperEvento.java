@@ -28,11 +28,6 @@ public class AdministradorSuperEvento extends Base {
     @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
 
-    // muchos administradores -> un usuario (organizador)
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "organizador_id", nullable = false)
-    private Usuario organizador;
-
     // muchos administradores -> un super evento
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "super_evento_id", nullable = false)

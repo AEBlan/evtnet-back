@@ -2,6 +2,9 @@ package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.Usuario;
 import com.evtnet.evtnetback.dto.usuarios.*;
+
+import com.evtnet.evtnetback.Services.BaseService;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
@@ -68,4 +71,13 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
     void bajaUsuario(String username) throws Exception;
     void altaUsuario(DTOAltaUsuario dto) throws Exception;
     void modificarUsuario(DTOModificarUsuario dto) throws Exception;
+
+    // Buscar usuarios (admin)
+    Page<DTOResultadoBusquedaUsuario> adminBuscarUsuarios(DTOFiltrosBusquedaUsuarios filtros, Pageable pageable) throws Exception;
+    DTOUsuarioCompleto adminObtenerUsuarioCompleto(String username) throws Exception;
+
+    // Obtener eventos/espacios/supereventos de un usuario (admin)
+    DTOEventosUsuario adminObtenerEventosUsuario(String username) throws Exception;
+    DTOEspaciosUsuario adminObtenerEspaciosUsuario(String username) throws Exception;
+    DTOSupereventosUsuario adminObtenerSupereventosUsuario(String username) throws Exception;
 }

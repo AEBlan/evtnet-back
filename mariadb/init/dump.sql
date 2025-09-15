@@ -92,12 +92,12 @@ WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Finalizado'
 -- CalificacionTipo (tiene fechas opcionales)
 -- =========================
 INSERT INTO calificacion_tipo (nombre, fecha_hora_alta)
-SELECT 'Normal', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Normal');
+SELECT 'Calificacion Normal', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Calificacion Normal');
 
 INSERT INTO calificacion_tipo (nombre, fecha_hora_alta)
-SELECT 'Denuncia', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Denuncia');
+SELECT 'Calificacion Denuncia', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Calificacion Denuncia');
 
 -- =========================
 -- TipoUsuarioGrupo (fecha_hora_alta NOT NULL)
@@ -467,3 +467,95 @@ WHERE NOT EXISTS (
   SELECT 1 FROM motivo_calificacion 
   WHERE LOWER(nombre)='grosero' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
 );
+
+-- Recomendado: ejecutar en una transacción para poder revertir si algo falla
+START TRANSACTION;
+
+-- ====== USUARIOS ======
+-- Campos vistos en logs: id (AI), cbu, apellido, contrasena, dni, fecha_baja, fecha_hora_alta, fecha_hora_baja,
+-- fecha_nacimiento, foto_perfil, mail, nombre, username
+
+INSERT INTO usuario
+(nombre, apellido, username, dni, mail, fecha_nacimiento, foto_perfil, contrasena, CBU,
+ fecha_hora_alta, fecha_hora_baja, fecha_baja)
+VALUES
+('Jose', 'Pérez', 'luly', '12345678', 'sara2608min@gmail.com', '1990-08-26 00:00:00', NULL,
+ -- contrasena: usá algo ya codificado en tu sistema; para pruebas puede ser texto si no logueás con esto
+ '$2a$10$abcdefghijklmnopqrstuv', '0011223344556677889900',
+ NOW(), NULL, NULL),
+('sara', 'rodriguez', 'sam', '23456789', 'admin@example.com', '1995-02-10 00:00:00', NULL,
+ '$2a$10$abcdefghijklmnopqrstuv', NULL,
+ NOW(), NULL, NULL);
+
+-- Guardamos IDs para referencia (si tu cliente permite variables)
+-- Si no, obtenelos con un SELECT luego.
+SET @id_luly = (SELECT id FROM usuario WHERE username='luly');
+SET @id_sam  = (SELECT id FROM usuario WHERE username='sam');
+
+-- ====== ESPACIOS ======
+-- Tabla: espacio
+-- Campos clave: nombre, descripcion, fecha_hora_alta, fecha_hora_baja, direccion_ubicacion,
+-- latitud_ubicacion, longitud_ubicacion, propietario_id (FK usuario)
+
+INSERT INTO espacio
+(nombre, descripcion, fecha_hora_alta, fecha_hora_baja, direccion_ubicacion,
+ latitud_ubicacion, longitud_ubicacion, propietario_id)
+VALUES
+('Cancha Central', 'Cancha techada multiuso', NOW(), NULL, 'Calle 123',
+  -34.6037, -58.3816, @id_luly);
+
+SET @id_espacio1 = LAST_INSERT_ID();
+
+-- ====== SUPER EVENTO ======
+-- Tabla: super_evento
+-- Campos: nombre, descripcion, usuario_id (organizador/owner)
+INSERT INTO super_evento
+(nombre, descripcion, usuario_id)
+VALUES
+('Liga Primavera', 'Super torneo de primavera', @id_luly);
+
+SET @id_se1 = LAST_INSERT_ID();
+
+-- ====== EVENTOS ======
+-- Tabla: evento
+-- Campos vistos: nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, direccion_ubicacion,
+-- longitud_ubicacion, latitud_ubicacion, precio_inscripcion, cantidad_maxima_invitados,
+-- cantidad_maxima_participantes, precio_organizacion, super_evento_id, espacio_id, organizador_id
+
+INSERT INTO evento
+(nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, direccion_ubicacion,
+ longitud_ubicacion, latitud_ubicacion, precio_inscripcion, cantidad_maxima_invitados,
+ cantidad_maxima_participantes, precio_organizacion, super_evento_id, espacio_id, organizador_id)
+VALUES
+('Fecha 1', 'Apertura de la liga', NOW() + INTERVAL 1 DAY, NOW() + INTERVAL 1 DAY + INTERVAL 2 HOUR,
+ 'Calle 123', -58.3816, -34.6037, 100.00, 10, 20, 0.00, @id_se1, @id_espacio1, @id_luly),
+('Fecha 2', 'Segunda fecha', NOW() + INTERVAL 8 DAY, NOW() + INTERVAL 8 DAY + INTERVAL 3 HOUR,
+ 'Calle 123', -58.3816, -34.6037, 120.00, 10, 20, 0.00, @id_se1, @id_espacio1, @id_luly);
+
+-- Guardamos IDs de eventos
+SET @id_evento1 = (SELECT id FROM evento WHERE nombre='Fecha 1' ORDER BY id DESC LIMIT 1);
+SET @id_evento2 = (SELECT id FROM evento WHERE nombre='Fecha 2' ORDER BY id DESC LIMIT 1);
+
+-- ====== ADMINISTRADORES ======
+-- Tabla: administrador_espacio (campos habituales: id AI, fecha_baja, fecha_hora_alta, fecha_hora_baja, espacio_id, usuario_id)
+INSERT INTO administrador_espacio (fecha_baja, fecha_hora_alta, fecha_hora_baja, espacio_id, usuario_id)
+VALUES (NULL, NOW() - INTERVAL 2 DAY, NULL, @id_espacio1, @id_sam);
+
+-- Tabla: administrador_evento (id AI, fecha_baja, fecha_hora_alta, fecha_hora_baja, evento_id, usuario_id)
+INSERT INTO administrador_evento (fecha_baja, fecha_hora_alta, fecha_hora_baja, evento_id, usuario_id)
+VALUES (NULL, NOW() - INTERVAL 1 DAY, NULL, @id_evento2, @id_sam);
+
+-- Tabla: administrador_super_evento
+-- Por los logs: columnas: id, fecha_baja, fecha_hora_alta, fecha_hora_baja, organizador_id, super_evento_id, usuario_id
+INSERT INTO administrador_super_evento
+(fecha_baja, fecha_hora_alta, fecha_hora_baja, super_evento_id, usuario_id)
+VALUES
+(NULL, NOW() - INTERVAL 3 DAY, NULL, @id_se1, @id_sam);
+
+-- ====== INSCRIPCIÓN (para que SAM aparezca como participante del Evento 1) ======
+-- Ajustá los nombres de columnas de tu tabla de inscripciones si varían.
+-- Usualmente: id AI, fecha_hora_alta, fecha_hora_baja, usuario_id, evento_id, etc.
+INSERT INTO inscripcion (fecha_hora_alta, fecha_hora_baja,permitir_devolucion_completa, usuario_id, evento_id)
+VALUES (NOW() - INTERVAL 12 HOUR, NULL, 1,@id_sam, @id_evento1);
+
+COMMIT;
