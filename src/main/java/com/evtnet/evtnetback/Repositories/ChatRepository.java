@@ -8,8 +8,6 @@ import org.springframework.data.repository.query.Param;
 
 import com.evtnet.evtnetback.Entities.Chat;
 
-import com.evtnet.evtnetback.Repositories.BaseRepository;
-
 public interface ChatRepository extends BaseRepository <Chat, Long> {
 
     // ✅ Para listar directos de un usuario (6 args)

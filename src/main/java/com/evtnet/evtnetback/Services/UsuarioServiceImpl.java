@@ -10,8 +10,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 
-import java.time.LocalDateTime;
-
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,14 +22,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.SecureRandom;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;                         // <<< IMPORT NECESARIO
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
 
 @Service
 public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implements UsuarioService {
@@ -54,6 +48,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final EspacioRepository espacioRepository;
     private final SuperEventoRepository superEventoRepository;
     private final ChatRepository chatRepository;
+    private final DenunciaEventoRepository denunciaEventoRepository;
+    //private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepository;
+    //private final EstadoDenunciaEventoRepository estadoDenunciaEventoRepository;
 
 
     // Directorio para fotos de perfil (montá un volumen)
@@ -86,8 +83,10 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             EventoRepository eventoRepository,
             EspacioRepository espacioRepository,
             SuperEventoRepository superEventoRepository,
-            ChatRepository chatRepository
-            
+            ChatRepository chatRepository,
+            DenunciaEventoRepository denunciaEventoRepository
+            //DenunciaEventoEstadoRepository denunciaEventoEstadoRepository,
+            //EstadoDenunciaEventoRepository estadoDenunciaEventoRepository
             
 ) {
         super(baseRepository);
@@ -109,6 +108,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         this.espacioRepository = espacioRepository;
         this.superEventoRepository = superEventoRepository;
         this.chatRepository = chatRepository;
+        this.denunciaEventoRepository = denunciaEventoRepository;
+        //this.denunciaEventoEstadoRepository = denunciaEventoEstadoRepository;
+        //this.estadoDenunciaEventoRepository = estadoDenunciaEventoRepository;
 
 }
 
@@ -1506,6 +1508,12 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         return "Usuario " + u.getId();
     }
 
+    // --- Denuncias ---
+    @Override
+    public Page<DTODenunciaUsuario> obtenerDenunciasUsuario(String username, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return denunciaEventoRepository.pageDenunciasUsuario(username, pageable);
+    }
 
 
 }

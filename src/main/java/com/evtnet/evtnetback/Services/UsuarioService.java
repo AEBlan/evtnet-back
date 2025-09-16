@@ -3,8 +3,6 @@ package com.evtnet.evtnetback.Services;
 import com.evtnet.evtnetback.Entities.Usuario;
 import com.evtnet.evtnetback.dto.usuarios.*;
 
-import com.evtnet.evtnetback.Services.BaseService;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
@@ -84,4 +82,7 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
     // Obtener grupos/interacciones de un usuario (admin)
     DTOGruposUsuario adminObtenerGruposUsuario(String username);
     DTOInteraccionesUsuario adminObtenerInteraccionesUsuario(String username);
+
+    //Denuncias
+    Page<DTODenunciaUsuario> obtenerDenunciasUsuario(String username, int page, int size);
 }

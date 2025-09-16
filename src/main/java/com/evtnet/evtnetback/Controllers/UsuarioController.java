@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.*;
@@ -24,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServiceImpl> {
 
     private final UsuarioService service;
-
     // --- Auth ---
     @PostMapping("/iniciarSesion")
     public ResponseEntity<DTOAuth> iniciarSesion(@RequestParam String mail, @RequestParam String password) throws Exception {
@@ -287,5 +287,21 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     @GetMapping("/adminObtenerInteraccionesUsuario")
     public ResponseEntity<DTOInteraccionesUsuario> adminObtenerInteraccionesUsuario(@RequestParam String username) {
         return ResponseEntity.ok(service.adminObtenerInteraccionesUsuario(username));
+    }
+    // --- Denuncias ---
+    @GetMapping("/obtenerDenunciasUsuario")
+    public ResponseEntity<Page<DTODenunciaUsuario>> obtenerDenunciasUsuario(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size
+    ) {
+        String username = currentUsername();
+        return ResponseEntity.ok(service.obtenerDenunciasUsuario(username, page, size));
+    }
+
+    private String currentUsername() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        return (auth != null && auth.getName() != null && !auth.getName().isBlank())
+                ? auth.getName()
+                : "luly"; // fallback para dev
     }
 }
