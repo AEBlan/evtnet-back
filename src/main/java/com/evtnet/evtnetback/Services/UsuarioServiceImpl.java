@@ -9,7 +9,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
-
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,6 +65,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
     @Value("${app.storage.calificaciones:/app/uploads/calificaciones}")
     private String calificacionesDir;
+
+    @Value("${app.front.resetBaseUrl:http://localhost:5173/usuarios/restablecerContrasena}")
+    private String resetBaseUrl;
 
     public UsuarioServiceImpl(
             BaseRepository<Usuario, Long> baseRepository,
@@ -203,6 +208,59 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
                 Si no solicitaste este código, podés ignorar este mensaje.
                 """.formatted(meta.code, RESET_TTL.toMinutes());
+
+        mailService.enviar(m, subject, body);
+    }
+
+
+    @Value("${app.frontend.base-url:https://localhost:5173}")
+    private String frontendBaseUrl;
+
+    @Value("${app.frontend.invite-path:/usuarios/restablecerContrasena}")
+    private String invitePath;
+
+    /**
+     * Envía un código de invitación + link para que el usuario cree su contraseña.
+     */
+    public void enviarCodigoAltaUsuario(String mail) {
+        String m = normalizeMail(mail);
+        Instant now = Instant.now();
+
+        if (!usuarioRepository.existsByMail(m)) {
+            throw new IllegalArgumentException("Mail no registrado");
+        }
+
+        CodeMeta meta = codigosRecuperoPorMail.get(m);
+        if (meta == null || meta.expired(now)) {
+            meta = new CodeMeta(generateCode(), now);
+            codigosRecuperoPorMail.put(m, meta);
+        } else {
+            if (!meta.canResend(now)) return; // anti-spam silencioso
+            meta.markResent(now);
+        }
+
+        // Armamos el link directo con mail y codigo como query params
+        String inviteUrl = UriComponentsBuilder
+                .fromHttpUrl(frontendBaseUrl)
+                .path(invitePath)
+                .queryParam("mail", m)
+                .queryParam("codigo", meta.code)        // el front lo leerá del query string
+                .build()
+                .toUriString();
+
+        String subject = "Creá tu contraseña para acceder";
+        String body = """
+                ¡Hola!
+
+                Tu cuenta fue creada por un administrador.
+                Usá este código para crear tu contraseña: %s
+                El código expira en %d minutos.
+
+                También podés entrar directamente con este enlace:
+                %s
+
+                Si no esperabas este correo, podés ignorarlo.
+                """.formatted(meta.code, RESET_TTL.toMinutes(), inviteUrl);
 
         mailService.enviar(m, subject, body);
     }
@@ -1039,6 +1097,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 );
             }
         }
+        enviarCodigoAltaUsuario(u.getMail());
+
     }
 
     // -------------------------
