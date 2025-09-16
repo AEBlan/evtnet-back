@@ -11,9 +11,6 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import lombok.extern.slf4j.Slf4j;
 
-
-import com.evtnet.evtnetback.Repositories.BaseRepository;
-
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.beans.factory.annotation.Value;
@@ -291,10 +288,21 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
     @Override
     public DTOAuth login(String mail, String password) throws Exception {
-        Usuario u = usuarioRepository.findByMail(mail)
-                .orElseThrow(() -> new Exception("Usuario no encontrado"));
-        if (!passwordEncoder.matches(password, u.getContrasena()))
+        Usuario u;
+
+        // si contiene "@" lo tratamos como mail
+        if (mail.contains("@")) {
+            u = usuarioRepository.findByMail(mail)
+                    .orElseThrow(() -> new Exception("Usuario no encontrado por mail"));
+        } else {
+            u = usuarioRepository.findByUsername(mail)
+                    .orElseThrow(() -> new Exception("Usuario no encontrado por username"));
+        }
+
+        if (!passwordEncoder.matches(password, u.getContrasena())) {
             throw new Exception("Credenciales inválidas");
+        }
+
         return authFromUser(u);
     }
 

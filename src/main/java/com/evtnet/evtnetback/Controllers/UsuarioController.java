@@ -27,7 +27,9 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     private final UsuarioService service;
     // --- Auth ---
     @PostMapping("/iniciarSesion")
-    public ResponseEntity<DTOAuth> iniciarSesion(@RequestParam String mail, @RequestParam String password) throws Exception {
+    public ResponseEntity<DTOAuth> iniciarSesion(
+            @RequestParam String mail,
+            @RequestParam String password) throws Exception {
         return ResponseEntity.ok(service.login(mail, password));
     }
 
