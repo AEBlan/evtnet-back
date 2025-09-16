@@ -318,387 +318,581 @@ WHERE NOT EXISTS (
   SELECT 1 FROM rol_usuario WHERE usuario_id=@u_admin AND rol_id=(SELECT id FROM rol WHERE nombre='Administrador' LIMIT 1)
 );
 
--- =======================
--- Espacios
--- =======================
+USE evtnet_db;
+START TRANSACTION;
+
+-- =====================================================
+-- 0) MINIMOS (por si faltan)
+-- =====================================================
+-- Tipo de espacio básicos
+INSERT INTO tipo_espacio (nombre, descripcion, fecha_hora_alta)
+SELECT 'Privado', 'Espacio privado', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE nombre='Privado');
+
+INSERT INTO tipo_espacio (nombre, descripcion, fecha_hora_alta)
+SELECT 'Público', 'Espacio público', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE nombre='Público');
+
+-- Tipo usuario grupo
+INSERT INTO tipo_usuario_grupo (nombre, fecha_hora_alta)
+SELECT 'Administrador', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Administrador');
+
+INSERT INTO tipo_usuario_grupo (nombre, fecha_hora_alta)
+SELECT 'Miembro', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Miembro');
+
+-- Estado de denuncia básico
+INSERT INTO estado_denuncia_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Ingresado','Denuncia creada', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Ingresado');
+
+INSERT INTO estado_denuncia_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Finalizado','Denuncia cerrada', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Finalizado');
+
+-- Calificación tipo
+INSERT INTO calificacion_tipo (nombre, fecha_hora_alta)
+SELECT 'Calificacion Normal', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Calificacion Normal');
+
+-- Medio de pago / comisiones (para comprobantes)
+INSERT INTO medio_de_pago (nombre)
+SELECT 'Mercado Pago' WHERE NOT EXISTS (SELECT 1 FROM medio_de_pago WHERE nombre='Mercado Pago');
+
+INSERT INTO comision_por_inscripcion (fecha_desde, fecha_hasta, monto_limite, porcentaje)
+SELECT NOW(), NULL, 100000.00, 5.00
+WHERE NOT EXISTS (SELECT 1 FROM comision_por_inscripcion);
+
+INSERT INTO comision_por_organizacion (fecha_desde, fecha_hasta, monto_limite, porcentaje)
+SELECT NOW(), NULL, 250000.00, 7.50
+WHERE NOT EXISTS (SELECT 1 FROM comision_por_organizacion);
+
+-- =====================================================
+-- 1) USUARIOS BASE (se suman a los 3 que ya tienes)
+-- =====================================================
+INSERT INTO usuario (nombre, apellido, username, dni, mail, fecha_nacimiento, contrasena, cbu, fecha_hora_alta)
+SELECT 'Carolina','Suarez','carol','33333333','carol@example.com','1992-03-10 00:00:00',
+       '$2a$10$abcdefghijklmnopqrstuv','CBU0003', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE username='carol');
+
+INSERT INTO usuario (nombre, apellido, username, dni, mail, fecha_nacimiento, contrasena, cbu, fecha_hora_alta)
+SELECT 'Luis','Pérez','luly','44444444','luly@example.com','1994-04-15 00:00:00',
+       '$2a$10$abcdefghijklmnopqrstuv','0011223344556677889900', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE username='luly');
+
+INSERT INTO usuario (nombre, apellido, username, dni, mail, fecha_nacimiento, contrasena, cbu, fecha_hora_alta)
+SELECT 'Samuel','Rodriguez','sam','55555555','sam@example.com','1995-05-20 00:00:00',
+       '$2a$10$abcdefghijklmnopqrstuv',NULL, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE username='sam');
+
+-- =====================================================
+-- 2) ICONOS (según tu entidad: imagen + fecha_hora_alta)
+-- =====================================================
+INSERT INTO icono_caracteristica (imagen, fecha_hora_alta)
+SELECT '/icons/bano.png', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM icono_caracteristica WHERE imagen='/icons/bano.png');
+
+INSERT INTO icono_caracteristica (imagen, fecha_hora_alta)
+SELECT '/icons/cocina.svg', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM icono_caracteristica WHERE imagen='/icons/cocina.svg');
+
+INSERT INTO icono_caracteristica (imagen, fecha_hora_alta)
+SELECT '/icons/estacionamiento.svg', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM icono_caracteristica WHERE imagen='/icons/estacionamiento.svg');
+
+INSERT INTO icono_caracteristica (imagen, fecha_hora_alta)
+SELECT '/icons/wifi.png', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM icono_caracteristica WHERE imagen='/icons/wifi.png');
+
+-- =====================================================
+-- 3) ESPACIOS (propietarios existentes)
+-- =====================================================
 INSERT INTO espacio
 (nombre, descripcion, fecha_hora_alta, direccion_ubicacion, latitud_ubicacion, longitud_ubicacion, tipo_espacio_id, propietario_id)
-SELECT 'Espacio Fantasioso 1', 'Espacio de prueba para eventos', NOW(),
-       'Avenida Siempreviva 742', -34.603722, -58.381592,
+SELECT 'Espacio Fantasioso 1','Espacio de prueba para eventos',NOW(),'Avenida Siempreviva 742',-34.603722,-58.381592,
        (SELECT id FROM tipo_espacio WHERE nombre='Privado' LIMIT 1),
-       @u_admin
+       (SELECT id FROM usuario WHERE username='adminevt' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE nombre='Espacio Fantasioso 1');
 
 INSERT INTO espacio
 (nombre, descripcion, fecha_hora_alta, direccion_ubicacion, latitud_ubicacion, longitud_ubicacion, tipo_espacio_id, propietario_id)
-SELECT 'Polideportivo Centro', 'Polideportivo multiuso', NOW(),
-       'Calle Falsa 123', -34.60, -58.40,
+SELECT 'Polideportivo Centro','Polideportivo multiuso',NOW(),'Calle Falsa 123',-34.600000,-58.400000,
        (SELECT id FROM tipo_espacio WHERE nombre='Público' LIMIT 1),
-       @u_admin
+       (SELECT id FROM usuario WHERE username='carol' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE nombre='Polideportivo Centro');
 
-SET @esp1 := (SELECT id FROM espacio WHERE nombre='Espacio Fantasioso 1' LIMIT 1);
+-- =====================================================
+-- 4) CARACTERISTICAS (ahora sí, referenciando iconos existentes)
+-- =====================================================
+INSERT INTO caracteristica (nombre, espacio_id, icono_caracteristica_id)
+SELECT 'Baño',
+       (SELECT id FROM espacio WHERE nombre='Polideportivo Centro' LIMIT 1),
+       (SELECT id FROM icono_caracteristica WHERE imagen='/icons/bano.png' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM caracteristica 
+  WHERE nombre='Baño' 
+    AND espacio_id=(SELECT id FROM espacio WHERE nombre='Polideportivo Centro' LIMIT 1)
+);
 
--- =======================
+INSERT INTO caracteristica (nombre, espacio_id, icono_caracteristica_id)
+SELECT 'Estacionamiento',
+       (SELECT id FROM espacio WHERE nombre='Polideportivo Centro' LIMIT 1),
+       (SELECT id FROM icono_caracteristica WHERE imagen='/icons/estacionamiento.svg' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM caracteristica 
+  WHERE nombre='Estacionamiento' 
+    AND espacio_id=(SELECT id FROM espacio WHERE nombre='Polideportivo Centro' LIMIT 1)
+);
+
+INSERT INTO caracteristica (nombre, espacio_id, icono_caracteristica_id)
+SELECT 'Cocina',
+       (SELECT id FROM espacio WHERE nombre='Espacio Fantasioso 1' LIMIT 1),
+       (SELECT id FROM icono_caracteristica WHERE imagen='/icons/cocina.svg' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM caracteristica 
+  WHERE nombre='Cocina' 
+    AND espacio_id=(SELECT id FROM espacio WHERE nombre='Espacio Fantasioso 1' LIMIT 1)
+);
+
+INSERT INTO caracteristica (nombre, espacio_id, icono_caracteristica_id)
+SELECT 'WiFi',
+       (SELECT id FROM espacio WHERE nombre='Espacio Fantasioso 1' LIMIT 1),
+       (SELECT id FROM icono_caracteristica WHERE imagen='/icons/wifi.png' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM caracteristica 
+  WHERE nombre='WiFi' 
+    AND espacio_id=(SELECT id FROM espacio WHERE nombre='Espacio Fantasioso 1' LIMIT 1)
+);
+
+-- =====================================================
+-- 5) SUPEREVENTO + EVENTOS (organizadores existentes)
+-- =====================================================
+INSERT INTO super_evento (nombre, descripcion, usuario_id)
+SELECT 'Liga Primavera','Super torneo de primavera',
+       (SELECT id FROM usuario WHERE username='luly' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM super_evento WHERE nombre='Liga Primavera');
+
 -- Evento principal
--- =======================
 INSERT INTO evento
-(nombre, descripcion, fecha_hora_inicio, fecha_hora_fin,
- direccion_ubicacion, longitud_ubicacion, latitud_ubicacion,
+(nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, direccion_ubicacion, longitud_ubicacion, latitud_ubicacion,
  precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes, precio_organizacion,
- tipo_inscripcion_evento_id, modo_evento_id, espacio_id, organizador_id)
+ super_evento_id, espacio_id, organizador_id, tipo_inscripcion_evento_id, modo_evento_id)
 SELECT
- 'Evento Fantástico 1',
- '¡En este evento conocerás muchas personas y formarás amistades para toda tu vida!',
- DATE_ADD(NOW(), INTERVAL 3 DAY),
- DATE_ADD(DATE_ADD(NOW(), INTERVAL 3 DAY), INTERVAL 2 HOUR),
- 'Avenida Siempreviva 742', -58.381592, -34.603722,
- 2200.00, 2, 10, 10000.00,
+ 'Fecha 1','Apertura de la liga', NOW() + INTERVAL 1 DAY, NOW() + INTERVAL 1 DAY + INTERVAL 2 HOUR,
+ 'Calle 123', -58.3816, -34.6037, 100.00, 10, 20, 0.00,
+ (SELECT id FROM super_evento WHERE nombre='Liga Primavera' LIMIT 1),
+ (SELECT id FROM espacio WHERE nombre='Polideportivo Centro' LIMIT 1),
+ (SELECT id FROM usuario WHERE username='luly' LIMIT 1),
  (SELECT id FROM tipo_inscripcion_evento WHERE nombre='Inscripción por Usuario' LIMIT 1),
- (SELECT id FROM modo_evento              WHERE nombre='Individual'              LIMIT 1),
- @esp1, @u_org
-WHERE NOT EXISTS (SELECT 1 FROM evento WHERE nombre='Evento Fantástico 1');
+ (SELECT id FROM modo_evento WHERE nombre='Individual' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE nombre='Fecha 1');
 
-SET @ev1 := (SELECT id FROM evento WHERE nombre='Evento Fantástico 1' LIMIT 1);
-
--- Administrador del evento
-INSERT INTO administrador_evento (fecha_hora_alta, usuario_id, evento_id)
-SELECT NOW(), @u_admin, @ev1
-WHERE NOT EXISTS (SELECT 1 FROM administrador_evento WHERE usuario_id=@u_admin AND evento_id=@ev1);
-
--- =======================
--- Disciplinas del evento (tabla de cruce DisciplinaEvento)
--- =======================
-INSERT INTO disciplina_evento (evento_id, disciplina_id)
-SELECT @ev1, (SELECT id FROM disciplina WHERE nombre='Futbol' LIMIT 1)
-WHERE NOT EXISTS (
-  SELECT 1 FROM disciplina_evento 
-  WHERE evento_id=@ev1 AND disciplina_id=(SELECT id FROM disciplina WHERE nombre='Futbol' LIMIT 1)
-);
-
-INSERT INTO disciplina_evento (evento_id, disciplina_id)
-SELECT @ev1, (SELECT id FROM disciplina WHERE nombre='Padel' LIMIT 1)
-WHERE NOT EXISTS (
-  SELECT 1 FROM disciplina_evento 
-  WHERE evento_id=@ev1 AND disciplina_id=(SELECT id FROM disciplina WHERE nombre='Padel' LIMIT 1)
-);
-
--- =======================
--- Inscripción de prueba + invitado
--- =======================
+-- =====================================================
+-- 6) INSCRIPCION + COMPROBANTE
+-- =====================================================
 INSERT INTO inscripcion (fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id)
-SELECT NOW(), 2200.00, TRUE, @u_org, @ev1
-WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE usuario_id=@u_org AND evento_id=@ev1);
+SELECT NOW(), 100.00, TRUE,
+       (SELECT id FROM usuario WHERE username='sam' LIMIT 1),
+       (SELECT id FROM evento WHERE nombre='Fecha 1' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM inscripcion 
+  WHERE usuario_id=(SELECT id FROM usuario WHERE username='sam' LIMIT 1)
+    AND evento_id=(SELECT id FROM evento WHERE nombre='Fecha 1' LIMIT 1)
+);
 
-SET @ins1 := (SELECT id FROM inscripcion WHERE usuario_id=@u_org AND evento_id=@ev1 LIMIT 1);
-
-INSERT INTO invitado (nombre, apellido, dni, inscripcion_id)
-SELECT 'Tatiana','Duran','87654321', @ins1
-WHERE NOT EXISTS (SELECT 1 FROM invitado WHERE dni='87654321' AND inscripcion_id=@ins1);
-
--- =======================
--- Comprobante de pago de ejemplo
--- =======================
 INSERT INTO comprobante_pago
 (numero, concepto, fecha_hora_emision, monto_total_bruto, forma_de_pago, comision,
  inscripcion_id, evento_id, cobro_id, pago_id, medio_de_pago_id, comision_por_inscripcion_id, comision_por_organizacion_id)
 SELECT
- 'CP-0001',
- 'Inscripción Evento Fantástico 1',
- NOW(), 2200.00, 'Online', 0.00,
- @ins1, @ev1, @u_admin, @u_org,
- (SELECT id FROM medio_de_pago              WHERE nombre='Mercado Pago' LIMIT 1),
- (SELECT id FROM comision_por_inscripcion   LIMIT 1),
- (SELECT id FROM comision_por_organizacion  LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM comprobante_pago WHERE numero='CP-0001');
+ 'CP-1001','Pago inscripción Fecha 1', NOW(), 100.00, 'Online', 0.00,
+ (SELECT id FROM inscripcion WHERE usuario_id=(SELECT id FROM usuario WHERE username='sam') AND evento_id=(SELECT id FROM evento WHERE nombre='Fecha 1')),
+ (SELECT id FROM evento WHERE nombre='Fecha 1'),
+ (SELECT id FROM usuario WHERE username='luly'),  -- cobra organizador
+ (SELECT id FROM usuario WHERE username='sam'),   -- paga participante
+ (SELECT id FROM medio_de_pago WHERE nombre='Mercado Pago'),
+ (SELECT id FROM comision_por_inscripcion LIMIT 1),
+ (SELECT id FROM comision_por_organizacion LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM comprobante_pago WHERE numero='CP-1001');
 
+-- =====================================================
+-- 7) DENUNCIA + ESTADOS
+-- =====================================================
+INSERT INTO denuncia_evento (titulo, descripcion, evento_id, inscripcion_id, denunciante_id)
+SELECT 'Juego brusco','Faltas fuertes no sancionadas.',
+       (SELECT id FROM evento WHERE nombre='Fecha 1' LIMIT 1),
+       NULL,
+       (SELECT id FROM usuario WHERE username='mara' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM denuncia_evento WHERE titulo='Juego brusco');
 
--- TipoCalificacion (verde)
-INSERT INTO tipo_calificacion (nombre) SELECT 'Buena' WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE LOWER(nombre)='buena');
-INSERT INTO tipo_calificacion (nombre) SELECT 'Media' WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE LOWER(nombre)='media');
-INSERT INTO tipo_calificacion (nombre) SELECT 'Mala'  WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE LOWER(nombre)='mala');
+INSERT INTO denuncia_evento_estado
+(descripcion, fecha_hora_desde, fecha_hora_hasta, estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
+SELECT 'Creada por mara', NOW(), NULL,
+       (SELECT id FROM estado_denuncia_evento WHERE nombre='Ingresado' LIMIT 1),
+       (SELECT id FROM denuncia_evento WHERE titulo='Juego brusco' LIMIT 1),
+       NULL
+WHERE NOT EXISTS (SELECT 1 FROM denuncia_evento_estado WHERE descripcion='Creada por mara' AND denuncia_evento_id=(SELECT id FROM denuncia_evento WHERE titulo='Juego brusco' LIMIT 1));
 
--- MotivoCalificacion (verde) usando subselects
-INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
-SELECT 'Puntual', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+INSERT INTO denuncia_evento_estado
+(descripcion, fecha_hora_desde, fecha_hora_hasta, estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
+SELECT 'En revisión por admin', NOW(), NULL,
+       (SELECT id FROM estado_denuncia_evento WHERE nombre='Finalizado' LIMIT 1),
+       (SELECT id FROM denuncia_evento WHERE titulo='Juego brusco' LIMIT 1),
+       (SELECT id FROM usuario WHERE username='adminevt' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM denuncia_evento_estado WHERE descripcion='En revisión por admin' AND denuncia_evento_id=(SELECT id FROM denuncia_evento WHERE titulo='Juego brusco' LIMIT 1));
+
+-- =====================================================
+-- 8) CALIFICACION (usuario a usuario)
+-- =====================================================
+INSERT INTO calificacion (descripcion, fecha_hora, calificacion_tipo_id, autor_id, calificado_id)
+SELECT 'Muy puntual y colaborador', NOW(),
+       (SELECT id FROM calificacion_tipo WHERE nombre='Calificacion Normal' LIMIT 1),
+       (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1),
+       (SELECT id FROM usuario WHERE username='sam' LIMIT 1)
 WHERE NOT EXISTS (
-  SELECT 1 FROM motivo_calificacion 
-  WHERE LOWER(nombre)='puntual' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+  SELECT 1 FROM calificacion 
+  WHERE autor_id=(SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1)
+    AND calificado_id=(SELECT id FROM usuario WHERE username='sam' LIMIT 1)
+    AND descripcion='Muy puntual y colaborador'
 );
 
-INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
-SELECT 'Colaborador', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+-- =====================================================
+-- 9) CHAT DE GRUPO + GRUPO + USUARIOS + MENSAJES
+--     (chat tipo ESPACIO asociado a "Polideportivo Centro")
+-- =====================================================
+INSERT INTO chat (tipo, fecha_hora_alta, espacio_id)
+SELECT 'ESPACIO', NOW(), (SELECT id FROM espacio WHERE nombre='Polideportivo Centro' LIMIT 1)
 WHERE NOT EXISTS (
-  SELECT 1 FROM motivo_calificacion 
-  WHERE LOWER(nombre)='colaborador' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+  SELECT 1 FROM chat 
+  WHERE tipo='ESPACIO' AND espacio_id=(SELECT id FROM espacio WHERE nombre='Polideportivo Centro' LIMIT 1)
 );
 
-INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
-SELECT 'Respetuoso', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+SET @chat_grupo := (SELECT id FROM chat WHERE tipo='ESPACIO' AND espacio_id=(SELECT id FROM espacio WHERE nombre='Polideportivo Centro' LIMIT 1) LIMIT 1);
+
+INSERT INTO grupo (nombre, descripcion, chat_id)
+SELECT 'Grupo Pádel UTN','Chat grupal para coordinar pádel', @chat_grupo
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE chat_id=@chat_grupo);
+
+SET @grupo_id := (SELECT id FROM grupo WHERE chat_id=@chat_grupo LIMIT 1);
+
+-- Carol Admin
+INSERT INTO usuario_grupo (fecha_hora_alta, usuario_id, grupo_id, tipo_usuario_grupo_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='carol' LIMIT 1),
+       @grupo_id,
+       (SELECT id FROM tipo_usuario_grupo WHERE nombre='Administrador' LIMIT 1)
 WHERE NOT EXISTS (
-  SELECT 1 FROM motivo_calificacion 
-  WHERE LOWER(nombre)='respetuoso' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='buena')
+  SELECT 1 FROM usuario_grupo 
+  WHERE usuario_id=(SELECT id FROM usuario WHERE username='carol' LIMIT 1) AND grupo_id=@grupo_id
 );
 
-INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
-SELECT 'Neutral', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='media')
+-- Sam Miembro
+INSERT INTO usuario_grupo (fecha_hora_alta, usuario_id, grupo_id, tipo_usuario_grupo_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='sam' LIMIT 1),
+       @grupo_id,
+       (SELECT id FROM tipo_usuario_grupo WHERE nombre='Miembro' LIMIT 1)
 WHERE NOT EXISTS (
-  SELECT 1 FROM motivo_calificacion 
-  WHERE LOWER(nombre)='neutral' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='media')
+  SELECT 1 FROM usuario_grupo 
+  WHERE usuario_id=(SELECT id FROM usuario WHERE username='sam' LIMIT 1) AND grupo_id=@grupo_id
 );
 
-INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
-SELECT 'Impuntual', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+-- Mensajes
+INSERT INTO mensaje (texto, fecha_hora, chat_id, usuario_id)
+SELECT '¿Confirmamos el partido del sábado?', NOW(), @chat_grupo, (SELECT id FROM usuario WHERE username='carol' LIMIT 1)
 WHERE NOT EXISTS (
-  SELECT 1 FROM motivo_calificacion 
-  WHERE LOWER(nombre)='impuntual' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+  SELECT 1 FROM mensaje 
+  WHERE chat_id=@chat_grupo AND texto='¿Confirmamos el partido del sábado?'
 );
 
-INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
-SELECT 'Incumplidor', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+INSERT INTO mensaje (texto, fecha_hora, chat_id, usuario_id)
+SELECT '¡Sí, yo voy!', NOW(), @chat_grupo, (SELECT id FROM usuario WHERE username='sam' LIMIT 1)
 WHERE NOT EXISTS (
-  SELECT 1 FROM motivo_calificacion 
-  WHERE LOWER(nombre)='incumplidor' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
+  SELECT 1 FROM mensaje 
+  WHERE chat_id=@chat_grupo AND texto='¡Sí, yo voy!'
 );
 
-INSERT INTO motivo_calificacion (nombre, tipo_calificacion_id)
-SELECT 'Grosero', (SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
-WHERE NOT EXISTS (
-  SELECT 1 FROM motivo_calificacion 
-  WHERE LOWER(nombre)='grosero' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
-);
-/*
--- Recomendado: ejecutar en una transacción para poder revertir si algo falla
+COMMIT;
 START TRANSACTION;
 
--- ====== USUARIOS ======
--- Campos vistos en logs: id (AI), cbu, apellido, contrasena, dni, fecha_baja, fecha_hora_alta, fecha_hora_baja,
--- fecha_nacimiento, foto_perfil, mail, nombre, username
+-- ===================================================================
+-- USUARIOS (solo referenciamos los ya existentes)
+-- ===================================================================
+SET @u_sergio := (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1);
+SET @u_admin  := (SELECT id FROM usuario WHERE username='adminevt'     LIMIT 1);
+SET @u_mara   := (SELECT id FROM usuario WHERE username='mara'         LIMIT 1);
+SET @u_carol  := (SELECT id FROM usuario WHERE username='carol'        LIMIT 1);
+SET @u_luly   := (SELECT id FROM usuario WHERE username='luly'         LIMIT 1);
+SET @u_sam    := (SELECT id FROM usuario WHERE username='sam'          LIMIT 1);
 
-INSERT INTO usuario
-(nombre, apellido, username, dni, mail, fecha_nacimiento, foto_perfil, contrasena, CBU,
- fecha_hora_alta, fecha_hora_baja, fecha_baja)
-VALUES
-('Jose', 'Pérez', 'luly', '12345678', 'sara2608min@gmail.com', '1990-08-26 00:00:00', NULL,
- -- contrasena: usá algo ya codificado en tu sistema; para pruebas puede ser texto si no logueás con esto
- '$2a$10$abcdefghijklmnopqrstuv', '0011223344556677889900',
- NOW(), NULL, NULL),
-('sara', 'rodriguez', 'sam', '23456789', 'admin@example.com', '1995-02-10 00:00:00', NULL,
- '$2a$10$abcdefghijklmnopqrstuv', NULL,
- NOW(), NULL, NULL);
+-- Asegurar que exista el estado "Rechazada"
+INSERT INTO estado_denuncia_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Rechazada', 'Cerrada sin lugar', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Rechazada');
 
--- Guardamos IDs para referencia (si tu cliente permite variables)
--- Si no, obtenelos con un SELECT luego.
-SET @id_luly = (SELECT id FROM usuario WHERE username='luly' ORDER BY id DESC LIMIT 1);
-SET @id_sam  = (SELECT id FROM usuario WHERE username='sam'  ORDER BY id DESC LIMIT 1);
+-- Tomar IDs necesarios
+SET @est_rech  := (SELECT id FROM estado_denuncia_evento WHERE nombre='Rechazada' LIMIT 1);
+SET @den_cobro := (SELECT id FROM denuncia_evento WHERE titulo='Cobro indebido' LIMIT 1);
+SET @u_admin   := (SELECT id FROM usuario WHERE username='adminevt' LIMIT 1);
 
--- ====== ESPACIOS ======
--- Tabla: espacio
--- Campos clave: nombre, descripcion, fecha_hora_alta, fecha_hora_baja, direccion_ubicacion,
--- latitud_ubicacion, longitud_ubicacion, propietario_id (FK usuario)
+-- Insertar el estado solo si tenemos todo y no existe ya
+INSERT INTO denuncia_evento_estado
+  (descripcion, fecha_hora_desde, fecha_hora_hasta, estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
+SELECT
+  'Rechazada por falta de pruebas', NOW(), NULL, @est_rech, @den_cobro, @u_admin
+WHERE
+  @est_rech IS NOT NULL
+  AND @den_cobro IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM denuncia_evento_estado
+    WHERE denuncia_evento_id = @den_cobro
+      AND estado_denuncia_evento_id = @est_rech
+  );
+-- ===================================================================
+-- NUEVOS ESPACIOS + ADMINISTRADORES DE ESPACIO
+-- ===================================================================
+INSERT INTO espacio
+(nombre, descripcion, fecha_hora_alta, direccion_ubicacion, latitud_ubicacion, longitud_ubicacion, tipo_espacio_id, propietario_id)
+SELECT 'Cancha Norte','Cancha techada con césped sintético',NOW(),'Av. Norte 1000',-34.61,-58.39,
+       (SELECT id FROM tipo_espacio WHERE nombre='Público' LIMIT 1), @u_sergio
+WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE nombre='Cancha Norte');
 
 INSERT INTO espacio
-(nombre, descripcion, fecha_hora_alta, fecha_hora_baja, direccion_ubicacion,
- latitud_ubicacion, longitud_ubicacion, propietario_id)
-VALUES
-('Cancha Central', 'Cancha techada multiuso', NOW(), NULL, 'Calle 123',
-  -34.6037, -58.3816, @id_luly);
+(nombre, descripcion, fecha_hora_alta, direccion_ubicacion, latitud_ubicacion, longitud_ubicacion, tipo_espacio_id, propietario_id)
+SELECT 'Salon Multiuso UTN','Salón para eventos sociales y e-sports',NOW(),'Laprida 500',-34.62,-58.38,
+       (SELECT id FROM tipo_espacio WHERE nombre='Privado' LIMIT 1), @u_admin
+WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE nombre='Salon Multiuso UTN');
 
-SET @id_espacio1 = LAST_INSERT_ID();
-
--- ====== SUPER EVENTO ======
--- Tabla: super_evento
--- Campos: nombre, descripcion, usuario_id (organizador/owner)
-INSERT INTO super_evento
-(nombre, descripcion, usuario_id)
-VALUES
-('Liga Primavera', 'Super torneo de primavera', @id_luly);
-
-SET @id_se1 = LAST_INSERT_ID();
-
--- ====== EVENTOS ======
--- Tabla: evento
--- Campos vistos: nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, direccion_ubicacion,
--- longitud_ubicacion, latitud_ubicacion, precio_inscripcion, cantidad_maxima_invitados,
--- cantidad_maxima_participantes, precio_organizacion, super_evento_id, espacio_id, organizador_id
-
-INSERT INTO evento
-(nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, direccion_ubicacion,
- longitud_ubicacion, latitud_ubicacion, precio_inscripcion, cantidad_maxima_invitados,
- cantidad_maxima_participantes, precio_organizacion, super_evento_id, espacio_id, organizador_id)
-VALUES
-('Fecha 1', 'Apertura de la liga', NOW() + INTERVAL 1 DAY, NOW() + INTERVAL 1 DAY + INTERVAL 2 HOUR,
- 'Calle 123', -58.3816, -34.6037, 100.00, 10, 20, 0.00, @id_se1, @id_espacio1, @id_luly),
-('Fecha 2', 'Segunda fecha', NOW() + INTERVAL 8 DAY, NOW() + INTERVAL 8 DAY + INTERVAL 3 HOUR,
- 'Calle 123', -58.3816, -34.6037, 120.00, 10, 20, 0.00, @id_se1, @id_espacio1, @id_luly);
-
--- Guardamos IDs de eventos
-SET @id_evento1 = (SELECT id FROM evento WHERE nombre='Fecha 1' ORDER BY id DESC LIMIT 1);
-SET @id_evento2 = (SELECT id FROM evento WHERE nombre='Fecha 2' ORDER BY id DESC LIMIT 1);
-
--- ====== ADMINISTRADORES ======
--- Tabla: administrador_espacio (campos habituales: id AI, fecha_baja, fecha_hora_alta, fecha_hora_baja, espacio_id, usuario_id)
-INSERT INTO administrador_espacio (fecha_baja, fecha_hora_alta, fecha_hora_baja, espacio_id, usuario_id)
-VALUES (NULL, NOW() - INTERVAL 2 DAY, NULL, @id_espacio1, @id_sam);
-
--- Tabla: administrador_evento (id AI, fecha_baja, fecha_hora_alta, fecha_hora_baja, evento_id, usuario_id)
-INSERT INTO administrador_evento (fecha_baja, fecha_hora_alta, fecha_hora_baja, evento_id, usuario_id)
-VALUES (NULL, NOW() - INTERVAL 1 DAY, NULL, @id_evento2, @id_sam);
-
--- Tabla: administrador_super_evento
--- Por los logs: columnas: id, fecha_baja, fecha_hora_alta, fecha_hora_baja, organizador_id, super_evento_id, usuario_id
-INSERT INTO administrador_super_evento
-(fecha_baja, fecha_hora_alta, fecha_hora_baja, super_evento_id, usuario_id)
-SELECT NULL, NOW() - INTERVAL 3 DAY, NULL, @id_se1, @id_sam
+-- administradores de espacio (clase intermedia, usa usuario_id)
+INSERT INTO administrador_espacio (fecha_hora_alta, espacio_id, usuario_id)
+SELECT NOW(), (SELECT id FROM espacio WHERE nombre='Cancha Norte' LIMIT 1), @u_sergio
 WHERE NOT EXISTS (
-  SELECT 1 FROM administrador_super_evento
-  WHERE super_evento_id=@id_se1 AND usuario_id=@id_sam
+  SELECT 1 FROM administrador_espacio 
+  WHERE espacio_id=(SELECT id FROM espacio WHERE nombre='Cancha Norte' LIMIT 1) AND usuario_id=@u_sergio
 );
 
--- ====== INSCRIPCIÓN (para que SAM aparezca como participante del Evento 1) ======
--- Ajustá los nombres de columnas de tu tabla de inscripciones si varían.
--- Usualmente: id AI, fecha_hora_alta, fecha_hora_baja, usuario_id, evento_id, etc.
-INSERT INTO inscripcion (fecha_hora_alta, fecha_hora_baja,permitir_devolucion_completa, usuario_id, evento_id)
-VALUES (NOW() - INTERVAL 12 HOUR, NULL, 1,@id_sam, @id_evento1);
+INSERT INTO administrador_espacio (fecha_hora_alta, espacio_id, usuario_id)
+SELECT NOW(), (SELECT id FROM espacio WHERE nombre='Salon Multiuso UTN' LIMIT 1), @u_admin
+WHERE NOT EXISTS (
+  SELECT 1 FROM administrador_espacio 
+  WHERE espacio_id=(SELECT id FROM espacio WHERE nombre='Salon Multiuso UTN' LIMIT 1) AND usuario_id=@u_admin
+);
 
-COMMIT;
+-- ===================================================================
+-- NUEVO SUPER EVENTO + ADMINISTRADOR DE SUPER EVENTO (intermedia)
+-- ===================================================================
+INSERT INTO super_evento (nombre, descripcion, usuario_id)
+SELECT 'Copa Invierno','Copa invernal multideporte', @u_sergio
+WHERE NOT EXISTS (SELECT 1 FROM super_evento WHERE nombre='Copa Invierno');
 
-START TRANSACTION;
+INSERT INTO administrador_super_evento (fecha_hora_alta, super_evento_id, usuario_id)
+SELECT NOW(), (SELECT id FROM super_evento WHERE nombre='Copa Invierno' LIMIT 1), @u_carol
+WHERE NOT EXISTS (
+  SELECT 1 FROM administrador_super_evento
+  WHERE super_evento_id=(SELECT id FROM super_evento WHERE nombre='Copa Invierno' LIMIT 1)
+    AND usuario_id=@u_carol
+);
 
--- ===================== CHATS (obligatorios para los grupos) =====================
-INSERT INTO chat (id, tipo, fecha_hora_alta, fecha_hora_baja, usuario1_id, usuario2_id)
-VALUES
-  (600, 'ESPACIO', '2025-06-01 10:00:00', NULL, NULL, NULL),
-  (601, 'ESPACIO', '2025-06-15 12:00:00', NULL, NULL, NULL)
-ON DUPLICATE KEY UPDATE tipo=VALUES(tipo);
+-- ===================================================================
+-- NUEVOS EVENTOS (no tocamos "Fecha 1" que ya tenías)
+-- ===================================================================
+INSERT INTO evento
+(nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, direccion_ubicacion, longitud_ubicacion, latitud_ubicacion,
+ precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes, precio_organizacion,
+ super_evento_id, espacio_id, organizador_id, tipo_inscripcion_evento_id, modo_evento_id)
+SELECT
+ 'Torneo Fútbol 5 - Fecha 2','Segunda fecha del torneo',
+ NOW() + INTERVAL 8 DAY, NOW() + INTERVAL 8 DAY + INTERVAL 2 HOUR,
+ 'Av. Norte 1000', -58.39, -34.61, 150.00, 5, 16, 0.00,
+ (SELECT id FROM super_evento WHERE nombre='Liga Primavera' LIMIT 1),
+ (SELECT id FROM espacio WHERE nombre='Cancha Norte' LIMIT 1),
+ @u_sergio,
+ (SELECT id FROM tipo_inscripcion_evento WHERE nombre='Inscripción por Usuario' LIMIT 1),
+ (SELECT id FROM modo_evento WHERE nombre='Por equipos' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE nombre='Torneo Fútbol 5 - Fecha 2');
 
--- ===================== GRUPOS =====================
-INSERT INTO grupo (id, nombre, descripcion, chat_id)
-VALUES
-  (100, 'Grupo de Fútbol', 'Grupo sobre fútbol', 600),
-  (101, 'Grupo de Pádel',  'Grupo sobre pádel',  601)
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), chat_id=VALUES(chat_id);
+INSERT INTO evento
+(nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, direccion_ubicacion, longitud_ubicacion, latitud_ubicacion,
+ precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes, precio_organizacion,
+ super_evento_id, espacio_id, organizador_id, tipo_inscripcion_evento_id, modo_evento_id)
+SELECT
+ 'Partido Pádel Nocturno','Encuentro amistoso nocturno',
+ NOW() + INTERVAL 3 DAY, NOW() + INTERVAL 3 DAY + INTERVAL 2 HOUR,
+ 'Calle Falsa 123', -58.40, -34.60, 120.00, 0, 8, 0.00,
+ (SELECT id FROM super_evento WHERE nombre='Copa Invierno' LIMIT 1),
+ (SELECT id FROM espacio WHERE nombre='Polideportivo Centro' LIMIT 1),
+ @u_carol,
+ (SELECT id FROM tipo_inscripcion_evento WHERE nombre='Inscripción por Usuario' LIMIT 1),
+ (SELECT id FROM modo_evento WHERE nombre='Individual' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE nombre='Partido Pádel Nocturno');
 
--- ===================== TIPOS DE USUARIO-GRUPO =====================
-INSERT INTO tipo_usuario_grupo (id, nombre, fecha_hora_alta)
-VALUES
-  (12, 'Administrador', '2025-01-01 00:00:00'),
-  (13, 'Miembro',       '2025-01-01 00:00:00')
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+INSERT INTO evento
+(nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, direccion_ubicacion, longitud_ubicacion, latitud_ubicacion,
+ precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes, precio_organizacion,
+ super_evento_id, espacio_id, organizador_id, tipo_inscripcion_evento_id, modo_evento_id)
+SELECT
+ 'Metegol Relámpago','Mini torneo express de metegol',
+ NOW() + INTERVAL 5 DAY, NOW() + INTERVAL 5 DAY + INTERVAL 1 HOUR,
+ 'Laprida 500', -58.38, -34.62, 80.00, 0, 12, 0.00,
+ (SELECT id FROM super_evento WHERE nombre='Copa Invierno' LIMIT 1),
+ (SELECT id FROM espacio WHERE nombre='Salon Multiuso UTN' LIMIT 1),
+ @u_admin,
+ (SELECT id FROM tipo_inscripcion_evento WHERE nombre='Inscripción por Usuario' LIMIT 1),
+ (SELECT id FROM modo_evento WHERE nombre='Individual' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE nombre='Metegol Relámpago');
 
--- ===================== USUARIO_GRUPO =====================
--- ⚠️ Ajusté para usar los IDs correctos de tipo_usuario_grupo (12 y 13, no 10 y 11)
-INSERT INTO usuario_grupo (id, usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
-VALUES
-  (1000, 1, 100, 12, '2025-06-01 10:00:00'),  -- luly Admin en Grupo de Fútbol
-  (1001, 1, 101, 13, '2025-07-01 15:00:00'),  -- luly Miembro en Grupo de Pádel
-  (1002, 2, 100, 13, '2025-06-02 11:00:00')   -- juan Miembro en Grupo de Fútbol
-ON DUPLICATE KEY UPDATE tipo_usuario_grupo_id=VALUES(tipo_usuario_grupo_id);
+-- ===================================================================
+-- DISCIPLINAS PARA LOS NUEVOS EVENTOS
+-- ===================================================================
+INSERT INTO disciplina_evento (evento_id, disciplina_id)
+SELECT (SELECT id FROM evento WHERE nombre='Torneo Fútbol 5 - Fecha 2' LIMIT 1),
+       (SELECT id FROM disciplina WHERE nombre='Futbol' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM disciplina_evento 
+  WHERE evento_id=(SELECT id FROM evento WHERE nombre='Torneo Fútbol 5 - Fecha 2' LIMIT 1)
+    AND disciplina_id=(SELECT id FROM disciplina WHERE nombre='Futbol' LIMIT 1)
+);
 
--- ===================== EVENTOS =====================
-INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, organizador_id)
-VALUES
-  (200, 'Torneo Fútbol 5', 'Evento de fútbol', '2025-07-10 20:00:00', '2025-07-10 22:00:00', 1),
-  (201, 'Partido Pádel',   'Encuentro de pádel','2025-08-05 19:00:00', '2025-08-05 21:00:00', 1)
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+INSERT INTO disciplina_evento (evento_id, disciplina_id)
+SELECT (SELECT id FROM evento WHERE nombre='Metegol Relámpago' LIMIT 1),
+       (SELECT id FROM disciplina WHERE nombre='Metegol' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM disciplina_evento 
+  WHERE evento_id=(SELECT id FROM evento WHERE nombre='Metegol Relámpago' LIMIT 1)
+    AND disciplina_id=(SELECT id FROM disciplina WHERE nombre='Metegol' LIMIT 1)
+);
 
--- ===================== ESPACIOS =====================
-INSERT INTO espacio (id, nombre, descripcion, fecha_hora_alta, fecha_hora_baja, propietario_id)
-VALUES
-  (300, 'Cancha Techada',        'Cancha indoor',              '2025-06-20 09:00:00', NULL, 1),
-  (301, 'Polideportivo Central', 'Polideportivo municipal',    '2025-06-25 09:00:00', NULL, 1)
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+-- ===================================================================
+-- ADMINISTRADORES DE EVENTO (intermedia) SOLO PARA LOS NUEVOS
+-- ===================================================================
+INSERT INTO administrador_evento (fecha_hora_alta, evento_id, usuario_id)
+SELECT NOW(), (SELECT id FROM evento WHERE nombre='Torneo Fútbol 5 - Fecha 2' LIMIT 1), @u_admin
+WHERE NOT EXISTS (
+  SELECT 1 FROM administrador_evento 
+  WHERE evento_id=(SELECT id FROM evento WHERE nombre='Torneo Fútbol 5 - Fecha 2' LIMIT 1) AND usuario_id=@u_admin
+);
 
--- ===================== SUPER EVENTO =====================
-INSERT INTO super_evento (id, nombre, descripcion, usuario_id)
-VALUES
-  (400, 'Liga UTN', 'Super evento de deportes universitarios', 1)
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+INSERT INTO administrador_evento (fecha_hora_alta, evento_id, usuario_id)
+SELECT NOW(), (SELECT id FROM evento WHERE nombre='Partido Pádel Nocturno' LIMIT 1), @u_admin
+WHERE NOT EXISTS (
+  SELECT 1 FROM administrador_evento 
+  WHERE evento_id=(SELECT id FROM evento WHERE nombre='Partido Pádel Nocturno' LIMIT 1) AND usuario_id=@u_admin
+);
 
-COMMIT;
-*/
-START TRANSACTION;
+INSERT INTO administrador_evento (fecha_hora_alta, evento_id, usuario_id)
+SELECT NOW(), (SELECT id FROM evento WHERE nombre='Metegol Relámpago' LIMIT 1), @u_admin
+WHERE NOT EXISTS (
+  SELECT 1 FROM administrador_evento 
+  WHERE evento_id=(SELECT id FROM evento WHERE nombre='Metegol Relámpago' LIMIT 1) AND usuario_id=@u_admin
+);
 
--- =====================================================
--- Asegurar ORGANIZADORES en los eventos que ya tenés
--- (ajustá si querés otros)
--- =====================================================
--- Sergio Albino (id=1) organiza Torneo Fútbol 5 (200)
-UPDATE evento SET organizador_id = 1 WHERE id = 200;
+-- ===================================================================
+-- INSCRIPCIONES + COMPROBANTES (nuevas)
+-- ===================================================================
+-- mara en Partido Pádel Nocturno
+INSERT INTO inscripcion (fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id)
+SELECT NOW(), 120.00, TRUE, @u_mara, (SELECT id FROM evento WHERE nombre='Partido Pádel Nocturno' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM inscripcion WHERE usuario_id=@u_mara AND evento_id=(SELECT id FROM evento WHERE nombre='Partido Pádel Nocturno' LIMIT 1)
+);
 
--- Carol (id=3) organiza Partido Pádel (201)
-UPDATE evento SET organizador_id = 3 WHERE id = 201;
+INSERT INTO comprobante_pago
+(numero, concepto, fecha_hora_emision, monto_total_bruto, forma_de_pago, comision,
+ inscripcion_id, evento_id, cobro_id, pago_id, medio_de_pago_id, comision_por_inscripcion_id, comision_por_organizacion_id)
+SELECT
+ 'CP-2001','Pago inscripción Pádel', NOW(), 120.00, 'Online', 0.00,
+ (SELECT id FROM inscripcion WHERE usuario_id=@u_mara AND evento_id=(SELECT id FROM evento WHERE nombre='Partido Pádel Nocturno' LIMIT 1)),
+ (SELECT id FROM evento WHERE nombre='Partido Pádel Nocturno' LIMIT 1),
+ @u_carol, @u_mara,
+ (SELECT id FROM medio_de_pago WHERE nombre='Mercado Pago' LIMIT 1),
+ (SELECT id FROM comision_por_inscripcion LIMIT 1),
+ (SELECT id FROM comision_por_organizacion LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM comprobante_pago WHERE numero='CP-2001');
 
--- adminevt (id=2) organiza los demás de prueba (1,10,11)
-UPDATE evento SET organizador_id = 2 WHERE id IN (1,10,11);
+-- luly en Metegol Relámpago
+INSERT INTO inscripcion (fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id)
+SELECT NOW(), 80.00, TRUE, @u_luly, (SELECT id FROM evento WHERE nombre='Metegol Relámpago' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM inscripcion WHERE usuario_id=@u_luly AND evento_id=(SELECT id FROM evento WHERE nombre='Metegol Relámpago' LIMIT 1)
+);
 
--- =====================================================
--- ESTADOS de denuncia (si ya existen, se actualizan)
--- =====================================================
-INSERT INTO estado_denuncia_evento (id, nombre, descripcion, fecha_hora_alta)
-VALUES
-  (1, 'Ingresada',   'Denuncia creada por el usuario',        '2025-01-01 00:00:00'),
-  (2, 'En revisión', 'Asignada a un responsable para análisis','2025-01-01 00:00:00'),
-  (3, 'Resuelta',    'Cerrada con resolución',                 '2025-01-01 00:00:00'),
-  (4, 'Rechazada',   'Cerrada sin lugar',                      '2025-01-01 00:00:00')
-ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), descripcion = VALUES(descripcion);
+INSERT INTO comprobante_pago
+(numero, concepto, fecha_hora_emision, monto_total_bruto, forma_de_pago, comision,
+ inscripcion_id, evento_id, cobro_id, pago_id, medio_de_pago_id, comision_por_inscripcion_id, comision_por_organizacion_id)
+SELECT
+ 'CP-3001','Pago inscripción Metegol', NOW(), 80.00, 'Online', 0.00,
+ (SELECT id FROM inscripcion WHERE usuario_id=@u_luly AND evento_id=(SELECT id FROM evento WHERE nombre='Metegol Relámpago' LIMIT 1)),
+ (SELECT id FROM evento WHERE nombre='Metegol Relámpago' LIMIT 1),
+ @u_admin, @u_luly,
+ (SELECT id FROM medio_de_pago WHERE nombre='Mercado Pago' LIMIT 1),
+ (SELECT id FROM comision_por_inscripcion LIMIT 1),
+ (SELECT id FROM comision_por_organizacion LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM comprobante_pago WHERE numero='CP-3001');
 
--- =====================================================
--- DENUNCIAS (9000+ para no pisar nada)
--- denunciante_id -> el usuario que denuncia
--- evento_id      -> evento denunciado
--- =====================================================
-/*INSERT INTO denuncia_evento (id, titulo, descripcion, evento_id, inscripcion_id, denunciante_id)
-VALUES
-  (9000, 'Juego brusco',              'Faltas fuertes no sancionadas.',       200, NULL, 11), -- luly denuncia evento 200 (orga: 1)
-  (9001, 'Tardanza del organizador',  'Comenzó 30 minutos tarde.',            201, NULL, 12), -- sam  denuncia evento 201 (orga: 3)
-  (9002, 'Cobro indebido',            'Se cobró un extra no avisado.',          1, NULL, 13)  -- mara denuncia evento   1 (orga: 2)
-ON DUPLICATE KEY UPDATE
-  titulo = VALUES(titulo),
-  descripcion = VALUES(descripcion),
-  evento_id = VALUES(evento_id),
-  denunciante_id = VALUES(denunciante_id);
+-- ===================================================================
+-- DENUNCIA NUEVA + ESTADO
+-- ===================================================================
+INSERT INTO denuncia_evento (titulo, descripcion, evento_id, inscripcion_id, denunciante_id)
+SELECT 'Cobro indebido','Se cobró un extra no avisado.',
+       (SELECT id FROM evento WHERE nombre='Partido Pádel Nocturno' LIMIT 1),
+       (SELECT id FROM inscripcion WHERE usuario_id=@u_mara AND evento_id=(SELECT id FROM evento WHERE nombre='Partido Pádel Nocturno' LIMIT 1)),
+       @u_sam
+WHERE NOT EXISTS (SELECT 1 FROM denuncia_evento WHERE titulo='Cobro indebido');
 
--- =====================================================
--- HISTORIAL / ESTADO ACTUAL de cada denuncia
--- responsable_id = usuario que movió el estado (ej: adminevt id=2)
--- Las fechas hacen que la última fila de cada denuncia quede como estado vigente (fecha_hora_hasta = NULL)
--- =====================================================
-
--- Denuncia 9000 (luly -> evento 200)
 INSERT INTO denuncia_evento_estado
-  (id,  descripcion,                     fecha_hora_desde,     fecha_hora_hasta,    estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
-VALUES
-  (9100,'Creada por luly',               '2025-07-10 22:05:00','2025-07-11 09:00:00', 1,                         9000,               NULL),
-  (9101,'En revisión por admin',         '2025-07-11 09:00:00','2025-07-12 12:00:00', 2,                         9000,               2),
-  (9102,'Resuelta con advertencia',      '2025-07-12 12:00:00',        NULL,          3,                         9000,               2)
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+(descripcion, fecha_hora_desde, fecha_hora_hasta, estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
+SELECT 'Rechazada por falta de pruebas', NOW(), NULL,
+       (SELECT id FROM estado_denuncia_evento WHERE nombre='Rechazada' LIMIT 1),
+       (SELECT id FROM denuncia_evento WHERE titulo='Cobro indebido' LIMIT 1),
+       @u_admin
+WHERE NOT EXISTS (
+  SELECT 1 FROM denuncia_evento_estado 
+  WHERE denuncia_evento_id=(SELECT id FROM denuncia_evento WHERE titulo='Cobro indebido' LIMIT 1)
+    AND estado_denuncia_evento_id=(SELECT id FROM estado_denuncia_evento WHERE nombre='Rechazada' LIMIT 1)
+);
 
--- Denuncia 9001 (sam -> evento 201)
-INSERT INTO denuncia_evento_estado
-  (id,  descripcion,                     fecha_hora_desde,     fecha_hora_hasta,    estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
-VALUES
-  (9110,'Creada por sam',                '2025-08-05 21:10:00','2025-08-06 10:00:00', 1,                         9001,               NULL),
-  (9111,'En revisión por admin',         '2025-08-06 10:00:00',        NULL,          2,                         9001,               2)
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+-- ===================================================================
+-- CALIFICACION NUEVA (Normal)
+-- ===================================================================
+INSERT INTO calificacion (descripcion, fecha_hora, calificacion_tipo_id, autor_id, calificado_id)
+SELECT 'Correcto y respetuoso', NOW(),
+       (SELECT id FROM calificacion_tipo WHERE nombre='Calificacion Normal' LIMIT 1),
+       @u_carol, @u_mara
+WHERE NOT EXISTS (
+  SELECT 1 FROM calificacion 
+  WHERE autor_id=@u_carol AND calificado_id=@u_mara AND descripcion='Correcto y respetuoso'
+);
 
--- Denuncia 9002 (mara -> evento 1)
-INSERT INTO denuncia_evento_estado
-  (id,  descripcion,                     fecha_hora_desde,     fecha_hora_hasta,    estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
-VALUES
-  (9120,'Creada por mara',               '2025-09-18 03:15:00','2025-09-19 09:00:00', 1,                         9002,               NULL),
-  (9121,'Rechazada por falta de pruebas','2025-09-19 09:00:00',        NULL,          4,                         9002,               2)
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+-- ===================================================================
+-- CHATS NUEVOS
+-- ===================================================================
+-- Chat de EVENTO para "Torneo Fútbol 5 - Fecha 2" + un mensaje
+INSERT INTO chat (tipo, fecha_hora_alta, evento_id)
+SELECT 'EVENTO', NOW(), (SELECT id FROM evento WHERE nombre='Torneo Fútbol 5 - Fecha 2' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE tipo='EVENTO' AND evento_id=(SELECT id FROM evento WHERE nombre='Torneo Fútbol 5 - Fecha 2' LIMIT 1));
 
+INSERT INTO mensaje (texto, fecha_hora, chat_id, usuario_id)
+SELECT 'Formaciones listas', NOW(),
+       (SELECT id FROM chat WHERE tipo='EVENTO' AND evento_id=(SELECT id FROM evento WHERE nombre='Torneo Fútbol 5 - Fecha 2' LIMIT 1)),
+       @u_sergio
+WHERE NOT EXISTS (
+  SELECT 1 FROM mensaje 
+  WHERE chat_id=(SELECT id FROM chat WHERE tipo='EVENTO' AND evento_id=(SELECT id FROM evento WHERE nombre='Torneo Fútbol 5 - Fecha 2' LIMIT 1))
+    AND texto='Formaciones listas'
+);
+
+-- Chat DIRECTO (único por par) Carol ↔ Sam + mensaje
+INSERT INTO chat (tipo, fecha_hora_alta, usuario1_id, usuario2_id)
+SELECT 'DIRECTO', NOW(), @u_carol, @u_sam
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE tipo='DIRECTO' AND usuario1_id=@u_carol AND usuario2_id=@u_sam);
+
+INSERT INTO mensaje (texto, fecha_hora, chat_id, usuario_id)
+SELECT 'Te paso la ubicación del poli', NOW(),
+       (SELECT id FROM chat WHERE tipo='DIRECTO' AND usuario1_id=@u_carol AND usuario2_id=@u_sam LIMIT 1),
+       @u_carol
+WHERE NOT EXISTS (
+  SELECT 1 FROM mensaje 
+  WHERE chat_id=(SELECT id FROM chat WHERE tipo='DIRECTO' AND usuario1_id=@u_carol AND usuario2_id=@u_sam LIMIT 1)
+    AND texto='Te paso la ubicación del poli'
+);
 COMMIT;
-
--- (Opcional) chequeo rápido del “último estado” por denuncia:
--- SELECT de.id, de.titulo, e.nombre AS evento, u1.username AS denunciante,
---        u2.username AS organizador, dee.estado_denuncia_evento_id AS estado_actual, dee.fecha_hora_desde
--- FROM denuncia_evento de
--- JOIN evento e              ON e.id = de.evento_id
--- JOIN usuario u1            ON u1.id = de.denunciante_id
--- JOIN usuario u2            ON u2.id = e.organizador_id
--- JOIN denuncia_evento_estado dee ON dee.denuncia_evento_id = de.id
--- WHERE dee.fecha_hora_hasta IS NULL
--- ORDER BY dee.fecha_hora_desde DESC;
