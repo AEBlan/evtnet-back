@@ -9,6 +9,11 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import lombok.extern.slf4j.Slf4j;
+
+
+import com.evtnet.evtnetback.Repositories.BaseRepository;
+
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +34,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-@Service
+@Service 
+@Slf4j
 public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
@@ -213,16 +219,17 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     }
 
 
-    @Value("${app.frontend.base-url:https://localhost:5173}")
+    @Value("${app.frontend.base-url:localhost:5173}")
     private String frontendBaseUrl;
 
-    @Value("${app.frontend.invite-path:/usuarios/restablecerContrasena}")
+    @Value("${app.frontend.invite-path:/RecuperarContrasena}")
     private String invitePath;
 
     /**
      * Envía un código de invitación + link para que el usuario cree su contraseña.
      */
     public void enviarCodigoAltaUsuario(String mail) {
+        String path= "http://localhost:5173/RecuperarContrasena/";
         String m = normalizeMail(mail);
         Instant now = Instant.now();
 
@@ -242,9 +249,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         // Armamos el link directo con mail y codigo como query params
         String inviteUrl = UriComponentsBuilder
                 .fromHttpUrl(frontendBaseUrl)
-                .path(invitePath)
-                .queryParam("mail", m)
-                .queryParam("codigo", meta.code)        // el front lo leerá del query string
+                .path(invitePath)       // el front lo leerá del query string
                 .build()
                 .toUriString();
 
@@ -257,12 +262,18 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 El código expira en %d minutos.
 
                 También podés entrar directamente con este enlace:
-                %s
+                %s%s
 
                 Si no esperabas este correo, podés ignorarlo.
-                """.formatted(meta.code, RESET_TTL.toMinutes(), inviteUrl);
+                """.formatted(meta.code, RESET_TTL.toMinutes(), path,m);
 
+        try {
         mailService.enviar(m, subject, body);
+        log.info("Email de invitación enviado a {} con código {}", m, meta.code);
+        } catch (Exception e) {
+            log.error("Fallo al enviar email a {}: {}", m, e.getMessage(), e);
+            throw e;
+        }
     }
 
     // ---------- AUTH LOCAL ----------
@@ -1097,7 +1108,13 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 );
             }
         }
+        try {
         enviarCodigoAltaUsuario(u.getMail());
+        log.info("Email de invitación enviado a {}", u.getMail());
+        } catch (Exception e) {
+        log.error("Fallo al enviar email {}", e.getMessage(), e);
+        throw e;
+        }
 
     }
 
