@@ -648,7 +648,7 @@ ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), descripcion = VALUES(descripcio
 -- denunciante_id -> el usuario que denuncia
 -- evento_id      -> evento denunciado
 -- =====================================================
-INSERT INTO denuncia_evento (id, titulo, descripcion, evento_id, inscripcion_id, denunciante_id)
+/*INSERT INTO denuncia_evento (id, titulo, descripcion, evento_id, inscripcion_id, denunciante_id)
 VALUES
   (9000, 'Juego brusco',              'Faltas fuertes no sancionadas.',       200, NULL, 11), -- luly denuncia evento 200 (orga: 1)
   (9001, 'Tardanza del organizador',  'Comenzó 30 minutos tarde.',            201, NULL, 12), -- sam  denuncia evento 201 (orga: 3)
