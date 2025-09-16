@@ -489,8 +489,8 @@ VALUES
 
 -- Guardamos IDs para referencia (si tu cliente permite variables)
 -- Si no, obtenelos con un SELECT luego.
-SET @id_luly = (SELECT id FROM usuario WHERE username='luly');
-SET @id_sam  = (SELECT id FROM usuario WHERE username='sam');
+SET @id_luly = (SELECT id FROM usuario WHERE username='luly' ORDER BY id DESC LIMIT 1);
+SET @id_sam  = (SELECT id FROM usuario WHERE username='sam'  ORDER BY id DESC LIMIT 1);
 
 -- ====== ESPACIOS ======
 -- Tabla: espacio
@@ -549,8 +549,11 @@ VALUES (NULL, NOW() - INTERVAL 1 DAY, NULL, @id_evento2, @id_sam);
 -- Por los logs: columnas: id, fecha_baja, fecha_hora_alta, fecha_hora_baja, organizador_id, super_evento_id, usuario_id
 INSERT INTO administrador_super_evento
 (fecha_baja, fecha_hora_alta, fecha_hora_baja, super_evento_id, usuario_id)
-VALUES
-(NULL, NOW() - INTERVAL 3 DAY, NULL, @id_se1, @id_sam);
+SELECT NULL, NOW() - INTERVAL 3 DAY, NULL, @id_se1, @id_sam
+WHERE NOT EXISTS (
+  SELECT 1 FROM administrador_super_evento
+  WHERE super_evento_id=@id_se1 AND usuario_id=@id_sam
+);
 
 -- ====== INSCRIPCIÓN (para que SAM aparezca como participante del Evento 1) ======
 -- Ajustá los nombres de columnas de tu tabla de inscripciones si varían.
