@@ -9,9 +9,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
-
-import java.time.LocalDateTime;
-
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,19 +17,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.SecureRandom;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;                         // <<< IMPORT NECESARIO
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
 
 @Service
 public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implements UsuarioService {
@@ -49,6 +45,14 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final TipoCalificacionRepository tipoCalificacionRepository;
     private final PermisoRepository permisoRepository;
     private final RolPermisoRepository rolPermisoRepository;
+    private final UsuarioGrupoRepository usuarioGrupoRepository;
+    private final EventoRepository eventoRepository;
+    private final EspacioRepository espacioRepository;
+    private final SuperEventoRepository superEventoRepository;
+    private final ChatRepository chatRepository;
+    private final DenunciaEventoRepository denunciaEventoRepository;
+    //private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepository;
+    //private final EstadoDenunciaEventoRepository estadoDenunciaEventoRepository;
 
 
     // Directorio para fotos de perfil (montá un volumen)
@@ -61,6 +65,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
     @Value("${app.storage.calificaciones:/app/uploads/calificaciones}")
     private String calificacionesDir;
+
+    @Value("${app.front.resetBaseUrl:http://localhost:5173/usuarios/restablecerContrasena}")
+    private String resetBaseUrl;
 
     public UsuarioServiceImpl(
             BaseRepository<Usuario, Long> baseRepository,
@@ -76,7 +83,16 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             CalificacionMotivoCalificacionRepository calificacionMotivoCalificacionRepository,
             TipoCalificacionRepository tipoCalificacionRepository,
             PermisoRepository permisoRepository,
-            RolPermisoRepository rolPermisoRepository
+            RolPermisoRepository rolPermisoRepository,
+            UsuarioGrupoRepository usuarioGrupoRepository,
+            EventoRepository eventoRepository,
+            EspacioRepository espacioRepository,
+            SuperEventoRepository superEventoRepository,
+            ChatRepository chatRepository,
+            DenunciaEventoRepository denunciaEventoRepository
+            //DenunciaEventoEstadoRepository denunciaEventoEstadoRepository,
+            //EstadoDenunciaEventoRepository estadoDenunciaEventoRepository
+            
 ) {
         super(baseRepository);
         this.usuarioRepository = usuarioRepository;
@@ -92,6 +108,14 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         this.tipoCalificacionRepository = tipoCalificacionRepository;
         this.permisoRepository = permisoRepository;
         this.rolPermisoRepository = rolPermisoRepository;
+        this.usuarioGrupoRepository = usuarioGrupoRepository;
+        this.eventoRepository = eventoRepository;
+        this.espacioRepository = espacioRepository;
+        this.superEventoRepository = superEventoRepository;
+        this.chatRepository = chatRepository;
+        this.denunciaEventoRepository = denunciaEventoRepository;
+        //this.denunciaEventoEstadoRepository = denunciaEventoEstadoRepository;
+        //this.estadoDenunciaEventoRepository = estadoDenunciaEventoRepository;
 
 }
 
@@ -184,6 +208,59 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
                 Si no solicitaste este código, podés ignorar este mensaje.
                 """.formatted(meta.code, RESET_TTL.toMinutes());
+
+        mailService.enviar(m, subject, body);
+    }
+
+
+    @Value("${app.frontend.base-url:https://localhost:5173}")
+    private String frontendBaseUrl;
+
+    @Value("${app.frontend.invite-path:/usuarios/restablecerContrasena}")
+    private String invitePath;
+
+    /**
+     * Envía un código de invitación + link para que el usuario cree su contraseña.
+     */
+    public void enviarCodigoAltaUsuario(String mail) {
+        String m = normalizeMail(mail);
+        Instant now = Instant.now();
+
+        if (!usuarioRepository.existsByMail(m)) {
+            throw new IllegalArgumentException("Mail no registrado");
+        }
+
+        CodeMeta meta = codigosRecuperoPorMail.get(m);
+        if (meta == null || meta.expired(now)) {
+            meta = new CodeMeta(generateCode(), now);
+            codigosRecuperoPorMail.put(m, meta);
+        } else {
+            if (!meta.canResend(now)) return; // anti-spam silencioso
+            meta.markResent(now);
+        }
+
+        // Armamos el link directo con mail y codigo como query params
+        String inviteUrl = UriComponentsBuilder
+                .fromHttpUrl(frontendBaseUrl)
+                .path(invitePath)
+                .queryParam("mail", m)
+                .queryParam("codigo", meta.code)        // el front lo leerá del query string
+                .build()
+                .toUriString();
+
+        String subject = "Creá tu contraseña para acceder";
+        String body = """
+                ¡Hola!
+
+                Tu cuenta fue creada por un administrador.
+                Usá este código para crear tu contraseña: %s
+                El código expira en %d minutos.
+
+                También podés entrar directamente con este enlace:
+                %s
+
+                Si no esperabas este correo, podés ignorarlo.
+                """.formatted(meta.code, RESET_TTL.toMinutes(), inviteUrl);
 
         mailService.enviar(m, subject, body);
     }
@@ -1020,6 +1097,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 );
             }
         }
+        enviarCodigoAltaUsuario(u.getMail());
+
     }
 
     // -------------------------
@@ -1365,7 +1444,136 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .administrador(administrador)
                 .build();
     }
+    // GRupo y interracciones
+    // ================== NUEVOS MÉTODOS PARA GRUPOS E INTERACCIONES ==================
+    @Override
+    public DTOGruposUsuario adminObtenerGruposUsuario(String username) {
+        List<UsuarioGrupo> ugs = usuarioGrupoRepository.findAllForUsername(username);
 
+        Map<Long, List<UsuarioGrupo>> porGrupo = ugs.stream()
+                .filter(ug -> ug.getGrupo() != null)
+                .collect(Collectors.groupingBy(
+                        ug -> ug.getGrupo().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<DTOGruposUsuario.GrupoDTO> grupos = new ArrayList<>();
+
+        for (var entry : porGrupo.entrySet()) {
+            Grupo g = entry.getValue().get(0).getGrupo();
+
+            List<DTOGruposUsuario.RolDTO> roles = entry.getValue().stream()
+                    .map(ug -> new DTOGruposUsuario.RolDTO(
+                            ug.getTipoUsuarioGrupo() != null ? ug.getTipoUsuarioGrupo().getNombre() : "Miembro",
+                            ug.getFechaHoraAlta(),
+                            null // si luego agregan fecha de baja del rol, mapear acá
+                    ))
+                    .collect(Collectors.toList());
+
+            grupos.add(new DTOGruposUsuario.GrupoDTO(g.getId(), g.getNombre(), roles));
+        }
+
+        return new DTOGruposUsuario(grupos);
+    }
+
+    @Override
+    public DTOInteraccionesUsuario adminObtenerInteraccionesUsuario(String username) {
+        List<DTOInteraccionesUsuario.InteraccionDTO> interacciones = new ArrayList<>();
+
+        // 1) Grupos (pertenencias)
+        for (UsuarioGrupo ug : usuarioGrupoRepository.findAllForUsername(username)) {
+            Grupo g = ug.getGrupo();
+            if (g != null) {
+                interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                        g.getId(), g.getNombre(), "Grupo",
+                        ug.getFechaHoraAlta(), null, null
+                ));
+            }
+        }
+
+        // 2) Eventos (organizador.username) -> inicio/fin
+        for (Evento ev : eventoRepository.findAllByOrganizador_Username(username)) {
+            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                    ev.getId(), ev.getNombre(), "Evento",
+                    ev.getFechaHoraInicio(), ev.getFechaHoraFin(), null
+            ));
+        }
+
+        // 3) Espacios (propietario.username) -> alta/baja
+        for (Espacio es : espacioRepository.findAllByPropietario_Username(username)) {
+            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                    es.getId(), es.getNombre(), "Espacio",
+                    es.getFechaHoraAlta(), es.getFechaHoraBaja(), null
+            ));
+        }
+
+        // 4) SuperEventos (usuario.username) -> sin fechas en la entidad
+        for (SuperEvento se : superEventoRepository.findAllByUsuario_Username(username)) {
+            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                    se.getId(), se.getNombre(), "SuperEvento",
+                    null, null, null
+            ));
+        }
+
+        // 5) Directos (chat DIRECTO por username en usuario1 o usuario2) — método con 6 argumentos
+        for (Chat c : chatRepository.findAllByTipoAndUsuario1_UsernameOrTipoAndUsuario2_Username(
+                Chat.Tipo.DIRECTO, username,
+                Chat.Tipo.DIRECTO, username)) {
+
+            Usuario otro = usernameEquals(c.getUsuario1(), username) ? c.getUsuario2() : c.getUsuario1();
+            String otroUsername = (otro != null) ? otro.getUsername() : null;
+            String nombre = (otro != null) ? displayName(otro) : "Chat directo";
+
+            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
+                    c.getId(), nombre, "Directo",
+                    c.getFechaHoraAlta(), c.getFechaHoraBaja(), otroUsername
+            ));
+        }
+
+        // Deduplicar por (tipo,id) + ordenar por fechaDesde desc (nulls al final)
+        interacciones = interacciones.stream()
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(
+                                it -> it.getTipo() + "#" + it.getId(),
+                                it -> it,
+                                (a, b) -> a,
+                                LinkedHashMap::new
+                        ),
+                        m -> new ArrayList<>(m.values())
+                ));
+
+        interacciones.sort(Comparator
+                .comparing(DTOInteraccionesUsuario.InteraccionDTO::getFechaDesde,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .reversed());
+
+        return new DTOInteraccionesUsuario(interacciones);
+    }
+
+    // ================== HELPERS PRIVADOS (faltaban) ==================
+    private static boolean usernameEquals(Usuario u, String username) {
+        return u != null && username != null && username.equals(u.getUsername());
+    }
+
+    private static String displayName(Usuario u) {
+        if (u == null) return "Usuario";
+        if ((u.getNombre() != null && !u.getNombre().isBlank()) ||
+            (u.getApellido() != null && !u.getApellido().isBlank())) {
+            return (Optional.ofNullable(u.getNombre()).orElse("") + " " +
+                    Optional.ofNullable(u.getApellido()).orElse("")).trim();
+        }
+        if (u.getUsername() != null) return u.getUsername();
+        if (u.getMail() != null) return u.getMail();
+        return "Usuario " + u.getId();
+    }
+
+    // --- Denuncias ---
+    @Override
+    public Page<DTODenunciaUsuario> obtenerDenunciasUsuario(String username, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return denunciaEventoRepository.pageDenunciasUsuario(username, pageable);
+    }
 
 
 }

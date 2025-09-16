@@ -1,6 +1,9 @@
 package com.evtnet.evtnetback.Repositories;
 
 import com.evtnet.evtnetback.Entities.Usuario;
+
+import com.evtnet.evtnetback.Repositories.BaseRepository;
+
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
@@ -14,4 +17,10 @@ public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
     boolean existsByUsernameIgnoreCase(String username);
     boolean existsByMailIgnoreCase(String mail);
     boolean existsByDni(String dni);
+
+    // Útil si querés evitar N+1 al traer grupos/tipos con un solo hit
+    Optional<Usuario> findWithGruposByUsername(String username);
+
+    Optional<Usuario> findWithRolesByUsername(String username);
+
 }

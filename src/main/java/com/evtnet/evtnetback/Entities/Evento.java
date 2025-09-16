@@ -83,8 +83,8 @@ public class Evento extends Base {
     @JoinColumn(name = "espacio_id")
     private Espacio espacio;
 
-    @OneToOne(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private Chat chat;
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Chat> chats;
 
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<ComprobantePago> comprobantesPago;

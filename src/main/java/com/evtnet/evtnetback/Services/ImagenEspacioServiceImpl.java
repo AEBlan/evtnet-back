@@ -16,8 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class ImagenEspacioServiceImpl extends BaseServiceImpl<ImagenEspacio, Long>
-        implements ImagenEspacioService {
+public class ImagenEspacioServiceImpl extends BaseServiceImpl<ImagenEspacio, Long>implements ImagenEspacioService {
 
     private final ImagenEspacioRepository imagenRepo;
     private final EspacioRepository espacioRepo;

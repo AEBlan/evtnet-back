@@ -467,7 +467,7 @@ WHERE NOT EXISTS (
   SELECT 1 FROM motivo_calificacion 
   WHERE LOWER(nombre)='grosero' AND tipo_calificacion_id=(SELECT id FROM tipo_calificacion WHERE LOWER(nombre)='mala')
 );
-
+/*
 -- Recomendado: ejecutar en una transacción para poder revertir si algo falla
 START TRANSACTION;
 
@@ -562,3 +562,143 @@ INSERT INTO inscripcion (fecha_hora_alta, fecha_hora_baja,permitir_devolucion_co
 VALUES (NOW() - INTERVAL 12 HOUR, NULL, 1,@id_sam, @id_evento1);
 
 COMMIT;
+
+START TRANSACTION;
+
+-- ===================== CHATS (obligatorios para los grupos) =====================
+INSERT INTO chat (id, tipo, fecha_hora_alta, fecha_hora_baja, usuario1_id, usuario2_id)
+VALUES
+  (600, 'ESPACIO', '2025-06-01 10:00:00', NULL, NULL, NULL),
+  (601, 'ESPACIO', '2025-06-15 12:00:00', NULL, NULL, NULL)
+ON DUPLICATE KEY UPDATE tipo=VALUES(tipo);
+
+-- ===================== GRUPOS =====================
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+VALUES
+  (100, 'Grupo de Fútbol', 'Grupo sobre fútbol', 600),
+  (101, 'Grupo de Pádel',  'Grupo sobre pádel',  601)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), chat_id=VALUES(chat_id);
+
+-- ===================== TIPOS DE USUARIO-GRUPO =====================
+INSERT INTO tipo_usuario_grupo (id, nombre, fecha_hora_alta)
+VALUES
+  (12, 'Administrador', '2025-01-01 00:00:00'),
+  (13, 'Miembro',       '2025-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+
+-- ===================== USUARIO_GRUPO =====================
+-- ⚠️ Ajusté para usar los IDs correctos de tipo_usuario_grupo (12 y 13, no 10 y 11)
+INSERT INTO usuario_grupo (id, usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+VALUES
+  (1000, 1, 100, 12, '2025-06-01 10:00:00'),  -- luly Admin en Grupo de Fútbol
+  (1001, 1, 101, 13, '2025-07-01 15:00:00'),  -- luly Miembro en Grupo de Pádel
+  (1002, 2, 100, 13, '2025-06-02 11:00:00')   -- juan Miembro en Grupo de Fútbol
+ON DUPLICATE KEY UPDATE tipo_usuario_grupo_id=VALUES(tipo_usuario_grupo_id);
+
+-- ===================== EVENTOS =====================
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, organizador_id)
+VALUES
+  (200, 'Torneo Fútbol 5', 'Evento de fútbol', '2025-07-10 20:00:00', '2025-07-10 22:00:00', 1),
+  (201, 'Partido Pádel',   'Encuentro de pádel','2025-08-05 19:00:00', '2025-08-05 21:00:00', 1)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+
+-- ===================== ESPACIOS =====================
+INSERT INTO espacio (id, nombre, descripcion, fecha_hora_alta, fecha_hora_baja, propietario_id)
+VALUES
+  (300, 'Cancha Techada',        'Cancha indoor',              '2025-06-20 09:00:00', NULL, 1),
+  (301, 'Polideportivo Central', 'Polideportivo municipal',    '2025-06-25 09:00:00', NULL, 1)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+
+-- ===================== SUPER EVENTO =====================
+INSERT INTO super_evento (id, nombre, descripcion, usuario_id)
+VALUES
+  (400, 'Liga UTN', 'Super evento de deportes universitarios', 1)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+
+COMMIT;
+*/
+START TRANSACTION;
+
+-- =====================================================
+-- Asegurar ORGANIZADORES en los eventos que ya tenés
+-- (ajustá si querés otros)
+-- =====================================================
+-- Sergio Albino (id=1) organiza Torneo Fútbol 5 (200)
+UPDATE evento SET organizador_id = 1 WHERE id = 200;
+
+-- Carol (id=3) organiza Partido Pádel (201)
+UPDATE evento SET organizador_id = 3 WHERE id = 201;
+
+-- adminevt (id=2) organiza los demás de prueba (1,10,11)
+UPDATE evento SET organizador_id = 2 WHERE id IN (1,10,11);
+
+-- =====================================================
+-- ESTADOS de denuncia (si ya existen, se actualizan)
+-- =====================================================
+INSERT INTO estado_denuncia_evento (id, nombre, descripcion, fecha_hora_alta)
+VALUES
+  (1, 'Ingresada',   'Denuncia creada por el usuario',        '2025-01-01 00:00:00'),
+  (2, 'En revisión', 'Asignada a un responsable para análisis','2025-01-01 00:00:00'),
+  (3, 'Resuelta',    'Cerrada con resolución',                 '2025-01-01 00:00:00'),
+  (4, 'Rechazada',   'Cerrada sin lugar',                      '2025-01-01 00:00:00')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), descripcion = VALUES(descripcion);
+
+-- =====================================================
+-- DENUNCIAS (9000+ para no pisar nada)
+-- denunciante_id -> el usuario que denuncia
+-- evento_id      -> evento denunciado
+-- =====================================================
+INSERT INTO denuncia_evento (id, titulo, descripcion, evento_id, inscripcion_id, denunciante_id)
+VALUES
+  (9000, 'Juego brusco',              'Faltas fuertes no sancionadas.',       200, NULL, 11), -- luly denuncia evento 200 (orga: 1)
+  (9001, 'Tardanza del organizador',  'Comenzó 30 minutos tarde.',            201, NULL, 12), -- sam  denuncia evento 201 (orga: 3)
+  (9002, 'Cobro indebido',            'Se cobró un extra no avisado.',          1, NULL, 13)  -- mara denuncia evento   1 (orga: 2)
+ON DUPLICATE KEY UPDATE
+  titulo = VALUES(titulo),
+  descripcion = VALUES(descripcion),
+  evento_id = VALUES(evento_id),
+  denunciante_id = VALUES(denunciante_id);
+
+-- =====================================================
+-- HISTORIAL / ESTADO ACTUAL de cada denuncia
+-- responsable_id = usuario que movió el estado (ej: adminevt id=2)
+-- Las fechas hacen que la última fila de cada denuncia quede como estado vigente (fecha_hora_hasta = NULL)
+-- =====================================================
+
+-- Denuncia 9000 (luly -> evento 200)
+INSERT INTO denuncia_evento_estado
+  (id,  descripcion,                     fecha_hora_desde,     fecha_hora_hasta,    estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
+VALUES
+  (9100,'Creada por luly',               '2025-07-10 22:05:00','2025-07-11 09:00:00', 1,                         9000,               NULL),
+  (9101,'En revisión por admin',         '2025-07-11 09:00:00','2025-07-12 12:00:00', 2,                         9000,               2),
+  (9102,'Resuelta con advertencia',      '2025-07-12 12:00:00',        NULL,          3,                         9000,               2)
+ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+
+-- Denuncia 9001 (sam -> evento 201)
+INSERT INTO denuncia_evento_estado
+  (id,  descripcion,                     fecha_hora_desde,     fecha_hora_hasta,    estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
+VALUES
+  (9110,'Creada por sam',                '2025-08-05 21:10:00','2025-08-06 10:00:00', 1,                         9001,               NULL),
+  (9111,'En revisión por admin',         '2025-08-06 10:00:00',        NULL,          2,                         9001,               2)
+ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+
+-- Denuncia 9002 (mara -> evento 1)
+INSERT INTO denuncia_evento_estado
+  (id,  descripcion,                     fecha_hora_desde,     fecha_hora_hasta,    estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
+VALUES
+  (9120,'Creada por mara',               '2025-09-18 03:15:00','2025-09-19 09:00:00', 1,                         9002,               NULL),
+  (9121,'Rechazada por falta de pruebas','2025-09-19 09:00:00',        NULL,          4,                         9002,               2)
+ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+
+COMMIT;
+
+-- (Opcional) chequeo rápido del “último estado” por denuncia:
+-- SELECT de.id, de.titulo, e.nombre AS evento, u1.username AS denunciante,
+--        u2.username AS organizador, dee.estado_denuncia_evento_id AS estado_actual, dee.fecha_hora_desde
+-- FROM denuncia_evento de
+-- JOIN evento e              ON e.id = de.evento_id
+-- JOIN usuario u1            ON u1.id = de.denunciante_id
+-- JOIN usuario u2            ON u2.id = e.organizador_id
+-- JOIN denuncia_evento_estado dee ON dee.denuncia_evento_id = de.id
+-- WHERE dee.fecha_hora_hasta IS NULL
+-- ORDER BY dee.fecha_hora_desde DESC;

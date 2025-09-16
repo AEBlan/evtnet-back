@@ -17,13 +17,10 @@ import java.util.List;
          @Index(name = "ix_chat_usuario2", columnList = "usuario2_id")
        },
        uniqueConstraints = {
-         // Un único chat por cada ámbito
-         @UniqueConstraint(name = "uk_chat_evento", columnNames = {"evento_id"}),
-         @UniqueConstraint(name = "uk_chat_superevento", columnNames = {"super_evento_id"}),
-         @UniqueConstraint(name = "uk_chat_espacio", columnNames = {"espacio_id"}),
-         // Un único chat directo por par (u1,u2). (Ojo con (u2,u1); normalizalo en servicio)
-         @UniqueConstraint(name = "uk_chat_directo", columnNames = {"usuario1_id","usuario2_id"})
-       })
+        // único chat directo por par (u1,u2)
+        @UniqueConstraint(name = "uk_chat_directo", columnNames = {"usuario1_id","usuario2_id"})
+      }
+       )
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -51,16 +48,17 @@ public class Chat extends Base {
   private Usuario usuario2;
 
   // ---- Chat de sala (un único ámbito) ----
-  @OneToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "evento_id", unique = true)
   private Evento evento;
 
-  @OneToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "super_evento_id", unique = true)
   private SuperEvento superEvento;
 
-  @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "espacio_id", unique = true)
+  // ---- N chats pueden pertenecer a un mismo espacio
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "espacio_id")
   private Espacio espacio;
 
   // ---- Hijos ----
