@@ -895,4 +895,154 @@ WHERE NOT EXISTS (
   WHERE chat_id=(SELECT id FROM chat WHERE tipo='DIRECTO' AND usuario1_id=@u_carol AND usuario2_id=@u_sam LIMIT 1)
     AND texto='Te paso la ubicación del poli'
 );
+
+-- ============================================
+-- CHATS (primero, porque Grupo depende de Chat)
+-- ============================================
+INSERT INTO usuario (id, nombre, apellido, username, mail, contrasena, fecha_hora_alta)
+SELECT 4, 'Test', 'User', 'testuser', 'test@correo.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 4);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 200, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 200);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 201, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 201);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 202, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 202);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 203, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 203);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 204, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 204);
+
+-- ============================================
+-- GRUPOS (cada uno con su chat asociado)
+-- ============================================
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 100, 'Grupo Futbol 5', 'Equipo para jugar los jueves en la noche', 200
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 100);
+
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 101, 'Grupo Tenis', 'Jugamos dobles los fines de semana', 201
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 101);
+
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 102, 'Grupo Ajedrez', 'Amigos que se juntan a practicar ajedrez', 202
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 102);
+
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 103, 'Grupo Running', 'Grupo de running UTN', 203
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 103);
+
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 104, 'Grupo Proyecto UTN', 'Trabajo práctico de ingeniería de software', 204
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 104);
+
+-- ============================================
+-- USUARIO-GRUPO (miembros de los grupos)
+-- ============================================
+
+-- Grupo Futbol 5
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 1, 100, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 1 AND grupo_id = 100);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 2, 100, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 2 AND grupo_id = 100);
+
+-- Grupo Tenis
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 2, 101, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 2 AND grupo_id = 101);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 3, 101, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 3 AND grupo_id = 101);
+
+-- Grupo Ajedrez
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 4, 102, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 4 AND grupo_id = 102);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 1, 102, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 1 AND grupo_id = 102);
+
+-- Grupo Running
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 3, 103, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 3 AND grupo_id = 103);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 1, 103, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 1 AND grupo_id = 103);
+
+-- Grupo Proyecto UTN
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 1, 104, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 1 AND grupo_id = 104);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 2, 104, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 2 AND grupo_id = 104);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 3, 104, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 3 AND grupo_id = 104);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 4, 104, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 4 AND grupo_id = 104);
+
+-- ===================================================================
+-- VINCULAR USUARIO 'sergioalbino' COMO ADMINISTRADOR DEL GRUPO 1
+-- ===================================================================
+INSERT INTO usuario_grupo (fecha_hora_alta, usuario_id, grupo_id, tipo_usuario_grupo_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1),
+       1,
+       (SELECT id FROM tipo_usuario_grupo WHERE nombre='Administrador' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM usuario_grupo 
+  WHERE usuario_id=(SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1)
+    AND grupo_id=1
+);
+
+-- ===================================================================
+-- VINCULAR 'carol' COMO MIEMBRO DEL GRUPO 1
+-- ===================================================================
+INSERT INTO usuario_grupo (fecha_hora_alta, usuario_id, grupo_id, tipo_usuario_grupo_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='carol' LIMIT 1),
+       1,
+       (SELECT id FROM tipo_usuario_grupo WHERE nombre='Miembro' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM usuario_grupo 
+  WHERE usuario_id=(SELECT id FROM usuario WHERE username='carol' LIMIT 1)
+    AND grupo_id=1
+);
+
+-- ===================================================================
+-- VINCULAR 'sam' COMO MIEMBRO DEL GRUPO 1
+-- ===================================================================
+INSERT INTO usuario_grupo (fecha_hora_alta, usuario_id, grupo_id, tipo_usuario_grupo_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='sam' LIMIT 1),
+       1,
+       (SELECT id FROM tipo_usuario_grupo WHERE nombre='Miembro' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM usuario_grupo 
+  WHERE usuario_id=(SELECT id FROM usuario WHERE username='sam' LIMIT 1)
+    AND grupo_id=1
+);
+
 COMMIT;
