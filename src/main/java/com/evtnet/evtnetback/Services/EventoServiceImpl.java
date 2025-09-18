@@ -236,7 +236,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
         Evento e = eventoRepo.findById(dto.getIdEvento())
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-        if (inscripcionRepo.countByEventoIdAndUsuarioUsername(e.getId(), dto.getUsername()) > 0) return false;
+        String username = resolveUsername(dto.getUsername()); // ← tomar del token si viene vacío
+
+        if (inscripcionRepo.countByEventoIdAndUsuarioUsername(e.getId(), username) > 0) return false;
         if (LocalDateTime.now().isAfter(e.getFechaHoraInicio())) return false;
 
         int actuales = inscripcionRepo.countParticipantesEfectivos(e.getId());
@@ -253,6 +255,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
         return true;
     }
 
+
     @Override @Transactional
     public void inscribirse(DTOInscripcion dto) {
         if (!verificarDatosPrePago(dto))
@@ -260,13 +263,22 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
         Evento e = eventoRepo.findById(dto.getIdEvento())
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
-        Usuario u = usuarioRepo.findByUsername(dto.getUsername())
+
+        String username = resolveUsername(dto.getUsername()); // ← token si falta
+        Usuario u = usuarioRepo.findByUsername(username)
                 .orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
         Inscripcion ins = new Inscripcion();
         ins.setEvento(e);
         ins.setUsuario(u);
         ins.setFechaHoraAlta(LocalDateTime.now());
+        // precio: usa el del DTO si viene, sino el del evento
+        ins.setPrecioInscripcion(dto.getPrecioInscripcion() != null
+                ? dto.getPrecioInscripcion()
+                : e.getPrecioInscripcion());
+        // ¡crítico!
+        ins.setPermitirDevolucionCompleta(Boolean.FALSE);
+
         inscripcionRepo.save(ins);
 
         if (dto.getInvitados() != null) {
@@ -279,7 +291,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
                 invitadoRepo.save(inv);
             }
         }
+
+    // (opcional) persistir dto.getDatosPago() → comprobantes
     }
+
 
     @Override @Transactional
     public void desinscribirse(long idEvento) {
@@ -488,4 +503,15 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
         int mins = rem - horas * 60;
         return new int[]{dias, horas, mins};
     }
+
+    private String resolveUsername(String maybeUsername) {
+        String u = (maybeUsername == null) ? "" : maybeUsername.trim();
+        if (!u.isEmpty()) return u;
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            throw new HttpErrorException(401, "No hay usuario autenticado");
+        }
+        return auth.getName();
+    }
+
 }
