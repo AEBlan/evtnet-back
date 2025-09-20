@@ -149,14 +149,29 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
         return ResponseEntity.ok(service.obtenerPerfilParaEditar(username));
     }
 
-    @PutMapping(value = "/editarPerfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Void> editarPerfil(@RequestPart("datos") DTOEditarPerfil datos,
-                                             @RequestPart(value = "foto", required = false) MultipartFile foto) throws Exception {
-        byte[] bytes = (foto != null && !foto.isEmpty()) ? foto.getBytes() : null;
-        String nombre = (foto != null) ? foto.getOriginalFilename() : null;
-        String ct     = (foto != null) ? foto.getContentType() : null;
+    @PutMapping("/editarPerfil")
+    public ResponseEntity<Void> editarPerfil(
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) String apellido,
+            @RequestParam(required = false) String dni,
+            @RequestParam(required = false) String cbu,
+            @RequestParam(required = false) Long fechaNacimiento,
+            @RequestPart(value = "fotoDePerfil", required = false) MultipartFile foto) throws Exception {
 
-        service.editarPerfil(datos, bytes, nombre, ct);
+        DTOEditarPerfil dto = DTOEditarPerfil.builder()
+                .nombre(nombre)
+                .apellido(apellido)
+                .dni(dni)
+                .cbu(cbu)
+                .fechaNacimiento(fechaNacimiento)
+                .build();
+
+        service.editarPerfil(
+                dto,
+                (foto != null ? foto.getBytes() : null),
+                (foto != null ? foto.getOriginalFilename() : null),
+                (foto != null ? foto.getContentType() : null)
+        );
         return ResponseEntity.noContent().build();
     }
 

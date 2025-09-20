@@ -1045,4 +1045,88 @@ WHERE NOT EXISTS (
     AND grupo_id=1
 );
 
+-- =========================
+-- Usuarios (propietario y participantes)
+-- =========================
+INSERT INTO usuario (id, username, mail, contrasena)
+SELECT 10, 'propietario1', 'propietario@test.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 10);
+
+INSERT INTO usuario (id, username, mail, contrasena)
+SELECT 11, 'userA', 'userA@test.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 11);
+
+INSERT INTO usuario (id, username, mail, contrasena)
+SELECT 12, 'userB', 'userB@test.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 12);
+
+INSERT INTO usuario (id, username, mail, contrasena)
+SELECT 74, 'userC', 'userC@test.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 74);
+
+-- =========================
+-- Roles asignados
+-- (asume que rol_id 2=USUARIO, 3=ORGANIZADOR ya existen)
+-- =========================
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 100, NOW(), 2, 10 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 100);
+
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 101, NOW(), 3, 10 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 101);
+
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 102, NOW(), 2, 11 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 102);
+
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 103, NOW(), 2, 12 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 103);
+
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 104, NOW(), 2, 74 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 104);
+
+-- =========================
+-- Espacio del propietario
+-- =========================
+INSERT INTO espacio (id, nombre, descripcion, fecha_hora_alta, direccion_ubicacion, propietario_id)
+SELECT 10, 'Polideportivo Central', 'Gimnasio techado', NOW(), 'Av. Siempre Viva 123', 10
+WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE id = 10);
+
+-- =========================
+-- Eventos dentro del espacio
+-- =========================
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, espacio_id, organizador_id)
+SELECT 100, 'Torneo de Ajedrez', 'Competencia abierta', '2025-09-10 18:00:00', '2025-09-10 22:00:00', 10, 10
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 100);
+
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, espacio_id, organizador_id)
+SELECT 101, 'Clínica de Básquet', 'Entrenamiento especial', '2025-09-15 10:00:00', '2025-09-15 12:00:00', 10, 10
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 101);
+
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, espacio_id, organizador_id)
+SELECT 102, 'Clase de Yoga', 'Sesión relajante', '2025-09-20 09:00:00', '2025-09-20 10:30:00', 10, 10
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 102);
+
+-- =========================
+-- Inscripciones (activas/cancelada)
+-- =========================
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1000, NOW(), 100.0, TRUE, 11, 100, NULL
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1000);
+
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1001, NOW(), 100.0, TRUE, 12, 100, NULL
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1001);
+
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1002, NOW(), 100.0, TRUE, 74, 100, NULL
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1002);
+
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1003, NOW(), 200.0, TRUE, 11, 101, NULL
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1003);
+
+-- Cancelada (no cuenta)
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1004, NOW(), 150.0, TRUE, 12, 101, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1004);
+
 COMMIT;
