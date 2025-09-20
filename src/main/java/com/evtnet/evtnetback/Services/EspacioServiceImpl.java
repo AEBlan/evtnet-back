@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import com.evtnet.evtnetback.Entities.TipoEspacio;
 import com.evtnet.evtnetback.Repositories.TipoEspacioRepository;
+import com.evtnet.evtnetback.Repositories.UsuarioRepository;
+
 import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
@@ -27,7 +29,6 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
     private final EspacioRepository espacioRepository;
     private final DisciplinaRepository disciplinaRepository;
     private final DisciplinaEspacioRepository disciplinaEspacioRepository;
-    private final AdministradorEspacioRepository administradorEspacioRepository;
     private final UsuarioRepository usuarioRepository;
     private final TipoEspacioRepository tipoEspacioRepository;
 
@@ -40,7 +41,6 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         DisciplinaRepository disciplinaRepository,
         DisciplinaEspacioRepository disciplinaEspacioRepository,
         TipoEspacioRepository tipoEspacioRepository,
-        AdministradorEspacioRepository administradorEspacioRepository,
         UsuarioRepository usuarioRepository
     ) {
     super(espacioRepository);
@@ -48,74 +48,63 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
     this.disciplinaRepository = disciplinaRepository;
     this.disciplinaEspacioRepository = disciplinaEspacioRepository;
     this.tipoEspacioRepository = tipoEspacioRepository;
-    this.administradorEspacioRepository = administradorEspacioRepository;
     this.usuarioRepository = usuarioRepository;
     }
 
 
-    @Override
-    @Transactional
-    public IdResponse crearEspacioPrivado(DTOCrearEspacio dto, Long usuarioActualId) {
-        validarCrear(dto);
+  @Override
+@Transactional
+public IdResponse crearEspacioPrivado(DTOCrearEspacio dto, Long usuarioActualId) {
+    validarCrear(dto);
 
-        final String nombre = dto.nombre().trim();
-        final String dir = dto.direccion().trim();
+    final String nombre = dto.nombre().trim();
+    final String dir    = dto.direccion().trim();
 
-        // Antiduplicado por nombre + dirección (no se usa lat/lon)
-        if (espacioRepository.existsByNombreIgnoreCaseAndDireccionUbicacionIgnoreCase(nombre, dir)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Ya existe un espacio con el mismo nombre y dirección");
-        }
-
-        Espacio e = new Espacio();
-        e.setNombre(nombre);
-        e.setDescripcion(dto.descripcion());
-        e.setDireccionUbicacion(dir);
-        e.setLatitudUbicacion(BigDecimal.valueOf(dto.latitud()));
-        e.setLongitudUbicacion(BigDecimal.valueOf(dto.longitud()));
-
-        // 1) Resolver usuario actual
-        var usuario = usuarioRepository.findById(usuarioActualId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no válido"));
-
-        // 2) Buscar (o crear) el AdministradorEspacio de ese usuario
-        var admin = administradorEspacioRepository.findByPropietario_Id(usuario.getId())
-        .orElseGet(() -> administradorEspacioRepository.save(
-                AdministradorEspacio.builder()
-                        .propietario(usuario)
-                        .fechaHoraAlta(java.time.LocalDateTime.now())
-                        .build()
-        ));
-
-        // TipoEspacio PRIVADO
-        TipoEspacio tipoPrivado = resolveTipoEspacioPrivado();
-        e.setTipoEspacio(tipoPrivado);
-
-        // 3) Setear propietario del espacio
-        e.setAdministradorEspacio(admin);
-
-        // Privado por defecto: no asociar solicitud pública
-        e.setSolicitudEspacioPublico(null);
-
-        //Guardar
-        e = espacioRepository.save(e);
-
-        // Vincular disciplinas si vinieron
-        if (dto.disciplinas() != null && !dto.disciplinas().isEmpty()) {
-            var disciplinas = disciplinaRepository.findAllById(dto.disciplinas());
-            if (disciplinas.size() != dto.disciplinas().size()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Alguna disciplina no existe");
-            }
-            for (Disciplina d : disciplinas) {
-                var de = new DisciplinaEspacio();
-                de.setEspacio(e);
-                de.setDisciplina(d);
-                disciplinaEspacioRepository.save(de);
-            }
-        }
-
-        return new IdResponse(e.getId());
+    // Duplicado por nombre + dirección
+    if (espacioRepository.existeDuplicadoNombreDireccion(nombre, dir)) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Ya existe un espacio con el mismo nombre y dirección");
     }
+
+    // Propietario (usuario autenticado)
+    var usuario = usuarioRepository.findById(usuarioActualId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no válido"));
+
+    // TipoEspacio PRIVADO
+    TipoEspacio tipoPrivado = resolveTipoEspacioPrivado();
+
+    // ---- Crear usando SETTERS ----
+    Espacio e = new Espacio();
+    e.setNombre(nombre);
+    e.setDescripcion(dto.descripcion());
+    e.setDireccionUbicacion(dir);
+    e.setLatitudUbicacion(java.math.BigDecimal.valueOf(dto.latitud()));
+    e.setLongitudUbicacion(java.math.BigDecimal.valueOf(dto.longitud()));
+    e.setPropietario(usuario);              // <- propietario directo
+    e.setTipoEspacio(tipoPrivado);          // <- privado por tipo
+    e.setSolicitudEspacioPublico(null);     // <- privado por defecto (opcional)
+    e.setFechaHoraAlta(java.time.LocalDateTime.now());
+
+    // Guardar
+    e = espacioRepository.save(e);
+
+    // Vincular disciplinas si vinieron
+    if (dto.disciplinas() != null && !dto.disciplinas().isEmpty()) {
+        var disciplinas = disciplinaRepository.findAllById(dto.disciplinas());
+        if (disciplinas.size() != dto.disciplinas().size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Alguna disciplina no existe");
+        }
+        for (Disciplina d : disciplinas) {
+            var de = new DisciplinaEspacio();
+            de.setEspacio(e);
+            de.setDisciplina(d);
+            disciplinaEspacioRepository.save(de);
+        }
+    }
+
+    return new IdResponse(e.getId());
+}
+
 
     @Override
     @Transactional(readOnly = true)
