@@ -75,9 +75,12 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
     @Override
     @Transactional
-    public List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro) {
-        return eventoRepo.findAll(EventoSpecs.byFiltroMisEventos(filtro), Sort.by("fechaHoraInicio").descending())
-                .stream().map(EventoSearchMapper::toResultadoBusquedaMis).toList();
+    public List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro, String username) {
+        return eventoRepo.findAll(EventoSpecs.byFiltroMisEventos(filtro, username),
+                              Sort.by("fechaHoraInicio").descending())
+            .stream()
+            .map(EventoSearchMapper::toResultadoBusquedaMis)
+            .toList();
     }
 
     @Override
@@ -133,63 +136,70 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     @Override
     @Transactional
     public long crearEvento(DTOEventoCreate r) {
-        if (r.getFechaHoraInicio() == null || r.getFechaHoraFin() == null) {
-            throw new HttpErrorException(400, "Fecha/hora de inicio y fin son requeridas");
-        }
-
-        Evento e = new Evento();
-        e.setNombre(r.getNombre());
-        e.setDescripcion(r.getDescripcion());
-        e.setFechaHoraInicio(r.getFechaHoraInicio());
-        e.setFechaHoraFin(r.getFechaHoraFin());
-        e.setDireccionUbicacion(r.getDireccionUbicacion());
-        e.setLatitudUbicacion(r.getLatitudUbicacion());
-        e.setLongitudUbicacion(r.getLongitudUbicacion());
-        e.setPrecioInscripcion(r.getPrecioInscripcion());
-        e.setCantidadMaximaInvitados(r.getCantidadMaximaInvitados());
-        e.setCantidadMaximaParticipantes(r.getCantidadMaximaParticipantes());
-        e.setPrecioOrganizacion(r.getPrecioOrganizacion());
-
-        if (r.getEspacioId() != null) {
-            Espacio esp = espacioRepo.findById(r.getEspacioId())
-                    .orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado"));
-            e.setEspacio(esp);
-        }
-        if (r.getTipoInscripcionEventoId() != null) {
-            TipoInscripcionEvento tie = tipoInscripcionRepo.findById(r.getTipoInscripcionEventoId())
-                    .orElseThrow(() -> new HttpErrorException(400, "Tipo de inscripción inválido"));
-            e.setTipoInscripcionEvento(tie);
-        }
-        if (r.getModoEventoId() != null) {
-            ModoEvento me = modoRepo.findById(r.getModoEventoId())
-                    .orElseThrow(() -> new HttpErrorException(400, "Modo de evento inválido"));
-            e.setModoEvento(me);
-        }
-        if (r.getAdministradorEventoId() != null) {
-            AdministradorEvento adm = administradorEventoRepo.findById(r.getAdministradorEventoId())
-                    .orElseThrow(() -> new HttpErrorException(400, "Administrador de evento inválido"));
-            e.getAdministradoresEvento().add(adm);
-        }
-
-        // Hijos DisciplinaEvento
-        List<DisciplinaEvento> hijos = new ArrayList<>();
-        if (r.getDisciplinasEvento() != null) {
-            for (DTODisciplinaEventoCreate deDto : r.getDisciplinasEvento()) {
-                Long disciplinaId = (deDto.getDisciplina() != null) ? deDto.getDisciplina().getId() : null;
-                if (disciplinaId == null) {
-                    throw new HttpErrorException(400, "disciplina.id es requerido en cada disciplinasEvento");
-                }
-                Disciplina disciplina = disciplinaBaseRepo.findById(disciplinaId)
-                        .orElseThrow(() -> new HttpErrorException(400, "Disciplina no encontrada: id=" + disciplinaId));
-
-                hijos.add(DisciplinaEvento.builder().evento(e).disciplina(disciplina).build());
-            }
-        }
-        e.setDisciplinasEvento(hijos);
-
-        eventoRepo.save(e);
-        return e.getId();
+    if (r.getFechaHoraInicio() == null || r.getFechaHoraFin() == null) {
+        throw new HttpErrorException(400, "Fecha/hora de inicio y fin son requeridas");
     }
+
+    Evento e = new Evento();
+    e.setNombre(r.getNombre());
+    e.setDescripcion(r.getDescripcion());
+    e.setFechaHoraInicio(r.getFechaHoraInicio());
+    e.setFechaHoraFin(r.getFechaHoraFin());
+    e.setDireccionUbicacion(r.getDireccionUbicacion());
+    e.setLatitudUbicacion(r.getLatitudUbicacion());
+    e.setLongitudUbicacion(r.getLongitudUbicacion());
+    e.setPrecioInscripcion(r.getPrecioInscripcion());
+    e.setCantidadMaximaInvitados(r.getCantidadMaximaInvitados());
+    e.setCantidadMaximaParticipantes(r.getCantidadMaximaParticipantes());
+    e.setPrecioOrganizacion(r.getPrecioOrganizacion());
+
+    // 🔹 Asignar organizador (usuario autenticado)
+    String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    Usuario organizador = usuarioRepo.findByUsername(username)
+            .orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+    e.setOrganizador(organizador);
+
+    if (r.getEspacioId() != null) {
+        Espacio esp = espacioRepo.findById(r.getEspacioId())
+                .orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado"));
+        e.setEspacio(esp);
+    }
+    if (r.getTipoInscripcionEventoId() != null) {
+        TipoInscripcionEvento tie = tipoInscripcionRepo.findById(r.getTipoInscripcionEventoId())
+                .orElseThrow(() -> new HttpErrorException(400, "Tipo de inscripción inválido"));
+        e.setTipoInscripcionEvento(tie);
+    }
+    if (r.getModoEventoId() != null) {
+        ModoEvento me = modoRepo.findById(r.getModoEventoId())
+                .orElseThrow(() -> new HttpErrorException(400, "Modo de evento inválido"));
+        e.setModoEvento(me);
+    }
+    if (r.getAdministradorEventoId() != null) {
+        AdministradorEvento adm = administradorEventoRepo.findById(r.getAdministradorEventoId())
+                .orElseThrow(() -> new HttpErrorException(400, "Administrador de evento inválido"));
+        e.getAdministradoresEvento().add(adm);
+    }
+
+    // Hijos DisciplinaEvento
+    List<DisciplinaEvento> hijos = new ArrayList<>();
+    if (r.getDisciplinasEvento() != null) {
+        for (DTODisciplinaEventoCreate deDto : r.getDisciplinasEvento()) {
+            Long disciplinaId = (deDto.getDisciplina() != null) ? deDto.getDisciplina().getId() : null;
+            if (disciplinaId == null) {
+                throw new HttpErrorException(400, "disciplina.id es requerido en cada disciplinasEvento");
+            }
+            Disciplina disciplina = disciplinaBaseRepo.findById(disciplinaId)
+                    .orElseThrow(() -> new HttpErrorException(400, "Disciplina no encontrada: id=" + disciplinaId));
+
+            hijos.add(DisciplinaEvento.builder().evento(e).disciplina(disciplina).build());
+        }
+    }
+    e.setDisciplinasEvento(hijos);
+
+    eventoRepo.save(e);
+    return e.getId();
+    }
+
 
     @Override
     @Transactional
