@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String,Object>> handleGeneric(Exception ex) {
         return ResponseEntity.status(500).body(Map.of(
                 "code", -1,
-                "message", "Error interno del servidor"
+                "message", ex.getMessage()
         ));
     }
 
