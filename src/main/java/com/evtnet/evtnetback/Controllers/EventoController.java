@@ -10,6 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+
 
 import java.util.List;
 import java.util.Map;
@@ -101,4 +105,102 @@ public class EventoController {
         service.modificarEvento(dto);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/obtenerInscripciones")
+    public ResponseEntity<DTOInscripcionesEvento> obtenerInscripciones(
+        @RequestParam long id,
+        @RequestParam(required = false) String busqueda) {
+    return ResponseEntity.ok(service.obtenerInscripciones(id, busqueda));
+    }
+
+    @DeleteMapping("/cancelarInscripcion")
+    public ResponseEntity<Void> cancelarInscripcion(@RequestParam long id) {
+        service.cancelarInscripcion(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/obtenerDatosParaInscripcion")
+    public ResponseEntity<DTODatosParaInscripcion> obtenerDatosParaInscripcion(
+            @RequestParam long id, Authentication auth) {
+        return ResponseEntity.ok(service.obtenerDatosParaInscripcion(id, auth.getName()));
+    }
+
+    @PostMapping("/inscribirUsuario")
+    public ResponseEntity<Void> inscribirUsuario(@RequestParam long idEvento,
+                                                @RequestParam String username) {
+        service.inscribirUsuario(idEvento, username);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/obtenerAdministradores")
+    public ResponseEntity<DTOAdministradores> obtenerAdministradores(
+        @RequestParam long idEvento,
+        Authentication auth) {
+    return ResponseEntity.ok(service.obtenerAdministradores(idEvento, auth.getName()));
+    }
+
+    @PostMapping("/agregarAdministrador")
+    public ResponseEntity<Void> agregarAdministrador(
+        @RequestParam long idEvento,
+        @RequestParam String username) {
+    service.agregarAdministrador(idEvento, username);
+    return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/quitarAdministrador")
+    public ResponseEntity<Void> quitarAdministrador(
+        @RequestParam long idEvento,
+        @RequestParam String username) {
+    service.quitarAdministrador(idEvento, username);
+    return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/entregarOrganizador")
+    public ResponseEntity<Void> entregarOrganizador(
+        @RequestParam long idEvento,
+        @RequestParam String username) {
+    service.entregarOrganizador(idEvento, username);
+    return ResponseEntity.ok().build();
+    }
+
+    // --- DENUNCIAS ---
+
+    @PostMapping("/denunciarEvento")
+    public ResponseEntity<Void> denunciarEvento(@RequestBody DTODenunciaEvento dto, Authentication auth) {
+        service.denunciarEvento(dto, auth.getName());
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/buscarDenuncias")
+    public ResponseEntity<Page<DTODenunciaEventoSimple>> buscarDenuncias(
+            @RequestBody DTOBusquedaDenunciasEventos filtro,
+            @RequestParam(defaultValue = "0") int page
+    ) {
+        return ResponseEntity.ok(service.buscarDenuncias(filtro, page));
+    }
+
+
+    @GetMapping("/obtenerDenunciaCompleta")
+    public ResponseEntity<DTODenunciaEventoCompleta> obtenerDenunciaCompleta(@RequestParam long idDenuncia) {
+        return ResponseEntity.ok(service.obtenerDenunciaCompleta(idDenuncia));
+    }
+
+    @GetMapping("/obtenerDatosParaCambioEstadoDenuncia")
+    public ResponseEntity<DTODatosParaCambioEstadoDenuncia> obtenerDatosParaCambioEstado(@RequestParam long idDenuncia) {
+        return ResponseEntity.ok(service.obtenerDatosParaCambioEstado(idDenuncia));
+    }
+
+    @PostMapping("/cambiarEstadoDenuncia")
+    public ResponseEntity<Void> cambiarEstadoDenuncia(@RequestBody DTOCambioEstadoDenuncia dto, Authentication auth) {
+        service.cambiarEstadoDenuncia(dto, auth.getName());
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/obtenerDatosParaDenunciar")
+    public ResponseEntity<DTODatosParaDenunciarEvento> obtenerDatosParaDenunciar(
+            @RequestParam long idEvento, Authentication auth) {
+        return ResponseEntity.ok(service.obtenerDatosParaDenunciar(idEvento, auth.getName()));
+    }
+
+
 }
