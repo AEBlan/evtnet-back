@@ -37,7 +37,7 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
 
     // Imagenes
     FotoResponse obtenerFotoDePerfil(String username) throws Exception;              // ← unificado
-    FotoResponse obtenerImagenDeCalificacion(String username) throws Exception;      // ← unificado
+    FotoResponseString obtenerImagenDeCalificacion(String nombre) throws Exception;
 
     class FotoResponse {
         private final byte[] bytes;
@@ -48,6 +48,20 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
                     ? "application/octet-stream" : contentType;
         }
         public byte[] getBytes() { return bytes; }
+        public String getContentType() { return contentType; }
+    }
+
+        public class FotoResponseString {
+        private final String content;
+        private final String contentType;
+
+        public FotoResponseString(String content, String contentType) {
+            this.content = content;
+            this.contentType = (contentType == null || contentType.isBlank())
+                    ? "application/octet-stream" : contentType;
+        }
+
+        public String getContent() { return content; }
         public String getContentType() { return contentType; }
     }
     // Perfil editable

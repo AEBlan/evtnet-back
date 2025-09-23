@@ -1129,4 +1129,72 @@ INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devol
 SELECT 1004, NOW(), 150.0, TRUE, 12, 101, NOW()
 WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1004);
 
+-- Script de seed: Calificaciones de ejemplo (Mara id=3, SergioAlbino id=1)
+-- Ejecutar en MariaDB/MySQL
+
+-- 1) CalificacionTipo "Normal"
+INSERT INTO calificacion_tipo (id, nombre, fecha_hora_alta)
+SELECT 1, 'Normal', NOW()
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE id = 1 OR nombre = 'Normal');
+
+-- 2) TipoCalificacion (emoji/imagen): Buena / Media / Mala
+INSERT INTO tipo_calificacion (id, nombre, imagen)
+SELECT 1, 'Buena', 'buena.png' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE id = 1 OR nombre = 'Buena');
+
+INSERT INTO tipo_calificacion (id, nombre, imagen)
+SELECT 2, 'Media', 'media.png' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE id = 2 OR nombre = 'Media');
+
+INSERT INTO tipo_calificacion (id, nombre, imagen)
+SELECT 3, 'Mala', 'mala.png' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE id = 3 OR nombre = 'Mala');
+
+-- 3) MotivoCalificacion (asociados a tipos)
+-- (IDs elegidos: 1=Puntual, 2=Asistencia completa, 3=Llegó tarde, 4=No asistió, 5=Se retiró antes)
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 1, 'Puntual', 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 1 OR (nombre='Puntual' AND tipo_calificacion_id=1));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 2, 'Asistencia completa', 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 2 OR (nombre='Asistencia completa' AND tipo_calificacion_id=1));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 3, 'Llegó tarde', 3 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 3 OR (nombre='Llegó tarde' AND tipo_calificacion_id=3));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 4, 'No asistió', 3 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 4 OR (nombre='No asistió' AND tipo_calificacion_id=3));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 5, 'Se retiró antes', 2 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 5 OR (nombre='Se retiró antes' AND tipo_calificacion_id=2));
+
+-- 4) Insertar la calificacion: autor = SergioAlbino (1), calificado = Mara (3)
+-- Usamos id = 500 para la calificacion ejemplo (se salta si ya existe)
+INSERT INTO calificacion (id, descripcion, fecha_hora, calificacion_tipo_id, autor_id, calificado_id)
+SELECT 500,
+       'Calificación por asistencia y puntualidad',
+       NOW(),
+       1,  -- calificacion_tipo_id = Normal
+       1,  -- autor_id = SergioAlbino
+       3   -- calificado_id = Mara
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM calificacion WHERE id = 500);
+
+-- 5) Asociar motivos a esa calificacion (calificacion_id = 500)
+-- Usamos ids 1001,1002 para las filas intermedias (se saltan si ya existen)
+INSERT INTO calificacion_motivo_calificacion (id, calificacion_id, motivo_calificacion_id)
+SELECT 1001, 500, 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_motivo_calificacion WHERE id = 1001 OR (calificacion_id=500 AND motivo_calificacion_id=1));
+
+INSERT INTO calificacion_motivo_calificacion (id, calificacion_id, motivo_calificacion_id)
+SELECT 1002, 500, 2 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_motivo_calificacion WHERE id = 1002 OR (calificacion_id=500 AND motivo_calificacion_id=2));
+
+
+
 COMMIT;
