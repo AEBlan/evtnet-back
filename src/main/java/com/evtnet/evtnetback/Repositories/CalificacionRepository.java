@@ -14,7 +14,7 @@ public interface CalificacionRepository extends BaseRepository <Calificacion, Lo
             join cmc.motivoCalificacion m
             join m.tipoCalificacion t
         where c.calificado.username = :username
-          and (c.calificacionTipo.nombre = 'Normal' or c.calificacionTipo is null)
+          and (c.calificacionTipo.nombre = 'Calificacion Normal' or c.calificacionTipo is null)
         group by lower(t.nombre)
         """)
     List<Object[]> conteoPorTipo(@Param("username") String username);

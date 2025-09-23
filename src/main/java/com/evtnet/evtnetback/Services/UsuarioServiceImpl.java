@@ -10,7 +10,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import lombok.extern.slf4j.Slf4j;
-import com.evtnet.evtnetback.Repositories.BaseRepository;
 
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.data.jpa.domain.Specification;
@@ -768,7 +767,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         for (var t : tiposBase) {
             String nombre = t.getNombre() == null ? "" : t.getNombre().trim();
 
-            if (destinoDadoDeBaja && !nombre.equalsIgnoreCase("Denuncia")) {
+            if (destinoDadoDeBaja && !nombre.equalsIgnoreCase("Calificación Denuncia")) {
                 continue;
             }
 
@@ -842,7 +841,11 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
         // 4) Bifurcación: si es "Denuncia" → terminamos SIN motivos
         String nombreTipo = (califTipo.getNombre() == null) ? "" : califTipo.getNombre().trim().toLowerCase();
-        boolean esDenuncia = nombreTipo.equals("Calificacion denuncia");
+
+        // Normalizamos para evitar problemas con tildes
+        nombreTipo = nombreTipo.replace("á", "a");
+
+        boolean esDenuncia = nombreTipo.equalsIgnoreCase("calificacion denuncia");
 
         if (esDenuncia) {
             // Nada más que hacer: no hay motivos ni tipo verde

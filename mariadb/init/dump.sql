@@ -91,13 +91,11 @@ WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Finalizado'
 -- =========================
 -- CalificacionTipo (tiene fechas opcionales)
 -- =========================
-INSERT INTO calificacion_tipo (nombre, fecha_hora_alta)
-SELECT 'Calificacion Normal', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Calificacion Normal');
-
-INSERT INTO calificacion_tipo (nombre, fecha_hora_alta)
-SELECT 'Calificacion Denuncia', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Calificacion Denuncia');
+INSERT INTO calificacion_tipo (id, nombre, fecha_hora_alta)
+VALUES
+(1, 'Calificacion Normal', NOW()),
+(2, 'Calificacion Denuncia', NOW())
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- =========================
 -- TipoUsuarioGrupo (fecha_hora_alta NOT NULL)
@@ -1134,9 +1132,9 @@ WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1004);
 
 -- 1) CalificacionTipo "Normal"
 INSERT INTO calificacion_tipo (id, nombre, fecha_hora_alta)
-SELECT 1, 'Normal', NOW()
+SELECT 1, 'Calificacion Normal', NOW()
 FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE id = 1 OR nombre = 'Normal');
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE id = 1 OR nombre = 'Calificacion Normal');
 
 -- 2) TipoCalificacion (emoji/imagen): Buena / Media / Mala
 INSERT INTO tipo_calificacion (id, nombre, imagen)
@@ -1195,6 +1193,37 @@ INSERT INTO calificacion_motivo_calificacion (id, calificacion_id, motivo_califi
 SELECT 1002, 500, 2 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM calificacion_motivo_calificacion WHERE id = 1002 OR (calificacion_id=500 AND motivo_calificacion_id=2));
 
+-- =============== MOTIVOS POR TIPO ===============
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+VALUES
+(1, 'Puntual', 1),
+(2, 'Respetuoso', 1),
+(3, 'Participativo', 1),
+(4, 'Regular asistencia', 2),
+(5, 'Distracciones', 2),
+(6, 'Impuntual', 3),
+(7, 'Inasistencia', 3)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
+
+-- =============== CALIFICACIONES ===============
+INSERT INTO calificacion (id, descripcion, fecha_hora, calificacion_tipo_id, autor_id, calificado_id)
+VALUES
+(100, 'Muy puntual y buena actitud', NOW(), 1, 1, 3),
+(101, 'Regular en la asistencia', NOW(), 1, 1, 3),
+(102, 'Faltó sin aviso', NOW(), 1, 1, 3),
+(103, 'Participó activamente', NOW(), 1, 1, 3)
+ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+
+-- =============== CALIFICACION_MOTIVO_CALIFICACION ===============
+INSERT INTO calificacion_motivo_calificacion (id, calificacion_id, motivo_calificacion_id)
+VALUES
+(200, 100, 1), -- Puntual
+(201, 100, 2), -- Respetuoso
+(202, 101, 4), -- Regular asistencia
+(203, 102, 6), -- Impuntual
+(204, 102, 7), -- Inasistencia
+(205, 103, 3)  -- Participativo
+ON DUPLICATE KEY UPDATE calificacion_id = VALUES(calificacion_id);
 
 COMMIT;
