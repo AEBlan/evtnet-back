@@ -17,6 +17,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import com.evtnet.evtnetback.Repositories.specs.DenunciaEventoSpecs;
 
+import org.springframework.beans.factory.annotation.Value;
+import java.time.ZoneId;
+
 
 
 import java.math.RoundingMode;
@@ -45,6 +48,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final DenunciaEventoRepository denunciaEventoRepo;
     private final EstadoDenunciaEventoRepository estadoDenunciaRepo;
     private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepo;
+
+    @Value("${app.timezone:UTC}") // por defecto UTC si no está configurado
+    private String appTimezone;
 
 public EventoServiceImpl(
         EventoRepository eventoRepo,
@@ -257,24 +263,36 @@ public EventoServiceImpl(
                 .build();
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public boolean verificarDatosPrePago(DTOInscripcion dto) {
         Evento e = eventoRepo.findById(dto.getIdEvento())
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
         String username = resolveUsername(dto.getUsername()); // ← tomar del token si viene vacío
 
+        // ya inscripto
         if (inscripcionRepo.countByEventoIdAndUsuarioUsername(e.getId(), username) > 0) return false;
-        if (LocalDateTime.now().isAfter(e.getFechaHoraInicio())) return false;
 
+        ZoneId zone = ZoneId.of(appTimezone);
+        LocalDateTime ahora = LocalDateTime.now(zone);
+        LocalDateTime inicio = e.getFechaHoraInicio();
+
+        if (ahora.isAfter(inicio)) {
+        return false; // bloquear solo si ya pasó
+        }
+
+        // capacidad de participantes
         int actuales = inscripcionRepo.countParticipantesEfectivos(e.getId());
         int nuevos = 1 + (dto.getInvitados() != null ? dto.getInvitados().size() : 0);
         Integer limite = e.getCantidadMaximaParticipantes();
         if (limite != null && actuales + nuevos > limite) return false;
 
+        // límite de invitados por inscripción
         if (e.getCantidadMaximaInvitados() != null && dto.getInvitados() != null &&
                 dto.getInvitados().size() > e.getCantidadMaximaInvitados()) return false;
 
+        // precio mínimo
         if (dto.getPrecioInscripcion() != null && e.getPrecioInscripcion() != null &&
                 dto.getPrecioInscripcion().compareTo(e.getPrecioInscripcion()) < 0) return false;
 

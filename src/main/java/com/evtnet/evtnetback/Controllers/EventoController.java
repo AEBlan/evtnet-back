@@ -165,7 +165,7 @@ public class EventoController {
 
     // --- DENUNCIAS ---
 
-    @PostMapping("/denunciarEvento")
+    @PostMapping("/denunciar")
     public ResponseEntity<Void> denunciarEvento(@RequestBody DTODenunciaEvento dto, Authentication auth) {
         service.denunciarEvento(dto, auth.getName());
         return ResponseEntity.ok().build();
@@ -196,8 +196,8 @@ public class EventoController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/obtenerDatosParaDenunciar")
-    public ResponseEntity<DTODatosParaDenunciarEvento> obtenerDatosParaDenunciar(
+    @GetMapping("/getDatosParaDenunciar")
+    public ResponseEntity<DTODatosParaDenunciarEvento> getDatosParaDenunciar(
             @RequestParam long idEvento, Authentication auth) {
         return ResponseEntity.ok(service.obtenerDatosParaDenunciar(idEvento, auth.getName()));
     }
