@@ -2,9 +2,8 @@ package com.evtnet.evtnetback.Repositories;
 
 import com.evtnet.evtnetback.Entities.Usuario;
 
-import com.evtnet.evtnetback.Repositories.BaseRepository;
-
 import org.springframework.stereotype.Repository;
+
 import java.util.Optional;
 
 
