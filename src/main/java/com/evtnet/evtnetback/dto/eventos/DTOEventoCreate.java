@@ -68,7 +68,7 @@ public class DTOEventoCreate {
     // El front manda "modos": [id,...] -> se toma el primero
     private Long modoEventoId;
 
-    private Long administradorEventoId;
+    //private Long administradorEventoId;
 
     // Acepta "idEspacio"
     @JsonAlias("idEspacio")

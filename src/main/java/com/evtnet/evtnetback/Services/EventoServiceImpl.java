@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import com.evtnet.evtnetback.Repositories.specs.DenunciaEventoSpecs;
+import java.util.ArrayList; import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import java.time.ZoneId;
@@ -181,6 +182,18 @@ public EventoServiceImpl(
             .orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
     e.setOrganizador(organizador);
 
+// 🔹 Agregar automáticamente al organizador como administrador del evento
+    AdministradorEvento admin = AdministradorEvento.builder()
+    .evento(e)
+    .usuario(organizador)
+    .fechaHoraAlta(LocalDateTime.now())
+    .build();
+
+    if (e.getAdministradoresEvento() == null) {
+    e.setAdministradoresEvento(new ArrayList<>());
+    }
+    e.getAdministradoresEvento().add(admin);
+
     if (r.getEspacioId() != null) {
         Espacio esp = espacioRepo.findById(r.getEspacioId())
                 .orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado"));
@@ -196,12 +209,7 @@ public EventoServiceImpl(
                 .orElseThrow(() -> new HttpErrorException(400, "Modo de evento inválido"));
         e.setModoEvento(me);
     }
-    if (r.getAdministradorEventoId() != null) {
-        AdministradorEvento adm = administradorEventoRepo.findById(r.getAdministradorEventoId())
-                .orElseThrow(() -> new HttpErrorException(400, "Administrador de evento inválido"));
-        e.getAdministradoresEvento().add(adm);
-    }
-
+    
     // Hijos DisciplinaEvento
     List<DisciplinaEvento> hijos = new ArrayList<>();
     if (r.getDisciplinasEvento() != null) {
