@@ -32,22 +32,34 @@ public class DisciplinaController {
     }
 
     @PutMapping ("/buscarDisciplinas")
-    public ResponseEntity<Page<DTODisciplinas>> buscarDisciplinas(@RequestParam(name = "page", defaultValue = "0") int page, @RequestBody DTOBusquedaDisciplina filtros) {
+    public ResponseEntity buscarDisciplinas(@RequestParam(name = "page", defaultValue = "0") int page, @RequestBody DTOBusquedaDisciplina filtros) {
         try {
             var pageable = org.springframework.data.domain.PageRequest.of(
                     page, 10, org.springframework.data.domain.Sort.by("id").ascending()
             );
             return ResponseEntity.ok(service.buscarDisciplinas(pageable, filtros));
         }
-        catch (Exception e) { return ResponseEntity.badRequest().build(); }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudieron obtener las disciplinas"
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
 
     @GetMapping ("/obtenerDisciplinaCompleta")
-    public ResponseEntity<DTODisciplinas> obtenerDisciplinaCompleta(@RequestParam(name="id", required=true) Long id) {
+    public ResponseEntity obtenerDisciplinaCompleta(@RequestParam(name="id", required=true) Long id) {
         try{
             return ResponseEntity.ok(service.obtenerDisciplinaCompleta(id));
         }
-        catch (Exception e) { return ResponseEntity.badRequest().build(); }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo obtener la disciplina"
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
 
     @PostMapping("/alta")
@@ -56,7 +68,13 @@ public class DisciplinaController {
             service.altaDisciplina(disciplina);
             return ResponseEntity.ok().build();
         }
-        catch (Exception e) { return ResponseEntity.badRequest().build(); }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo dar de alta la disciplina"
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
 
     @PutMapping("/modificar")
@@ -65,7 +83,13 @@ public class DisciplinaController {
             service.modificarDisciplina(disciplina);
             return ResponseEntity.ok().build();
         }
-        catch (Exception e) { return ResponseEntity.badRequest().build(); }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo actualizar la disciplina"
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
 
     @DeleteMapping("/baja")

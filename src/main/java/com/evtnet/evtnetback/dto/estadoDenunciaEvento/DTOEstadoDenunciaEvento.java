@@ -1,4 +1,4 @@
-package com.evtnet.evtnetback.dto.modoEvento;
+package com.evtnet.evtnetback.dto.estadoDenunciaEvento;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,11 +9,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class DTOModoEvento {
+public class DTOEstadoDenunciaEvento {
     private Long id;
     private String nombre;
     private String descripcion;
     private Long fechaAlta;
     private Long fechaBaja;
 }
-
