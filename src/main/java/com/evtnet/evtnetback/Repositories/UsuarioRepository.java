@@ -2,8 +2,6 @@ package com.evtnet.evtnetback.Repositories;
 
 import com.evtnet.evtnetback.Entities.Usuario;
 
-import com.evtnet.evtnetback.Repositories.BaseRepository;
-
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

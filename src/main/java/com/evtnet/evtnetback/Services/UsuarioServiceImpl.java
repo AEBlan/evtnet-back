@@ -5,6 +5,7 @@ import com.evtnet.evtnetback.Repositories.*;
 import com.evtnet.evtnetback.dto.usuarios.*;
 import com.evtnet.evtnetback.security.JwtUtil;
 import com.evtnet.evtnetback.util.CurrentUser;
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -54,6 +55,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final SuperEventoRepository superEventoRepository;
     private final ChatRepository chatRepository;
     private final DenunciaEventoRepository denunciaEventoRepository;
+    private final RegistroSingleton registroSingleton;
     //private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepository;
     //private final EstadoDenunciaEventoRepository estadoDenunciaEventoRepository;
 
@@ -92,7 +94,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             EspacioRepository espacioRepository,
             SuperEventoRepository superEventoRepository,
             ChatRepository chatRepository,
-            DenunciaEventoRepository denunciaEventoRepository
+            DenunciaEventoRepository denunciaEventoRepository,
+            RegistroSingleton registroSingleton
             //DenunciaEventoEstadoRepository denunciaEventoEstadoRepository,
             //EstadoDenunciaEventoRepository estadoDenunciaEventoRepository
             
@@ -117,6 +120,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         this.superEventoRepository = superEventoRepository;
         this.chatRepository = chatRepository;
         this.denunciaEventoRepository = denunciaEventoRepository;
+        this.registroSingleton = registroSingleton;
         //this.denunciaEventoEstadoRepository = denunciaEventoEstadoRepository;
         //this.estadoDenunciaEventoRepository = estadoDenunciaEventoRepository;
 
@@ -274,11 +278,12 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     }
 
     // ---------- AUTH LOCAL ----------
-    private DTOAuth authFromUser(Usuario u) {
+    private DTOAuth authFromUser(Usuario u) throws Exception {
         List<String> permisos = rolUsuarioRepository.findPermisosByUsername(u.getUsername());
         if (permisos == null) permisos = List.of(); // por las dudas
     
         String token = jwtUtil.generateToken(u.getUsername(), permisos);
+        registroSingleton.write("UsuariosGrupos", "inicio_sesion", "creacion", "El usuario se autenticó e inició sesión", u.getUsername());
         return DTOAuth.builder()
                 .token(token)
                 .permisos(permisos)

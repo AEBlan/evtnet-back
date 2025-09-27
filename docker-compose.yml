@@ -28,8 +28,9 @@ services:
     depends_on:
       - mariadb
     volumes:
-    - ./storage/perfiles:/app/storage/perfiles
-    - ./uploads:/app/uploads
+      - ./storage/perfiles:/app/storage/perfiles
+      - ./storage/logs:/app/storage/logs
+      - ./uploads:/data/uploads
     ports:
       - "8080:8080"
     environment:
