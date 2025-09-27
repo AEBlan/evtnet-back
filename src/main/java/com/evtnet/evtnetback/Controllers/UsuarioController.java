@@ -2,9 +2,12 @@ package com.evtnet.evtnetback.Controllers;
 
 import com.evtnet.evtnetback.Entities.Usuario;
 import com.evtnet.evtnetback.Services.UsuarioService;
+import com.evtnet.evtnetback.Services.UsuarioService.FotoResponse;
+import com.evtnet.evtnetback.Services.UsuarioService.FotoResponseString;
 import com.evtnet.evtnetback.Services.UsuarioServiceImpl;
 import com.evtnet.evtnetback.dto.usuarios.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,11 +16,16 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.*;
 
-
+import java.util.Locale;
 import java.util.Map;
 
 import com.evtnet.evtnetback.dto.comunes.BlobJson;
+
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -27,7 +35,9 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     private final UsuarioService service;
     // --- Auth ---
     @PostMapping("/iniciarSesion")
-    public ResponseEntity<DTOAuth> iniciarSesion(@RequestParam String mail, @RequestParam String password) throws Exception {
+    public ResponseEntity<DTOAuth> iniciarSesion(
+            @RequestParam String mail,
+            @RequestParam String password) throws Exception {
         return ResponseEntity.ok(service.login(mail, password));
     }
 
@@ -131,15 +141,18 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
         return ResponseEntity.ok(new BlobJson(binString, ct));
     }
     
-     // (Opcional) Imagen de calificación si después la usás desde el front.
-     @GetMapping("/obtenerImagenDeCalificacion")
-     public ResponseEntity<byte[]> obtenerImagenDeCalificacion(@RequestParam String username) throws Exception {
-         var fr = service.obtenerImagenDeCalificacion(username); // aquí "username" trae "Buena|Media|Mala"
-         if (fr == null || fr.getBytes() == null) return ResponseEntity.noContent().build();
-         return ResponseEntity.ok()
-                 .contentType(org.springframework.http.MediaType.parseMediaType(fr.getContentType()))
-                 .body(fr.getBytes());
-     }
+    @GetMapping("/obtenerImagenDeCalificacion")
+    public ResponseEntity<FotoResponseString> obtenerImagenDeCalificacion(@RequestParam String nombre) {
+        try {
+            FotoResponseString foto = service.obtenerImagenDeCalificacion(nombre);
+            if (foto == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(foto);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
       
 
     @GetMapping("/obtenerPerfilParaEditar")
@@ -147,7 +160,7 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
         return ResponseEntity.ok(service.obtenerPerfilParaEditar(username));
     }
 
-    @PutMapping(value = "/editarPerfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+     @PutMapping(value = "/editarPerfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> editarPerfil(@RequestPart("datos") DTOEditarPerfil datos,
                                              @RequestPart(value = "foto", required = false) MultipartFile foto) throws Exception {
         byte[] bytes = (foto != null && !foto.isEmpty()) ? foto.getBytes() : null;
@@ -157,6 +170,7 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
         service.editarPerfil(datos, bytes, nombre, ct);
         return ResponseEntity.noContent().build();
     }
+
 
     // --- Calificaciones ---
 

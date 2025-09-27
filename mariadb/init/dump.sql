@@ -91,13 +91,11 @@ WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Finalizado'
 -- =========================
 -- CalificacionTipo (tiene fechas opcionales)
 -- =========================
-INSERT INTO calificacion_tipo (nombre, fecha_hora_alta)
-SELECT 'Calificacion Normal', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Calificacion Normal');
-
-INSERT INTO calificacion_tipo (nombre, fecha_hora_alta)
-SELECT 'Calificacion Denuncia', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE nombre='Calificacion Denuncia');
+INSERT INTO calificacion_tipo (id, nombre, fecha_hora_alta)
+VALUES
+(1, 'Calificacion Normal', NOW()),
+(2, 'Calificacion Denuncia', NOW())
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- =========================
 -- TipoUsuarioGrupo (fecha_hora_alta NOT NULL)
@@ -895,6 +893,339 @@ WHERE NOT EXISTS (
   WHERE chat_id=(SELECT id FROM chat WHERE tipo='DIRECTO' AND usuario1_id=@u_carol AND usuario2_id=@u_sam LIMIT 1)
     AND texto='Te paso la ubicación del poli'
 );
+
+
+-- ============================================
+-- CHATS (primero, porque Grupo depende de Chat)
+-- ============================================
+INSERT INTO usuario (id, nombre, apellido, username, mail, contrasena, fecha_hora_alta)
+SELECT 4, 'Test', 'User', 'testuser', 'test@correo.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 4);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 200, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 200);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 201, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 201);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 202, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 202);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 203, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 203);
+
+INSERT INTO chat (id, tipo, fecha_hora_alta)
+SELECT 204, 'DIRECTO', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM chat WHERE id = 204);
+
+-- ============================================
+-- GRUPOS (cada uno con su chat asociado)
+-- ============================================
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 100, 'Grupo Futbol 5', 'Equipo para jugar los jueves en la noche', 200
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 100);
+
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 101, 'Grupo Tenis', 'Jugamos dobles los fines de semana', 201
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 101);
+
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 102, 'Grupo Ajedrez', 'Amigos que se juntan a practicar ajedrez', 202
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 102);
+
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 103, 'Grupo Running', 'Grupo de running UTN', 203
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 103);
+
+INSERT INTO grupo (id, nombre, descripcion, chat_id)
+SELECT 104, 'Grupo Proyecto UTN', 'Trabajo práctico de ingeniería de software', 204
+WHERE NOT EXISTS (SELECT 1 FROM grupo WHERE id = 104);
+
+-- ============================================
+-- USUARIO-GRUPO (miembros de los grupos)
+-- ============================================
+
+-- Grupo Futbol 5
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 1, 100, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 1 AND grupo_id = 100);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 2, 100, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 2 AND grupo_id = 100);
+
+-- Grupo Tenis
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 2, 101, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 2 AND grupo_id = 101);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 3, 101, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 3 AND grupo_id = 101);
+
+-- Grupo Ajedrez
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 4, 102, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 4 AND grupo_id = 102);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 1, 102, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 1 AND grupo_id = 102);
+
+-- Grupo Running
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 3, 103, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 3 AND grupo_id = 103);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 1, 103, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 1 AND grupo_id = 103);
+
+-- Grupo Proyecto UTN
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 1, 104, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Administrador' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 1 AND grupo_id = 104);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 2, 104, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 2 AND grupo_id = 104);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 3, 104, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 3 AND grupo_id = 104);
+
+INSERT INTO usuario_grupo (usuario_id, grupo_id, tipo_usuario_grupo_id, fecha_hora_alta)
+SELECT 4, 104, (SELECT id FROM tipo_usuario_grupo WHERE nombre = 'Miembro' LIMIT 1), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario_grupo WHERE usuario_id = 4 AND grupo_id = 104);
+
+-- ===================================================================
+-- VINCULAR USUARIO 'sergioalbino' COMO ADMINISTRADOR DEL GRUPO 1
+-- ===================================================================
+INSERT INTO usuario_grupo (fecha_hora_alta, usuario_id, grupo_id, tipo_usuario_grupo_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1),
+       1,
+       (SELECT id FROM tipo_usuario_grupo WHERE nombre='Administrador' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM usuario_grupo 
+  WHERE usuario_id=(SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1)
+    AND grupo_id=1
+);
+
+-- ===================================================================
+-- VINCULAR 'carol' COMO MIEMBRO DEL GRUPO 1
+-- ===================================================================
+INSERT INTO usuario_grupo (fecha_hora_alta, usuario_id, grupo_id, tipo_usuario_grupo_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='carol' LIMIT 1),
+       1,
+       (SELECT id FROM tipo_usuario_grupo WHERE nombre='Miembro' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM usuario_grupo 
+  WHERE usuario_id=(SELECT id FROM usuario WHERE username='carol' LIMIT 1)
+    AND grupo_id=1
+);
+
+-- ===================================================================
+-- VINCULAR 'sam' COMO MIEMBRO DEL GRUPO 1
+-- ===================================================================
+INSERT INTO usuario_grupo (fecha_hora_alta, usuario_id, grupo_id, tipo_usuario_grupo_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='sam' LIMIT 1),
+       1,
+       (SELECT id FROM tipo_usuario_grupo WHERE nombre='Miembro' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM usuario_grupo 
+  WHERE usuario_id=(SELECT id FROM usuario WHERE username='sam' LIMIT 1)
+    AND grupo_id=1
+);
+
+-- =========================
+-- Usuarios (propietario y participantes)
+-- =========================
+INSERT INTO usuario (id, username, mail, contrasena)
+SELECT 10, 'propietario1', 'propietario@test.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 10);
+
+INSERT INTO usuario (id, username, mail, contrasena)
+SELECT 11, 'userA', 'userA@test.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 11);
+
+INSERT INTO usuario (id, username, mail, contrasena)
+SELECT 12, 'userB', 'userB@test.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 12);
+
+INSERT INTO usuario (id, username, mail, contrasena)
+SELECT 74, 'userC', 'userC@test.com', '$2a$10$NlufKRaSkY.5G00DRAxQe.4KlfcfgUze.tGPsBskGwJ4JjPQm43PK'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 74);
+
+-- =========================
+-- Roles asignados
+-- (asume que rol_id 2=USUARIO, 3=ORGANIZADOR ya existen)
+-- =========================
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 100, NOW(), 2, 10 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 100);
+
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 101, NOW(), 3, 10 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 101);
+
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 102, NOW(), 2, 11 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 102);
+
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 103, NOW(), 2, 12 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 103);
+
+INSERT INTO rol_usuario (id, fecha_hora_alta, rol_id, usuario_id)
+SELECT 104, NOW(), 2, 74 WHERE NOT EXISTS (SELECT 1 FROM rol_usuario WHERE id = 104);
+
+-- =========================
+-- Espacio del propietario
+-- =========================
+INSERT INTO espacio (id, nombre, descripcion, fecha_hora_alta, direccion_ubicacion, propietario_id)
+SELECT 10, 'Polideportivo Central', 'Gimnasio techado', NOW(), 'Av. Siempre Viva 123', 10
+WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE id = 10);
+
+-- =========================
+-- Eventos dentro del espacio
+-- =========================
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, espacio_id, organizador_id)
+SELECT 100, 'Torneo de Ajedrez', 'Competencia abierta', '2025-09-10 18:00:00', '2025-09-10 22:00:00', 10, 10
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 100);
+
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, espacio_id, organizador_id)
+SELECT 101, 'Clínica de Básquet', 'Entrenamiento especial', '2025-09-15 10:00:00', '2025-09-15 12:00:00', 10, 10
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 101);
+
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, espacio_id, organizador_id)
+SELECT 102, 'Clase de Yoga', 'Sesión relajante', '2025-09-20 09:00:00', '2025-09-20 10:30:00', 10, 10
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 102);
+
+-- =========================
+-- Inscripciones (activas/cancelada)
+-- =========================
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1000, NOW(), 100.0, TRUE, 11, 100, NULL
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1000);
+
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1001, NOW(), 100.0, TRUE, 12, 100, NULL
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1001);
+
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1002, NOW(), 100.0, TRUE, 74, 100, NULL
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1002);
+
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1003, NOW(), 200.0, TRUE, 11, 101, NULL
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1003);
+
+-- Cancelada (no cuenta)
+INSERT INTO inscripcion (id, fecha_hora_alta, precio_inscripcion, permitir_devolucion_completa, usuario_id, evento_id, fecha_baja)
+SELECT 1004, NOW(), 150.0, TRUE, 12, 101, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 1004);
+
+-- Script de seed: Calificaciones de ejemplo (Mara id=3, SergioAlbino id=1)
+-- Ejecutar en MariaDB/MySQL
+
+-- 1) CalificacionTipo "Normal"
+INSERT INTO calificacion_tipo (id, nombre, fecha_hora_alta)
+SELECT 1, 'Calificacion Normal', NOW()
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_tipo WHERE id = 1 OR nombre = 'Calificacion Normal');
+
+-- 2) TipoCalificacion (emoji/imagen): Buena / Media / Mala
+INSERT INTO tipo_calificacion (id, nombre, imagen)
+SELECT 1, 'Buena', 'buena.png' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE id = 1 OR nombre = 'Buena');
+
+INSERT INTO tipo_calificacion (id, nombre, imagen)
+SELECT 2, 'Media', 'media.png' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE id = 2 OR nombre = 'Media');
+
+INSERT INTO tipo_calificacion (id, nombre, imagen)
+SELECT 3, 'Mala', 'mala.png' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE id = 3 OR nombre = 'Mala');
+
+-- 3) MotivoCalificacion (asociados a tipos)
+-- (IDs elegidos: 1=Puntual, 2=Asistencia completa, 3=Llegó tarde, 4=No asistió, 5=Se retiró antes)
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 1, 'Puntual', 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 1 OR (nombre='Puntual' AND tipo_calificacion_id=1));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 2, 'Asistencia completa', 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 2 OR (nombre='Asistencia completa' AND tipo_calificacion_id=1));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 3, 'Llegó tarde', 3 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 3 OR (nombre='Llegó tarde' AND tipo_calificacion_id=3));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 4, 'No asistió', 3 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 4 OR (nombre='No asistió' AND tipo_calificacion_id=3));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 5, 'Se retiró antes', 2 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 5 OR (nombre='Se retiró antes' AND tipo_calificacion_id=2));
+
+-- 4) Insertar la calificacion: autor = SergioAlbino (1), calificado = Mara (3)
+-- Usamos id = 500 para la calificacion ejemplo (se salta si ya existe)
+INSERT INTO calificacion (id, descripcion, fecha_hora, calificacion_tipo_id, autor_id, calificado_id)
+SELECT 500,
+       'Calificación por asistencia y puntualidad',
+       NOW(),
+       1,  -- calificacion_tipo_id = Normal
+       1,  -- autor_id = SergioAlbino
+       3   -- calificado_id = Mara
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM calificacion WHERE id = 500);
+
+-- 5) Asociar motivos a esa calificacion (calificacion_id = 500)
+-- Usamos ids 1001,1002 para las filas intermedias (se saltan si ya existen)
+INSERT INTO calificacion_motivo_calificacion (id, calificacion_id, motivo_calificacion_id)
+SELECT 1001, 500, 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_motivo_calificacion WHERE id = 1001 OR (calificacion_id=500 AND motivo_calificacion_id=1));
+
+INSERT INTO calificacion_motivo_calificacion (id, calificacion_id, motivo_calificacion_id)
+SELECT 1002, 500, 2 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM calificacion_motivo_calificacion WHERE id = 1002 OR (calificacion_id=500 AND motivo_calificacion_id=2));
+
+-- =============== MOTIVOS POR TIPO ===============
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+VALUES
+(1, 'Puntual', 1),
+(2, 'Respetuoso', 1),
+(3, 'Participativo', 1),
+(4, 'Regular asistencia', 2),
+(5, 'Distracciones', 2),
+(6, 'Impuntual', 3),
+(7, 'Inasistencia', 3)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+
+
+-- =============== CALIFICACIONES ===============
+INSERT INTO calificacion (id, descripcion, fecha_hora, calificacion_tipo_id, autor_id, calificado_id)
+VALUES
+(100, 'Muy puntual y buena actitud', NOW(), 1, 1, 3),
+(101, 'Regular en la asistencia', NOW(), 1, 1, 3),
+(102, 'Faltó sin aviso', NOW(), 1, 1, 3),
+(103, 'Participó activamente', NOW(), 1, 1, 3)
+ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+
+-- =============== CALIFICACION_MOTIVO_CALIFICACION ===============
+INSERT INTO calificacion_motivo_calificacion (id, calificacion_id, motivo_calificacion_id)
+VALUES
+(200, 100, 1), -- Puntual
+(201, 100, 2), -- Respetuoso
+(202, 101, 4), -- Regular asistencia
+(203, 102, 6), -- Impuntual
+(204, 102, 7), -- Inasistencia
+(205, 103, 3)  -- Participativo
+ON DUPLICATE KEY UPDATE calificacion_id = VALUES(calificacion_id);
 
 -- ===================================================================
 -- Registros, tipos y subtipos

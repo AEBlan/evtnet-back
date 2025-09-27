@@ -12,9 +12,6 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import lombok.extern.slf4j.Slf4j;
 
-
-import com.evtnet.evtnetback.Repositories.BaseRepository;
-
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,7 +61,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
 
     // Directorio para fotos de perfil (montá un volumen)
-    @Value("${app.storage.perfiles:/app/uploads/perfiles}")
+    @Value("${app.storage.perfiles:/app/storage/perfiles}")
     private String perfilesDir;
 
     // Google Sign-In (opcional)
@@ -296,10 +293,21 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
     @Override
     public DTOAuth login(String mail, String password) throws Exception {
-        Usuario u = usuarioRepository.findByMail(mail)
-                .orElseThrow(() -> new Exception("Usuario no encontrado"));
-        if (!passwordEncoder.matches(password, u.getContrasena()))
+        Usuario u;
+
+        // si contiene "@" lo tratamos como mail
+        if (mail.contains("@")) {
+            u = usuarioRepository.findByMail(mail)
+                    .orElseThrow(() -> new Exception("Usuario no encontrado por mail"));
+        } else {
+            u = usuarioRepository.findByUsername(mail)
+                    .orElseThrow(() -> new Exception("Usuario no encontrado por username"));
+        }
+
+        if (!passwordEncoder.matches(password, u.getContrasena())) {
             throw new Exception("Credenciales inválidas");
+        }
+
         return authFromUser(u);
     }
 
@@ -627,6 +635,16 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Usuario u = usuarioRepository.findByUsername(usernameActual)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
+                log.info("Editando usuario {} -> nombre={}, apellido={}, dni={}, cbu={}, fechaNac={}",
+                u.getUsername(),
+                datos.getNombre(),
+                datos.getApellido(),
+                datos.getDni(),
+                datos.getCbu(),
+                datos.getFechaNacimiento()
+        );
+
+        // Datos básicos
         if (datos != null) {
             if (datos.getNombre() != null) u.setNombre(datos.getNombre());
             if (datos.getApellido() != null) u.setApellido(datos.getApellido());
@@ -638,68 +656,74 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             }
         }
 
+        // Guardar foto si vino
         if (foto != null && foto.length > 0) {
-            Files.createDirectories(Paths.get(perfilesDir));
+            Files.createDirectories(Paths.get(perfilesDir)); // mismo que registerConFoto
+
             String ext = getExtension(nombreArchivo);
-            String filename = usernameActual + (ext.isEmpty() ? "" : "." + ext);
+            String filename = usernameActual + "_" + System.currentTimeMillis() + (ext.isEmpty() ? "" : "." + ext);
+
             Path destino = Paths.get(perfilesDir).resolve(filename).toAbsolutePath().normalize();
             Files.write(destino, foto, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            u.setFotoPerfil(destino.toString());
+
+            // Guardar SOLO el nombre en DB (como en registerConFoto)
+            u.setFotoPerfil(destino.toString()); // ruta absoluta
+
         }
 
         usuarioRepository.save(u);
     }
 
+
+
     @Override
     public FotoResponse obtenerFotoDePerfil(String username) throws Exception {
         var u = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
-        Path path = (u.getFotoPerfil() == null || u.getFotoPerfil().isBlank()) ? null : Paths.get(u.getFotoPerfil());
-        if (path == null || !Files.exists(path)) {
-            // devolvé null y que el controller aplique fallback, o devolvé el fallback aquí
-            return null;
+
+        if (u.getFotoPerfil() == null || u.getFotoPerfil().isBlank()) {
+            return null; // o devolver una imagen por defecto
         }
+
+        Path path = Paths.get(perfilesDir).resolve(u.getFotoPerfil()).toAbsolutePath().normalize();
+        if (!Files.exists(path)) return null;
+
         String ct = Files.probeContentType(path);
         return new FotoResponse(Files.readAllBytes(path), ct);
     }
 
 
     @Override
-    public FotoResponse obtenerImagenDeCalificacion(String username) throws Exception {
-        // En el front este parámetro es el "nombre de la calificación" (Buena/Media/Mala)
-        if (username == null || username.isBlank()) return null;
+    public FotoResponseString obtenerImagenDeCalificacion(String nombre) throws Exception {
+        if (nombre == null || nombre.isBlank()) return null;
 
-        // normalizo y valido
-        String tipo = username.trim().toLowerCase(Locale.ROOT);
+        String tipo = nombre.trim().toLowerCase(Locale.ROOT);
         switch (tipo) {
             case "buena":
             case "media":
             case "mala":
                 break;
             default:
-                // si te interesa, podrías mapear sinónimos aquí (p.ej. "baja" -> "mala")
                 return null;
         }
 
-        // carpeta base (agregá arriba en la clase: @Value("${app.storage.calificaciones:/app/uploads/calificaciones}") private String calificacionesDir;)
         Path base = Paths.get(calificacionesDir);
         Files.createDirectories(base);
 
-        // solo PNG
         Path img = base.resolve(tipo + ".png").toAbsolutePath().normalize();
+        if (!Files.exists(img)) {
+            img = base.resolve("default.png").toAbsolutePath().normalize();
+        }
+
         if (Files.exists(img)) {
-            return new FotoResponse(Files.readAllBytes(img), "image/png");
+            byte[] data = Files.readAllBytes(img);
+            String asString = new String(data, StandardCharsets.ISO_8859_1);
+            return new FotoResponseString(asString, "image/png");
         }
 
-        // fallback si no existe el específico
-        Path def = base.resolve("_default.png").toAbsolutePath().normalize();
-        if (Files.exists(def)) {
-            return new FotoResponse(Files.readAllBytes(def), "image/png");
-        }
-
-        // si no hay nada, que el front use su placeholder
         return null;
     }
+
 
     // ---------- Helpers ----------
     private String suggestUsername(String email) {
@@ -822,7 +846,11 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
         // 4) Bifurcación: si es "Denuncia" → terminamos SIN motivos
         String nombreTipo = (califTipo.getNombre() == null) ? "" : califTipo.getNombre().trim().toLowerCase();
-        boolean esDenuncia = nombreTipo.equals("Calificacion denuncia");
+
+        // Normalizamos para evitar problemas con tildes
+        nombreTipo = nombreTipo.replace("á", "a");
+
+        boolean esDenuncia = nombreTipo.equalsIgnoreCase("Denuncia");
 
         if (esDenuncia) {
             // Nada más que hacer: no hay motivos ni tipo verde

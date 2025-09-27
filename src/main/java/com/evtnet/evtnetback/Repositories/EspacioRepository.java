@@ -9,4 +9,5 @@ import com.evtnet.evtnetback.Entities.Espacio;
 @Repository
 public interface EspacioRepository extends BaseRepository <Espacio, Long> {
     List<Espacio> findAllByPropietario_Username(String username);
+    boolean existsByIdAndPropietario_Username(Long id, String username);
 }
