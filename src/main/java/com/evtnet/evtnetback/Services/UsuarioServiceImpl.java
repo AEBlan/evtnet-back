@@ -767,7 +767,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         for (var t : tiposBase) {
             String nombre = t.getNombre() == null ? "" : t.getNombre().trim();
 
-            if (destinoDadoDeBaja && !nombre.equalsIgnoreCase("Calificación Denuncia")) {
+            if (destinoDadoDeBaja && !nombre.equalsIgnoreCase("Denuncia")) {
                 continue;
             }
 
@@ -845,7 +845,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         // Normalizamos para evitar problemas con tildes
         nombreTipo = nombreTipo.replace("á", "a");
 
-        boolean esDenuncia = nombreTipo.equalsIgnoreCase("calificacion denuncia");
+        boolean esDenuncia = nombreTipo.equalsIgnoreCase("Denuncia");
 
         if (esDenuncia) {
             // Nada más que hacer: no hay motivos ni tipo verde
