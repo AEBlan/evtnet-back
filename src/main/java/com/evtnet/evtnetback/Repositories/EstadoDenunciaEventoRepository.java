@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
 public interface EstadoDenunciaEventoRepository extends BaseRepository <EstadoDenunciaEvento, Long> {
     @Modifying
     @Transactional
-    @Query("UPDATE EstadoDenunciaEvento me SET me.nombre = :nombre, me.descripcion = :descripcion WHERE me.id = :id")
+    @Query("UPDATE EstadoDenunciaEvento ede SET ede.nombre = :nombre, ede.descripcion = :descripcion WHERE ede.id = :id")
     void update(@Param("id") Long id, @Param("nombre") String nombre, @Param("descripcion") String descripcion);
 
     @Modifying
     @Transactional
-    @Query("UPDATE EstadoDenunciaEvento me SET me.fechaHoraBaja = :fecha WHERE me.id = :id")
+    @Query("UPDATE EstadoDenunciaEvento ede SET ede.fechaHoraBaja = :fecha WHERE ede.id = :id")
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
 }

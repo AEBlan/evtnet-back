@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
 public interface EstadoSEPRepository extends BaseRepository <EstadoSEP, Long> {
     @Modifying
     @Transactional
-    @Query("UPDATE EstadoSEP me SET me.nombre = :nombre, me.descripcion = :descripcion WHERE me.id = :id")
+    @Query("UPDATE EstadoSEP esep SET esep.nombre = :nombre, esep.descripcion = :descripcion WHERE esep.id = :id")
     void update(@Param("id") Long id, @Param("nombre") String nombre, @Param("descripcion") String descripcion);
 
     @Modifying
     @Transactional
-    @Query("UPDATE EstadoSEP me SET me.fechaHoraBaja = :fecha WHERE me.id = :id")
+    @Query("UPDATE EstadoSEP esep SET esep.fechaHoraBaja = :fecha WHERE esep.id = :id")
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
 }

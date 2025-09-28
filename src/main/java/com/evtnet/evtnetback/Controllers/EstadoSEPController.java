@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class EstadoSEPController extends BaseControllerImpl <EstadoSEP, EstadoSEPServiceImpl> {
     private final EstadoSEPServiceImpl service;
     @GetMapping("/obtenerListaEstadoSolicitud")
-    public ResponseEntity obtenerListaEstadoDenuncia(@RequestParam(name = "page", defaultValue = "0") int page) {
+    public ResponseEntity obtenerListaEstadoSEP(@RequestParam(name = "page", defaultValue = "0") int page) {
         try {
             var pageable = org.springframework.data.domain.PageRequest.of(
                     page, 10, org.springframework.data.domain.Sort.by("id").ascending()
