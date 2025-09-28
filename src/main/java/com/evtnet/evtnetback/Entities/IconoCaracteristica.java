@@ -16,8 +16,6 @@ import java.time.LocalDateTime;
 public class IconoCaracteristica extends Base {
 
     @Column(name = "imagen", nullable = false, length = 512)
-    @Pattern(regexp = "(?i).*\\.(png|svg)$",
-             message = "La imagen debe tener extensión .png o .svg")
     private String imagen;
 
     @Column(name = "fecha_hora_alta", nullable = false)
