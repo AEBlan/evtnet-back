@@ -6,6 +6,7 @@ import com.evtnet.evtnetback.Repositories.*;
 import com.evtnet.evtnetback.Repositories.specs.EventoSpecs;
 import com.evtnet.evtnetback.dto.disciplinaevento.DTODisciplinaEventoCreate;
 import com.evtnet.evtnetback.dto.eventos.*;
+import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import com.evtnet.evtnetback.mapper.EventoSearchMapper;
 import jakarta.transaction.Transactional;
@@ -636,20 +637,20 @@ public EventoServiceImpl(
 
 
 
-    @Override
-    @Transactional
-    public void cancelarInscripcion(long idInscripcion) {
+        @Override
+        @Transactional
+        public void cancelarInscripcion(long idInscripcion) {
         Inscripcion ins = inscripcionRepo.findById(idInscripcion)
                 .orElseThrow(() -> new HttpErrorException(404, "Inscripción no encontrada"));
         ins.setFechaHoraBaja(LocalDateTime.now());
         inscripcionRepo.save(ins);
         }
 
-    @Override
-    @Transactional
-    public DTODatosParaInscripcion obtenerDatosParaInscripcion(long idEvento, String username) {
-        Evento e = eventoRepo.findById(idEvento)
-                .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+        @Override
+        @Transactional
+        public DTODatosParaInscripcion obtenerDatosParaInscripcion(long idEvento, String username) {
+                Evento e = eventoRepo.findById(idEvento)
+                        .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
         boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(idEvento, username);
         boolean esOrganizador = e.getOrganizador() != null && e.getOrganizador().getUsername().equals(username);
@@ -665,17 +666,53 @@ public EventoServiceImpl(
 
         @Override
         @Transactional
-        public void inscribirUsuario(long idEvento, String username) {
-        Evento e = eventoRepo.findById(idEvento)
+        public List<DTOBusquedaUsuario> buscarUsuariosNoInscriptos(Long idEvento, String texto) {
+        return usuarioRepo.buscarNoInscriptos(idEvento, texto).stream()
+                .map((Usuario u) -> DTOBusquedaUsuario.builder()
+                        .username(u.getUsername())
+                        .nombre(u.getNombre())
+                        .apellido(u.getApellido())
+                        .mail(u.getMail())
+                        .dni(u.getDni())
+                        .fechaNacimiento(
+                                u.getFechaNacimiento() != null ? u.getFechaNacimiento().toLocalDate() : null
+                        )
+                        .build()
+                )
+                .toList();
+        }
+
+
+        @Override
+        @Transactional
+        public void inscribirUsuario(DTOInscripcion dto) {
+        Evento e = eventoRepo.findById(dto.getIdEvento())
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
-        Usuario u = usuarioRepo.findByUsername(username)
+
+        Usuario u = usuarioRepo.findByUsername(dto.getUsername())
                 .orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
         Inscripcion ins = new Inscripcion();
         ins.setEvento(e);
         ins.setUsuario(u);
         ins.setFechaHoraAlta(LocalDateTime.now());
+        if (dto.getPrecioInscripcion() != null) {
+                ins.setPrecioInscripcion(dto.getPrecioInscripcion());
+            }
+        ins.setPermitirDevolucionCompleta(Boolean.FALSE); // igual que en inscribirse
         inscripcionRepo.save(ins);
+
+        // Guardar invitados si vienen
+        if (dto.getInvitados() != null) {
+                for (DTOInscripcion.Invitado i : dto.getInvitados()) {
+                Invitado inv = new Invitado();
+                inv.setInscripcion(ins);
+                inv.setNombre(i.getNombre());
+                inv.setApellido(i.getApellido());
+                inv.setDni(i.getDni());
+                invitadoRepo.save(inv);
+                }
+           }
         }
 
         @Override

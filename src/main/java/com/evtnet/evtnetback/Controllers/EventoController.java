@@ -4,6 +4,7 @@ package com.evtnet.evtnetback.Controllers;
 import com.evtnet.evtnetback.dto.comunes.CantidadResponse;
 import com.evtnet.evtnetback.dto.comunes.IdResponse;
 import com.evtnet.evtnetback.dto.eventos.*;
+import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
 import com.evtnet.evtnetback.Services.EventoService;
 import lombok.RequiredArgsConstructor;
 
@@ -106,6 +107,15 @@ public class EventoController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/buscarUsuariosNoInscriptos")
+    public ResponseEntity<List<DTOBusquedaUsuario>> buscarUsuariosNoInscriptos(
+            @RequestParam long idEvento,
+            @RequestParam(required = false, defaultValue = "") String texto
+    ) {
+        return ResponseEntity.ok(service.buscarUsuariosNoInscriptos(idEvento, texto));
+    }
+
+
     @GetMapping("/obtenerInscripciones")
     public ResponseEntity<DTOInscripcionesEvento> obtenerInscripciones(
         @RequestParam long id,
@@ -126,11 +136,11 @@ public class EventoController {
     }
 
     @PostMapping("/inscribirUsuario")
-    public ResponseEntity<Void> inscribirUsuario(@RequestParam long idEvento,
-                                                @RequestParam String username) {
-        service.inscribirUsuario(idEvento, username);
+    public ResponseEntity<Void> inscribirUsuario(@RequestBody DTOInscripcion dto) {
+        service.inscribirUsuario(dto);
         return ResponseEntity.ok().build();
     }
+
 
     @GetMapping("/obtenerAdministradores")
     public ResponseEntity<DTOAdministradores> obtenerAdministradores(

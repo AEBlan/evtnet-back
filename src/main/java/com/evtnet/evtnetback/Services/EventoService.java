@@ -2,6 +2,8 @@ package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.Evento;
 import com.evtnet.evtnetback.dto.eventos.*;
+import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
+
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,11 +26,14 @@ public interface EventoService extends BaseService<Evento, Long> {
     Number obtenerMontoDevolucionCancelacion(long idEvento, String username);
     DTOModificarEvento obtenerDatosModificacionEvento(long id);
     void modificarEvento(DTOModificarEvento dto);
+    List<DTOBusquedaUsuario> buscarUsuariosNoInscriptos(Long idEvento, String texto);
+
 
     DTOInscripcionesEvento obtenerInscripciones(long idEvento, String texto);
     void cancelarInscripcion(long idInscripcion);
     DTODatosParaInscripcion obtenerDatosParaInscripcion(long idEvento, String username);
-    void inscribirUsuario(long idEvento, String username);
+    void inscribirUsuario(DTOInscripcion dto);
+
 
     DTOAdministradores obtenerAdministradores(long idEvento, String currentUser);
     void agregarAdministrador(long idEvento, String username);
