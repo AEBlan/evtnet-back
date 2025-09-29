@@ -149,6 +149,14 @@ public class EventoController {
     return ResponseEntity.ok(service.obtenerAdministradores(idEvento, auth.getName()));
     }
 
+    @GetMapping("/buscarUsuariosNoAdministradores")
+    public ResponseEntity<List<DTOBusquedaUsuario>> buscarUsuariosNoAdministradores(
+            @RequestParam long idEvento,
+            @RequestParam(required = false, defaultValue = "") String texto
+    ) {
+        return ResponseEntity.ok(service.buscarUsuariosNoAdministradores(idEvento, texto));
+    }
+
     @PostMapping("/agregarAdministrador")
     public ResponseEntity<Void> agregarAdministrador(
         @RequestParam long idEvento,

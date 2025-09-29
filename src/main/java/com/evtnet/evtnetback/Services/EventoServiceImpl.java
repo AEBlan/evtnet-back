@@ -746,6 +746,22 @@ public EventoServiceImpl(
 
         @Override
         @Transactional
+        public List<DTOBusquedaUsuario> buscarUsuariosNoAdministradores(Long idEvento, String texto) {
+        return usuarioRepo.buscarUsuariosNoAdministradores(idEvento, texto).stream()
+                .map((Usuario u) -> DTOBusquedaUsuario.builder()
+                        .username(u.getUsername())
+                        .nombre(u.getNombre())
+                        .apellido(u.getApellido())
+                        .mail(u.getMail())
+                        .dni(u.getDni())
+                        .fechaNacimiento(u.getFechaNacimiento() != null ? u.getFechaNacimiento().toLocalDate() : null)
+                        .build()
+                )
+                .toList();
+        }
+
+        @Override
+        @Transactional
         public void agregarAdministrador(long idEvento, String username) {
         Evento e = eventoRepo.findById(idEvento)
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
@@ -789,8 +805,12 @@ public EventoServiceImpl(
         // El organizador actual pasa a ser administrador
         if (e.getOrganizador() != null) {
                 Usuario anterior = e.getOrganizador();
-                boolean yaEsAdmin = e.getAdministradoresEvento().stream()
-                        .anyMatch(a -> a.getUsuario().equals(anterior) && a.getFechaHoraBaja() == null);
+
+                // Validar en DB si ya es administrador activo
+                boolean yaEsAdmin = administradorEventoRepo.existeAdministradorActivo(
+                        e.getId(), anterior.getId()
+                );
+
                 if (!yaEsAdmin) {
                 AdministradorEvento ae = AdministradorEvento.builder()
                         .evento(e)
@@ -799,12 +819,13 @@ public EventoServiceImpl(
                         .build();
                 administradorEventoRepo.save(ae);
                 }
-        }
+           }
 
-        // Asignar el nuevo organizador
+        // Cambiar organizador
         e.setOrganizador(nuevo);
         eventoRepo.save(e);
         }
+
 
         @Override
         @Transactional

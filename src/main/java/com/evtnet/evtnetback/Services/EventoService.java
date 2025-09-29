@@ -36,6 +36,7 @@ public interface EventoService extends BaseService<Evento, Long> {
 
 
     DTOAdministradores obtenerAdministradores(long idEvento, String currentUser);
+    List<DTOBusquedaUsuario> buscarUsuariosNoAdministradores(Long idEvento, String texto);
     void agregarAdministrador(long idEvento, String username);
     void quitarAdministrador(long idEvento, String username);
     void entregarOrganizador(long idEvento, String nuevoOrganizador);
