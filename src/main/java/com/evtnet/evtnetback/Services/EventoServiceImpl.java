@@ -390,8 +390,9 @@ public EventoServiceImpl(
         return totalPagado.multiply(factor).setScale(2, RoundingMode.HALF_UP);
     }
 
-    @Override @Transactional
-    public DTOModificarEvento obtenerDatosModificacionEvento(long idEvento) {
+        @Override
+        @Transactional
+        public DTOModificarEvento obtenerDatosModificacionEvento(long idEvento) {
         // 🔁 cambia a findByIdForDetalle
         Evento e = eventoRepo.findByIdForDetalle(idEvento)
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
@@ -401,17 +402,17 @@ public EventoServiceImpl(
 
         List<DTOModificarEvento.ItemIdNombre> disciplinas = new ArrayList<>();
         if (e.getDisciplinasEvento() != null) {
-            for (DisciplinaEvento de : e.getDisciplinasEvento()) {
+                for (DisciplinaEvento de : e.getDisciplinasEvento()) {
                 disciplinas.add(new DTOModificarEvento.ItemIdNombre(
                         de.getDisciplina().getId(), de.getDisciplina().getNombre()));
-            }
+                }
         }
 
         List<DTOModificarEvento.ItemIdNombre> modos = new ArrayList<>();
         if (e.getModoEvento() != null)
-            modos.add(new DTOModificarEvento.ItemIdNombre(e.getModoEvento().getId(), e.getModoEvento().getNombre()));
+                modos.add(new DTOModificarEvento.ItemIdNombre(e.getModoEvento().getId(), e.getModoEvento().getNombre()));
         if (e.getEventosModoEvento() != null)
-            for (EventoModoEvento eme : e.getEventosModoEvento())
+                for (EventoModoEvento eme : e.getEventosModoEvento())
                 modos.add(new DTOModificarEvento.ItemIdNombre(eme.getModoEvento().getId(), eme.getModoEvento().getNombre()));
 
         List<DTOModificarEvento.TipoInscripcion> tipos = tipoInscripcionRepo.findAll().stream()
@@ -425,9 +426,9 @@ public EventoServiceImpl(
 
         List<DTOModificarEvento.RangoReintegro> rangos = new ArrayList<>();
         if (e.getPorcentajesReintegroCancelacion() != null) {
-            e.getPorcentajesReintegroCancelacion().stream()
-                    .sorted(Comparator.comparing(PorcentajeReintegroCancelacionInscripcion::getMinutosLimite))
-                    .forEach(p -> {
+                e.getPorcentajesReintegroCancelacion().stream()
+                        .sorted(Comparator.comparing(PorcentajeReintegroCancelacionInscripcion::getMinutosLimite))
+                        .forEach(p -> {
                         int[] dhm = splitMinutes(p.getMinutosLimite());
                         rangos.add(DTOModificarEvento.RangoReintegro.builder()
                                 .dias(dhm[0])
@@ -439,78 +440,91 @@ public EventoServiceImpl(
                                                 : 0
                                 )
                                 .build());
-                    });
+                        });
         }
+
+        // 🔹 Validar si el usuario actual es administrador del evento
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(idEvento, username);
+
+        // 🔹 Validar si el usuario actual es organizador del evento
+        boolean esOrganizador = e.getOrganizador() != null && e.getOrganizador().getUsername().equals(username);
 
         return DTOModificarEvento.builder()
                 .id(e.getId())
-                .nombre(e.getNombre())
-                .descripcion(e.getDescripcion())
-                .idEspacio(e.getEspacio() != null ? e.getEspacio().getId() : null)
-                .nombreEspacio(e.getEspacio() != null ? e.getEspacio().getNombre() : null)
+                .nombre(e.getNombre() != null ? e.getNombre() : "")
+                .descripcion(e.getDescripcion() != null ? e.getDescripcion() : "")
+                .idEspacio(e.getEspacio() != null ? e.getEspacio().getId() : 0L)          // ⚡ nunca null
+                .nombreEspacio(e.getEspacio() != null ? e.getEspacio().getNombre() : "") // ⚡ nunca null
                 .usarCronograma(false)
                 .fechaDesde(e.getFechaHoraInicio())
                 .fechaHasta(e.getFechaHoraFin())
-                .horarioId(null)
-                .precioOrganizacion(e.getPrecioOrganizacion())
-                .direccion(e.getDireccionUbicacion())
+                .horarioId(null)         // ⚡ nunca null
+                .precioOrganizacion(e.getPrecioOrganizacion() != null ? e.getPrecioOrganizacion() : BigDecimal.ZERO)
+                .direccion(e.getDireccionUbicacion() != null ? e.getDireccionUbicacion() : "")
                 .ubicacion(new DTOModificarEvento.Ubicacion(
-                        e.getLatitudUbicacion() != null ? e.getLatitudUbicacion().doubleValue() : null,
-                        e.getLongitudUbicacion() != null ? e.getLongitudUbicacion().doubleValue() : null))
-                .disciplinas(disciplinas)
-                .modos(modos)
-                .tiposInscripcion(tipos)
-                .precioInscripcion(e.getPrecioInscripcion())
+                        e.getLatitudUbicacion() != null ? e.getLatitudUbicacion().doubleValue() : 0.0,
+                        e.getLongitudUbicacion() != null ? e.getLongitudUbicacion().doubleValue() : 0.0))
+                .disciplinas(disciplinas != null ? disciplinas : List.of()) // ⚡ lista vacía si no hay
+                .modos(modos != null ? modos : List.of())                   // ⚡ lista vacía
+                .tiposInscripcion(tipos != null ? tipos : List.of())        // ⚡ lista vacía
+                .precioInscripcion(e.getPrecioInscripcion() != null ? e.getPrecioInscripcion() : BigDecimal.ZERO)
                 .comisionInscripcion(BigDecimal.valueOf(0.12))
-                .cantidadMaximaParticipantes(e.getCantidadMaximaParticipantes())
-                .cantidadMaximaInvitados(e.getCantidadMaximaInvitados())
+                .cantidadMaximaParticipantes(e.getCantidadMaximaParticipantes() != null ? e.getCantidadMaximaParticipantes() : 0)
+                .cantidadMaximaInvitados(e.getCantidadMaximaInvitados() != null ? e.getCantidadMaximaInvitados() : 0)
                 .cantidadParticipantesActual(participantes)
                 .cantidadMaximaInvitadosPorInvitacionEfectiva(maxInvPorInscripcion)
-                .crearSuperevento(null)
+                .crearSuperevento(false) // ⚡ siempre boolean
                 .superevento(e.getSuperEvento() != null
-                        ? new DTOModificarEvento.Superevento(e.getSuperEvento().getId(),
-                                                             e.getSuperEvento().getNombre(),
-                                                             e.getSuperEvento().getDescripcion())
-                        : null)
-                .rangosReintegro(rangos)
+                        ? new DTOModificarEvento.Superevento(
+                                e.getSuperEvento().getId(),
+                                e.getSuperEvento().getNombre() != null ? e.getSuperEvento().getNombre() : "",
+                                e.getSuperEvento().getDescripcion() != null ? e.getSuperEvento().getDescripcion() : "")
+                        : new DTOModificarEvento.Superevento(0L, "", "")) // ⚡ objeto vacío, nunca null
+                .rangosReintegro(rangos != null ? rangos : List.of()) // ⚡ lista vacía
                 .espacioPublico(null)
-                .administradorEspacio(null)
-                .administradorEvento(null)
-                .organizadorEvento(true)
+                .administradorEspacio(false) // ⚡ default
+                .administradorEvento(esAdministrador)   // ⚡ true/false
+                .organizadorEvento(esOrganizador)       // ⚡ true/false
                 .diasHaciaAdelante(30)
                 .build();
-    }
 
-    @Override @Transactional
-    public void modificarEvento(DTOModificarEvento dto) {
-        Evento e = eventoRepo.findById(dto.getId())
-                .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-        if (dto.getFechaDesde() == null || dto.getFechaHasta() == null)
-            throw new HttpErrorException(400, "Fechas requeridas");
-
-        e.setNombre(dto.getNombre());
-        e.setDescripcion(dto.getDescripcion());
-        e.setFechaHoraInicio(dto.getFechaDesde());
-        e.setFechaHoraFin(dto.getFechaHasta());
-        e.setDireccionUbicacion(dto.getDireccion());
-        if (dto.getUbicacion() != null) {
-            e.setLatitudUbicacion(dto.getUbicacion().getLatitud() != null ?
-                    BigDecimal.valueOf(dto.getUbicacion().getLatitud()) : null);
-            e.setLongitudUbicacion(dto.getUbicacion().getLongitud() != null ?
-                    BigDecimal.valueOf(dto.getUbicacion().getLongitud()) : null);
         }
-        e.setPrecioInscripcion(dto.getPrecioInscripcion());
-        e.setPrecioOrganizacion(dto.getPrecioOrganizacion());
-        e.setCantidadMaximaInvitados(dto.getCantidadMaximaInvitados());
-        e.setCantidadMaximaParticipantes(dto.getCantidadMaximaParticipantes());
 
-        if (dto.getIdEspacio() != null) {
-            e.setEspacio(espacioRepo.findById(dto.getIdEspacio())
-                    .orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado")));
-        } else {
-            e.setEspacio(null);
-        }
+
+        @Override
+        @Transactional
+        public void modificarEvento(DTOModificarEvento dto) {
+            Evento e = eventoRepo.findById(dto.getId())
+                    .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+        
+            if (dto.getFechaDesde() == null || dto.getFechaHasta() == null)
+                throw new HttpErrorException(400, "Fechas requeridas");
+        
+            e.setNombre(dto.getNombre());
+            e.setDescripcion(dto.getDescripcion());
+            e.setFechaHoraInicio(dto.getFechaDesde());
+            e.setFechaHoraFin(dto.getFechaHasta());
+            e.setDireccionUbicacion(dto.getDireccion());
+        
+            if (dto.getUbicacion() != null) {
+                e.setLatitudUbicacion(BigDecimal.valueOf(dto.getUbicacion().getLatitud()));
+                e.setLongitudUbicacion(BigDecimal.valueOf(dto.getUbicacion().getLongitud()));
+            }
+        
+            e.setPrecioInscripcion(dto.getPrecioInscripcion());
+            e.setPrecioOrganizacion(dto.getPrecioOrganizacion());
+            e.setCantidadMaximaInvitados(dto.getCantidadMaximaInvitados());
+            e.setCantidadMaximaParticipantes(dto.getCantidadMaximaParticipantes());
+        
+            if (dto.getIdEspacio() > 0) { // ⚡ ahora se compara con 0, no con null
+                e.setEspacio(espacioRepo.findById(dto.getIdEspacio())
+                        .orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado")));
+            } else {
+                e.setEspacio(null);
+            }
 
         if (dto.getDisciplinas() != null) {
             if (e.getDisciplinasEvento() == null) e.setDisciplinasEvento(new ArrayList<>());

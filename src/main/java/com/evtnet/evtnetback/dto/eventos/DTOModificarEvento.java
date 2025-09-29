@@ -7,62 +7,80 @@ import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class DTOModificarEvento {
-    private Long id;
-    private String nombre;
-    private String descripcion;
+    private long id;                     // ⚡ nunca null
+    private String nombre;               // ⚡ vacío si no hay
+    private String descripcion;          // ⚡ vacío si no hay
 
-    private Long idEspacio;                
-    private String nombreEspacio;          
-    private boolean usarCronograma;
+    private long idEspacio;              // ⚡ 0 si no hay
+    private String nombreEspacio;        // ⚡ vacío si no hay
+    private boolean usarCronograma;      // ⚡ siempre boolean
 
     private LocalDateTime fechaDesde;
     private LocalDateTime fechaHasta;
 
-    private Long horarioId;                
+    private Long horarioId;              // ⚡ 0 si no hay
     private BigDecimal precioOrganizacion; 
 
-    private String direccion;
+    private String direccion;            // ⚡ vacío si no hay
     private Ubicacion ubicacion;
 
-    private List<ItemIdNombre> disciplinas;
-    private List<ItemIdNombre> modos;
-
-    private List<TipoInscripcion> tiposInscripcion;
+    private List<ItemIdNombre> disciplinas;   // ⚡ lista vacía si no hay
+    private List<ItemIdNombre> modos;         // ⚡ lista vacía
+    private List<TipoInscripcion> tiposInscripcion; // ⚡ lista vacía
 
     private BigDecimal precioInscripcion;
     private BigDecimal comisionInscripcion;
 
-    private Integer cantidadMaximaParticipantes;
-    private Integer cantidadMaximaInvitados;
+    private int cantidadMaximaParticipantes; // ⚡ 0 si no hay
+    private int cantidadMaximaInvitados;     // ⚡ 0 si no hay
 
-    private Integer cantidadParticipantesActual;
-    private Integer cantidadMaximaInvitadosPorInvitacionEfectiva;
+    private int cantidadParticipantesActual; // ⚡ 0 si no hay
+    private int cantidadMaximaInvitadosPorInvitacionEfectiva; // ⚡ 0 si no hay
 
-    private Boolean crearSuperevento;
-    private Superevento superevento; 
+    private boolean crearSuperevento;        // ⚡ siempre boolean
+    private Superevento superevento;         // ⚡ objeto vacío, nunca null
 
-    private List<RangoReintegro> rangosReintegro;
+    private List<RangoReintegro> rangosReintegro; // ⚡ lista vacía
 
-    private Boolean espacioPublico;
-    private Boolean administradorEspacio;
+    private Boolean espacioPublico;          // ⚡ siempre boolean
+    private boolean administradorEspacio;    // ⚡ siempre boolean
 
-    private Boolean administradorEvento;
-    private Boolean organizadorEvento;
+    private boolean administradorEvento;     // ⚡ siempre boolean
+    private boolean organizadorEvento;       // ⚡ siempre boolean
 
-    private Integer diasHaciaAdelante;
-
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class Ubicacion { private Double latitud; private Double longitud; }
+    private int diasHaciaAdelante;           // ⚡ default 0 si no hay
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class ItemIdNombre { private Long id; private String nombre; }
+    public static class Ubicacion { 
+        private double latitud;   // ⚡ 0.0 si no hay
+        private double longitud;  // ⚡ 0.0 si no hay
+    }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class TipoInscripcion { private Long id; private String nombre; private boolean seleccionado; }
+    public static class ItemIdNombre { 
+        private long id;          // ⚡ 0 si no hay
+        private String nombre;    // ⚡ vacío si no hay
+    }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class Superevento { private Long id; private String nombre; private String descripcion; }
+    public static class TipoInscripcion { 
+        private long id;          // ⚡ 0 si no hay
+        private String nombre;    // ⚡ vacío si no hay
+        private boolean seleccionado; 
+    }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class RangoReintegro { private int dias; private int horas; private int minutos; private int porcentaje; }
+    public static class Superevento { 
+        private long id;          // ⚡ 0 si no hay
+        private String nombre;    // ⚡ vacío si no hay
+        private String descripcion; // ⚡ vacío si no hay
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class RangoReintegro { 
+        private int dias; 
+        private int horas; 
+        private int minutos; 
+        private int porcentaje; 
+    }
 }
