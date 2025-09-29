@@ -9,6 +9,8 @@ import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import com.evtnet.evtnetback.mapper.EventoSearchMapper;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -49,6 +51,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final DenunciaEventoRepository denunciaEventoRepo;
     private final EstadoDenunciaEventoRepository estadoDenunciaRepo;
     private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepo;
+    private final SuperEventoRepository superEventoRepo; // 👈 Agregar esto
+
 
     @Value("${app.timezone:UTC}") // por defecto UTC si no está configurado
     private String appTimezone;
@@ -68,7 +72,9 @@ public EventoServiceImpl(
         InvitadoRepository invitadoRepo,
         DenunciaEventoRepository denunciaEventoRepo,
         EstadoDenunciaEventoRepository estadoDenunciaRepo,
-        DenunciaEventoEstadoRepository denunciaEventoEstadoRepo
+        DenunciaEventoEstadoRepository denunciaEventoEstadoRepo,
+        SuperEventoRepository superEventoRepo
+
 ) {
     super(eventoRepo);
     this.eventoRepo = eventoRepo;
@@ -86,6 +92,8 @@ public EventoServiceImpl(
     this.denunciaEventoRepo = denunciaEventoRepo;
     this.estadoDenunciaRepo = estadoDenunciaRepo;
     this.denunciaEventoEstadoRepo = denunciaEventoEstadoRepo;
+    this.superEventoRepo = superEventoRepo;
+    
 }
 
 
@@ -497,69 +505,93 @@ public EventoServiceImpl(
         @Override
         @Transactional
         public void modificarEvento(DTOModificarEvento dto) {
-            Evento e = eventoRepo.findById(dto.getId())
-                    .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
-        
-            if (dto.getFechaDesde() == null || dto.getFechaHasta() == null)
+        Evento e = eventoRepo.findById(dto.getId())
+                .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+
+        // Fechas (ya llegan como LocalDateTime gracias al deserializador)
+        if (dto.getFechaDesde() == null || dto.getFechaHasta() == null) {
                 throw new HttpErrorException(400, "Fechas requeridas");
-        
-            e.setNombre(dto.getNombre());
-            e.setDescripcion(dto.getDescripcion());
-            e.setFechaHoraInicio(dto.getFechaDesde());
-            e.setFechaHoraFin(dto.getFechaHasta());
-            e.setDireccionUbicacion(dto.getDireccion());
-        
-            if (dto.getUbicacion() != null) {
+        }
+
+        e.setNombre(dto.getNombre());
+        e.setDescripcion(dto.getDescripcion());
+        e.setFechaHoraInicio(dto.getFechaDesde());
+        e.setFechaHoraFin(dto.getFechaHasta());
+        e.setDireccionUbicacion(dto.getDireccion());
+
+        // Ubicación
+        if (dto.getUbicacion() != null) {
+                if (dto.getUbicacion().getLatitud() != null) {
                 e.setLatitudUbicacion(BigDecimal.valueOf(dto.getUbicacion().getLatitud()));
+                }
+                if (dto.getUbicacion().getLongitud() != null) {
                 e.setLongitudUbicacion(BigDecimal.valueOf(dto.getUbicacion().getLongitud()));
-            }
-        
-            e.setPrecioInscripcion(dto.getPrecioInscripcion());
-            e.setPrecioOrganizacion(dto.getPrecioOrganizacion());
-            e.setCantidadMaximaInvitados(dto.getCantidadMaximaInvitados());
-            e.setCantidadMaximaParticipantes(dto.getCantidadMaximaParticipantes());
-        
-            if (dto.getIdEspacio() > 0) { // ⚡ ahora se compara con 0, no con null
+                }
+        }
+
+        // Precios y cantidades
+        e.setPrecioInscripcion(dto.getPrecioInscripcion());
+        e.setPrecioOrganizacion(dto.getPrecioOrganizacion());
+        e.setCantidadMaximaInvitados(dto.getCantidadMaximaInvitados());
+        e.setCantidadMaximaParticipantes(dto.getCantidadMaximaParticipantes());
+
+        // Espacio
+        if (dto.getIdEspacio() != null && dto.getIdEspacio() > 0) {
                 e.setEspacio(espacioRepo.findById(dto.getIdEspacio())
                         .orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado")));
-            } else {
+        } else {
                 e.setEspacio(null);
-            }
+        }
 
+        // Disciplinas
         if (dto.getDisciplinas() != null) {
-            if (e.getDisciplinasEvento() == null) e.setDisciplinasEvento(new ArrayList<>());
-            e.getDisciplinasEvento().clear();
-            for (DTOModificarEvento.ItemIdNombre it : dto.getDisciplinas()) {
+                if (e.getDisciplinasEvento() == null) e.setDisciplinasEvento(new ArrayList<>());
+                e.getDisciplinasEvento().clear();
+                for (DTOModificarEvento.ItemIdNombre it : dto.getDisciplinas()) {
                 Disciplina d = disciplinaBaseRepo.findById(it.getId())
                         .orElseThrow(() -> new HttpErrorException(400, "Disciplina no encontrada"));
                 e.getDisciplinasEvento().add(DisciplinaEvento.builder()
                         .evento(e).disciplina(d).build());
-            }
+                }
         }
 
+        // Tipos de inscripción
         if (dto.getTiposInscripcion() != null) {
-            dto.getTiposInscripcion().stream().filter(DTOModificarEvento.TipoInscripcion::isSeleccionado).findFirst()
-                    .ifPresent(sel -> e.setTipoInscripcionEvento(
-                            tipoInscripcionRepo.findById(sel.getId())
-                                    .orElseThrow(() -> new HttpErrorException(400, "Tipo inscripción inválido"))));
+                dto.getTiposInscripcion().stream()
+                        .filter(DTOModificarEvento.TipoInscripcion::isSeleccionado)
+                        .findFirst()
+                        .ifPresent(sel -> e.setTipoInscripcionEvento(
+                                tipoInscripcionRepo.findById(sel.getId())
+                                        .orElseThrow(() -> new HttpErrorException(400, "Tipo inscripción inválido"))
+                        ));
         }
 
+        // Modos
         if (dto.getModos() != null && !dto.getModos().isEmpty()) {
-            ModoEvento principal = modoRepo.findById(dto.getModos().get(0).getId())
-                    .orElseThrow(() -> new HttpErrorException(400, "Modo de evento inválido"));
-            e.setModoEvento(principal);
+                ModoEvento principal = modoRepo.findById(dto.getModos().get(0).getId())
+                        .orElseThrow(() -> new HttpErrorException(400, "Modo de evento inválido"));
+                e.setModoEvento(principal);
 
-            if (e.getEventosModoEvento() == null) e.setEventosModoEvento(new ArrayList<>());
-            e.getEventosModoEvento().clear();
-            for (int i = 1; i < dto.getModos().size(); i++) {
+                if (e.getEventosModoEvento() == null) e.setEventosModoEvento(new ArrayList<>());
+                e.getEventosModoEvento().clear();
+                for (int i = 1; i < dto.getModos().size(); i++) {
                 ModoEvento me = modoRepo.findById(dto.getModos().get(i).getId())
                         .orElseThrow(() -> new HttpErrorException(400, "Modo de evento inválido"));
                 e.getEventosModoEvento().add(EventoModoEvento.builder().evento(e).modoEvento(me).build());
-            }
+                }
+        }
+
+        // Superevento
+        if (dto.getSuperevento() != null && dto.getSuperevento().getId() != null && dto.getSuperevento().getId() > 0) {
+                e.setSuperEvento(superEventoRepo.findById(dto.getSuperevento().getId())
+                        .orElseThrow(() -> new HttpErrorException(404, "Superevento no encontrado")));
+        } else {
+                e.setSuperEvento(null);
         }
 
         eventoRepo.save(e);
-    }
+        }
+
 
     @Override
     @Transactional
