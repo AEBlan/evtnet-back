@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface ReporteRepository extends JpaRepository<Evento, Long> {
@@ -31,6 +32,29 @@ public interface ReporteRepository extends JpaRepository<Evento, Long> {
         """)
     List<DatoLocal> reportePersonasPorEventoEnEspacio(
             @Param("espacioId") Long espacioId,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+    interface RowEventosPorEspacio {
+        Long getEspacioId();
+        String getEspacio();
+        long getEventos();
+    }
+
+    @Query("""
+        select 
+           e.espacio.id as espacioId,
+           e.espacio.nombre as espacio,
+           count(e.id) as eventos
+        from Evento e
+        where e.espacio.id in :espacios
+          and e.fechaHoraInicio < :hasta
+          and e.fechaHoraFin    > :desde
+        group by e.espacio.id, e.espacio.nombre
+        order by count(e.id) desc
+    """)
+    List<RowEventosPorEspacio> contarEventosPorEspacio(
+            @Param("espacios") Collection<Long> espacios,
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta
     );

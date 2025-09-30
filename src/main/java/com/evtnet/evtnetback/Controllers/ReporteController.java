@@ -1,8 +1,12 @@
 package com.evtnet.evtnetback.Controllers;
 
 import com.evtnet.evtnetback.Services.ReporteService;
-import com.evtnet.evtnetback.dto.reportes.DTOReportePersonsasEnEventosEnEspacio;
+import com.evtnet.evtnetback.dto.reportes.*;
 import lombok.RequiredArgsConstructor;
+
+
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +26,16 @@ public class ReporteController {
     ) throws Exception {
         DTOReportePersonsasEnEventosEnEspacio dto =
                 reporteService.generarPersonasEnEventosEnEspacio(espacioId, fechaDesdeMs, fechaHastaMs);
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/generarEventosPorEspacio")
+    public ResponseEntity<DTOReporteEventosPorEspacio> generarEventosPorEspacio(
+            @RequestParam List<Long> espacios,
+            @RequestParam("fechaDesde") long fechaDesdeMs,
+            @RequestParam("fechaHasta") long fechaHastaMs
+    ) throws Exception {
+        var dto = reporteService.generarEventosPorEspacio(espacios, fechaDesdeMs, fechaHastaMs);
         return ResponseEntity.ok(dto);
     }
 }

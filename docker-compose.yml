@@ -30,7 +30,7 @@ services:
     volumes:
       - ./storage/perfiles:/app/storage/perfiles
       - ./storage/logs:/app/storage/logs
-      - ./uploads:/data/uploads
+      - ./uploads:/app/uploads
     ports:
       - "8080:8080"
     environment:
@@ -46,6 +46,7 @@ services:
 
       # Ruta de storage (opcional si ya está en properties)
       APP_STORAGE_PERFILES: "/app/storage/perfiles"
+      APP_STORAGE_LOGS: "/app/storage/logs" 
 
     networks:
       - evtnet-net

@@ -283,7 +283,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         if (permisos == null) permisos = List.of(); // por las dudas
     
         String token = jwtUtil.generateToken(u.getUsername(), permisos);
-        registroSingleton.write("UsuariosGrupos", "inicio_sesion", "creacion", "El usuario se autenticó e inició sesión", u.getUsername());
+        //registroSingleton.write("UsuariosGrupos", "inicio_sesion", "creacion", "El usuario se autenticó e inició sesión", u.getUsername());
         return DTOAuth.builder()
                 .token(token)
                 .permisos(permisos)

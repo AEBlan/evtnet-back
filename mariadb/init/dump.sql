@@ -1460,5 +1460,22 @@ INSERT INTO subtipo_registro (nombre)
 INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
   SELECT (SELECT id FROM registro WHERE nombre LIKE "Pagos"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "ejecucion");
 
+--Reporte US2
+
+-- 🔹 Espacios
+INSERT INTO espacio (id, nombre, descripcion, fecha_hora_alta, direccion_ubicacion, propietario_id)
+VALUES
+  (20, 'Estadio Norte', 'Cancha techada', NOW(), 'Calle Norte 123', 1),
+  (21, 'Gimnasio Sur', 'Sala multiuso', NOW(), 'Av. Sur 456', 1)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+
+-- 🔹 Eventos (uno con datos, otro vacío)
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, espacio_id, organizador_id)
+VALUES
+  (200, 'Fútbol 5', 'Partido amistoso', '2025-09-01 18:00:00', '2025-09-01 20:00:00', 20, 2),
+  (201, 'Vóley', 'Entrenamiento juvenil', '2025-09-05 18:00:00', '2025-09-05 20:00:00', 20, 2),
+  (202, 'Crossfit', 'Clase intensa', '2025-09-12 09:00:00', '2025-09-12 10:00:00', 20, 2)
+ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
+
 
 COMMIT;
