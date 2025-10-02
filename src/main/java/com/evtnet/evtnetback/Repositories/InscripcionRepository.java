@@ -37,8 +37,19 @@ public interface InscripcionRepository extends BaseRepository<Inscripcion, Long>
         or lower(u.apellido) like lower(concat('%', :texto, '%'))
         )
     """)
+    
     List<Inscripcion> findByEventoIdAndFiltro(@Param("idEvento") Long idEvento,
                                             @Param("texto") String texto);
-
+    
+                                            @Query("""
+                                                select count(i)
+                                                from Inscripcion i
+                                                where i.evento.id = :idEvento
+                                                  and i.usuario.username = :username
+                                                  and i.fechaHoraBaja is null
+                                            """)
+                                            int countActivasByEventoIdAndUsuarioUsername(@Param("idEvento") Long idEvento,
+                                                                                         @Param("username") String username);
+                                            
 }
 

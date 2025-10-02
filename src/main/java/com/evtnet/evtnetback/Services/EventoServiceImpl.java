@@ -23,7 +23,7 @@ import java.util.ArrayList; import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import java.time.ZoneId;
-
+import java.time.ZonedDateTime;
 
 
 import java.math.RoundingMode;
@@ -53,7 +53,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final EstadoDenunciaEventoRepository estadoDenunciaRepo;
     private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepo;
     private final SuperEventoRepository superEventoRepo; // 👈 Agregar esto
-
+    private static final ZoneId ZONA_ARG = ZoneId.of("America/Argentina/Buenos_Aires");
 
     @Value("${app.timezone:UTC}") // por defecto UTC si no está configurado
     private String appTimezone;
@@ -115,35 +115,48 @@ public EventoServiceImpl(
             .toList();
     }
 
-    @Override
-    @Transactional
-    public DTOEvento obtenerEventoDetalle(long idEvento) {
+        @Override
+        @Transactional
+        public DTOEvento obtenerEventoDetalle(long idEvento) {
         // 🔁 Usa el query que NO hace fetch de dos bolsas
         Evento e = eventoRepo.findByIdForDetalle(idEvento)
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-        // (Opcional) tocar colecciones LAZY para inicializarlas dentro de la TX
-        if (e.getEventosModoEvento() != null)
-            e.getEventosModoEvento().forEach(eme -> { if (eme.getModoEvento()!=null) eme.getModoEvento().getNombre(); });
-        if (e.getInscripciones() != null)
-            e.getInscripciones().forEach(i -> { if (i.getUsuario()!=null) i.getUsuario().getUsername(); });
+        // (Opcional) inicializar colecciones LAZY
+        if (e.getEventosModoEvento() != null) {
+                e.getEventosModoEvento().forEach(eme -> {
+                if (eme.getModoEvento() != null) eme.getModoEvento().getNombre();
+                });
+        }
+        if (e.getInscripciones() != null) {
+                e.getInscripciones().forEach(i -> {
+                if (i.getUsuario() != null) i.getUsuario().getUsername();
+                });
+        }
 
+        // Usuario logueado
         String username = null;
-        try { username = SecurityContextHolder.getContext().getAuthentication().getName(); }
-        catch (Exception ignored) {}
+        try {
+                username = SecurityContextHolder.getContext().getAuthentication().getName();
+        } catch (Exception ignored) {}
 
+        // 🔹 Ahora solo cuenta inscripciones activas (fechaHoraBaja IS NULL)
         boolean inscripto = (username != null) &&
-                inscripcionRepo.countByEventoIdAndUsuarioUsername(e.getId(), username) > 0;
+                inscripcionRepo.countActivasByEventoIdAndUsuarioUsername(e.getId(), username) > 0;
 
+        // Verificar administrador
         boolean administrador = false;
         if (username != null) {
-            try {
+                try {
                 administrador = eventoRepo.existsByEventoIdAndAdministradorUsername(e.getId(), username);
-            } catch (Exception ignored) { administrador = false; }
+                } catch (Exception ignored) {
+                administrador = false;
+                }
         }
 
         return EventoSearchMapper.toDTOEvento(e, inscripto, administrador);
-    }
+        }
+
 
     @Override
     @Transactional
@@ -280,9 +293,9 @@ public EventoServiceImpl(
                 .build();
     }
 
-    @Override
-    @Transactional
-    public boolean verificarDatosPrePago(DTOInscripcion dto) {
+        @Override
+        @Transactional
+        public boolean verificarDatosPrePago(DTOInscripcion dto) {
         Evento e = eventoRepo.findById(dto.getIdEvento())
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
@@ -291,12 +304,19 @@ public EventoServiceImpl(
         // ya inscripto
         if (inscripcionRepo.countByEventoIdAndUsuarioUsername(e.getId(), username) > 0) return false;
 
+        // Zona configurada en application.properties
         ZoneId zone = ZoneId.of(appTimezone);
-        LocalDateTime ahora = LocalDateTime.now(zone);
-        LocalDateTime inicio = e.getFechaHoraInicio();
+
+        // ahora en zona ARG
+        ZonedDateTime ahora = ZonedDateTime.now(zone);
+
+        // inicio convertido a la misma zona
+        ZonedDateTime inicio = e.getFechaHoraInicio()
+                .atZone(ZoneId.of("UTC")) // asumiendo que en DB quedó guardado como UTC
+                .withZoneSameInstant(zone);
 
         if (ahora.isAfter(inicio)) {
-        return false; // bloquear solo si ya pasó
+                return false; // bloquear solo si ya pasó
         }
 
         // capacidad de participantes
@@ -314,13 +334,15 @@ public EventoServiceImpl(
                 dto.getPrecioInscripcion().compareTo(e.getPrecioInscripcion()) < 0) return false;
 
         return true;
-    }
+        }
 
 
-    @Override @Transactional
-    public void inscribirse(DTOInscripcion dto) {
+
+    @Override 
+        @Transactional
+        public void inscribirse(DTOInscripcion dto) {
         if (!verificarDatosPrePago(dto))
-            throw new HttpErrorException(400, "Datos inválidos para inscribirse");
+                throw new HttpErrorException(400, "Datos inválidos para inscribirse");
 
         Evento e = eventoRepo.findById(dto.getIdEvento())
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
@@ -332,39 +354,51 @@ public EventoServiceImpl(
         Inscripcion ins = new Inscripcion();
         ins.setEvento(e);
         ins.setUsuario(u);
-        ins.setFechaHoraAlta(LocalDateTime.now());
+        // 🔹 Corregido: guarda con hora de Argentina
+        ins.setFechaHoraAlta(LocalDateTime.now(ZONA_ARG));
+
         // precio: usa el del DTO si viene, sino el del evento
         ins.setPrecioInscripcion(dto.getPrecioInscripcion() != null
                 ? dto.getPrecioInscripcion()
                 : e.getPrecioInscripcion());
+
         // ¡crítico!
         ins.setPermitirDevolucionCompleta(Boolean.FALSE);
 
         inscripcionRepo.save(ins);
 
         if (dto.getInvitados() != null) {
-            for (DTOInscripcion.Invitado i : dto.getInvitados()) {
+                for (DTOInscripcion.Invitado i : dto.getInvitados()) {
                 Invitado inv = new Invitado();
                 inv.setInscripcion(ins);
                 inv.setNombre(i.getNombre());
                 inv.setApellido(i.getApellido());
                 inv.setDni(i.getDni());
                 invitadoRepo.save(inv);
-            }
+                }
+        }
         }
 
-    // (opcional) persistir dto.getDatosPago() → comprobantes
-    }
 
 
-    @Override @Transactional
-    public void desinscribirse(long idEvento) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Inscripcion ins = inscripcionRepo.findByEventoIdAndUsuarioUsername(idEvento, username)
-                .orElseThrow(() -> new HttpErrorException(404, "Inscripción no encontrada"));
-        invitadoRepo.deleteByInscripcionId(ins.getId());
-        inscripcionRepo.delete(ins);
-    }
+        @Override
+        @Transactional
+        public void desinscribirse(long idEvento) {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        
+            Inscripcion ins = inscripcionRepo.findByEventoIdAndUsuarioUsername(idEvento, username)
+                    .orElseThrow(() -> new HttpErrorException(404, "Inscripción no encontrada"));
+        
+            // Eliminar invitados asociados
+            invitadoRepo.deleteByInscripcionId(ins.getId());
+        
+            // En vez de eliminar la inscripción, la marcamos con fecha de baja
+            ZoneId zone = ZoneId.of("America/Argentina/Buenos_Aires");
+            ins.setFechaHoraBaja(LocalDateTime.now(zone));
+        
+            inscripcionRepo.save(ins);
+        }
+        
 
     @Override
     @Transactional
@@ -642,9 +676,14 @@ public EventoServiceImpl(
         public void cancelarInscripcion(long idInscripcion) {
         Inscripcion ins = inscripcionRepo.findById(idInscripcion)
                 .orElseThrow(() -> new HttpErrorException(404, "Inscripción no encontrada"));
-        ins.setFechaHoraBaja(LocalDateTime.now());
+
+        // Guardar hora de baja con zona Argentina
+        ZoneId zone = ZoneId.of("America/Argentina/Buenos_Aires");
+        ins.setFechaHoraBaja(LocalDateTime.now(zone));
+
         inscripcionRepo.save(ins);
         }
+
 
         @Override
         @Transactional
@@ -695,11 +734,16 @@ public EventoServiceImpl(
         Inscripcion ins = new Inscripcion();
         ins.setEvento(e);
         ins.setUsuario(u);
-        ins.setFechaHoraAlta(LocalDateTime.now());
+
+        // Guardar hora de alta con zona Argentina
+        ZoneId zone = ZoneId.of("America/Argentina/Buenos_Aires");
+        ins.setFechaHoraAlta(LocalDateTime.now(zone));
+
         if (dto.getPrecioInscripcion() != null) {
                 ins.setPrecioInscripcion(dto.getPrecioInscripcion());
-            }
-        ins.setPermitirDevolucionCompleta(Boolean.FALSE); // igual que en inscribirse
+        }
+        ins.setPermitirDevolucionCompleta(Boolean.FALSE);
+
         inscripcionRepo.save(ins);
 
         // Guardar invitados si vienen
@@ -712,8 +756,9 @@ public EventoServiceImpl(
                 inv.setDni(i.getDni());
                 invitadoRepo.save(inv);
                 }
-           }
+            }
         }
+
 
         @Override
         @Transactional
