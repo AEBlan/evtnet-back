@@ -41,15 +41,26 @@ public interface InscripcionRepository extends BaseRepository<Inscripcion, Long>
     List<Inscripcion> findByEventoIdAndFiltro(@Param("idEvento") Long idEvento,
                                             @Param("texto") String texto);
     
-                                            @Query("""
-                                                select count(i)
-                                                from Inscripcion i
-                                                where i.evento.id = :idEvento
-                                                  and i.usuario.username = :username
-                                                  and i.fechaHoraBaja is null
-                                            """)
-                                            int countActivasByEventoIdAndUsuarioUsername(@Param("idEvento") Long idEvento,
-                                                                                         @Param("username") String username);
+    @Query("""
+        select i
+        from Inscripcion i
+        join fetch i.usuario u
+        where i.evento.id = :idEvento
+            and i.fechaHoraBaja is null
+    """)
+    List<Inscripcion> findActivasByEventoId(@Param("idEvento") Long idEvento);
                                             
+    @Query("""
+        select count(i)
+        from Inscripcion i
+        where i.evento.id = :idEvento
+            and i.usuario.username = :username
+            and i.fechaHoraBaja is null
+    """)
+    int countActivasByEventoIdAndUsuarioUsername(@Param("idEvento") Long idEvento,
+                                                    @Param("username") String username);
+    
+   
+    
 }
 

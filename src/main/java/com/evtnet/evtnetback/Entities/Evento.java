@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @ToString(exclude = {"disciplinasEvento", "inscripciones", "eventosModoEvento", "porcentajesReintegroCancelacion", "denunciasEvento"})
@@ -56,6 +58,7 @@ public class Evento extends Base {
     @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DisciplinaEvento> disciplinasEvento;
 
+    //@OneToMany(mappedBy = "evento", fetch = FetchType.LAZY
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<Inscripcion> inscripciones;
 

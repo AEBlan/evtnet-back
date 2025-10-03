@@ -115,48 +115,51 @@ public EventoServiceImpl(
             .toList();
     }
 
-        @Override
-        @Transactional
-        public DTOEvento obtenerEventoDetalle(long idEvento) {
-        // 🔁 Usa el query que NO hace fetch de dos bolsas
-        Evento e = eventoRepo.findByIdForDetalle(idEvento)
-                .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+    @Override
+@Transactional
+public DTOEvento obtenerEventoDetalle(long idEvento) {
+    Evento e = eventoRepo.findByIdForDetalle(idEvento)
+            .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-        // (Opcional) inicializar colecciones LAZY
-        if (e.getEventosModoEvento() != null) {
-                e.getEventosModoEvento().forEach(eme -> {
-                if (eme.getModoEvento() != null) eme.getModoEvento().getNombre();
-                });
-        }
-        if (e.getInscripciones() != null) {
-                e.getInscripciones().forEach(i -> {
-                if (i.getUsuario() != null) i.getUsuario().getUsername();
-                });
-        }
+    // ✅ cargar inscripciones activas
+    List<Inscripcion> inscripcionesActivas = inscripcionRepo.findActivasByEventoId(e.getId());
+    e.setInscripciones(inscripcionesActivas);
 
-        // Usuario logueado
-        String username = null;
+    // Inicializar colecciones LAZY
+    if (e.getDisciplinasEvento() != null) {
+        e.getDisciplinasEvento().forEach(de -> {
+            if (de.getDisciplina() != null) de.getDisciplina().getNombre();
+        });
+    }
+    if (e.getEventosModoEvento() != null) {
+        e.getEventosModoEvento().forEach(eme -> {
+            if (eme.getModoEvento() != null) eme.getModoEvento().getNombre();
+        });
+    }
+
+    String username = null;
+    try {
+        username = SecurityContextHolder.getContext().getAuthentication().getName();
+    } catch (Exception ignored) {}
+
+    // ✅ inscripto = solo si existe inscripción activa (sin fechaHoraBaja)
+    boolean inscripto = (username != null) &&
+            inscripcionRepo.countActivasByEventoIdAndUsuarioUsername(e.getId(), username) > 0;
+
+    boolean administrador = false;
+    if (username != null) {
         try {
-                username = SecurityContextHolder.getContext().getAuthentication().getName();
-        } catch (Exception ignored) {}
-
-        // 🔹 Ahora solo cuenta inscripciones activas (fechaHoraBaja IS NULL)
-        boolean inscripto = (username != null) &&
-                inscripcionRepo.countActivasByEventoIdAndUsuarioUsername(e.getId(), username) > 0;
-
-        // Verificar administrador
-        boolean administrador = false;
-        if (username != null) {
-                try {
-                administrador = eventoRepo.existsByEventoIdAndAdministradorUsername(e.getId(), username);
-                } catch (Exception ignored) {
-                administrador = false;
-                }
+            administrador = eventoRepo.existsByEventoIdAndAdministradorUsername(e.getId(), username);
+        } catch (Exception ignored) {
+            administrador = false;
         }
+    }
 
-        return EventoSearchMapper.toDTOEvento(e, inscripto, administrador);
-        }
+    return EventoSearchMapper.toDTOEvento(e, inscripto, administrador);
+}
 
+    
+    
 
     @Override
     @Transactional
@@ -338,7 +341,7 @@ public EventoServiceImpl(
 
 
 
-    @Override 
+        @Override 
         @Transactional
         public void inscribirse(DTOInscripcion dto) {
         if (!verificarDatosPrePago(dto))
