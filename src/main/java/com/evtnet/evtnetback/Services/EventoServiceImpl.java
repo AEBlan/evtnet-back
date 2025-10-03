@@ -304,8 +304,9 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
 
         String username = resolveUsername(dto.getUsername()); // ← tomar del token si viene vacío
 
-        // ya inscripto
-        if (inscripcionRepo.countByEventoIdAndUsuarioUsername(e.getId(), username) > 0) return false;
+         // ya inscripto (solo si tiene una inscripción activa)
+        if (inscripcionRepo.countActivasByEventoIdAndUsuarioUsername(e.getId(), username) > 0) 
+        return false;
 
         // Zona configurada en application.properties
         ZoneId zone = ZoneId.of(appTimezone);
@@ -313,10 +314,8 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
         // ahora en zona ARG
         ZonedDateTime ahora = ZonedDateTime.now(zone);
 
-        // inicio convertido a la misma zona
-        ZonedDateTime inicio = e.getFechaHoraInicio()
-                .atZone(ZoneId.of("UTC")) // asumiendo que en DB quedó guardado como UTC
-                .withZoneSameInstant(zone);
+       // inicio interpretado directamente en la zona configurada (sin forzar UTC)
+        ZonedDateTime inicio = e.getFechaHoraInicio().atZone(zone);
 
         if (ahora.isAfter(inicio)) {
                 return false; // bloquear solo si ya pasó
@@ -389,16 +388,16 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
         public void desinscribirse(long idEvento) {
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
         
-            Inscripcion ins = inscripcionRepo.findByEventoIdAndUsuarioUsername(idEvento, username)
-                    .orElseThrow(() -> new HttpErrorException(404, "Inscripción no encontrada"));
-        
+            Inscripcion ins = inscripcionRepo.findActivaByEventoIdAndUsuarioUsername(idEvento, username)
+            .orElseThrow(() -> new HttpErrorException(404, "No existe inscripción activa"));
+            
             // Eliminar invitados asociados
             invitadoRepo.deleteByInscripcionId(ins.getId());
         
             // En vez de eliminar la inscripción, la marcamos con fecha de baja
             ZoneId zone = ZoneId.of("America/Argentina/Buenos_Aires");
             ins.setFechaHoraBaja(LocalDateTime.now(zone));
-        
+            
             inscripcionRepo.save(ins);
         }
         

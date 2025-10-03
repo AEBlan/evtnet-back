@@ -61,6 +61,15 @@ public interface InscripcionRepository extends BaseRepository<Inscripcion, Long>
                                                     @Param("username") String username);
     
    
-    
+    @Query("""
+        select i
+        from Inscripcion i
+        where i.evento.id = :idEvento
+            and i.usuario.username = :username
+            and i.fechaHoraBaja is null
+    """)
+    Optional<Inscripcion> findActivaByEventoIdAndUsuarioUsername(@Param("idEvento") Long idEvento,
+                                                                    @Param("username") String username);
+                                                    
 }
 
