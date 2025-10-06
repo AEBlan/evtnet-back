@@ -37,5 +37,6 @@ public interface EventoMapper {
     // Si tu DTO lo tiene y tu entidad también:
     // @Mapping(target = "administradorEventoId", source = "administradorEvento.id")
     @Mapping(target = "espacioId", source = "espacio.id")
+    @Mapping(target = "administrador", ignore = true)
     DTOEventoResponse toResponse(Evento entity);
 }

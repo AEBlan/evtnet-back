@@ -6,12 +6,14 @@ import com.evtnet.evtnetback.dto.eventos.DTOBusquedaMisEventos;
 import com.evtnet.evtnetback.utils.TimeUtil;
 import org.springframework.data.jpa.domain.Specification;
 
+import jakarta.persistence.criteria.JoinType;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public final class EventoSpecs {
     private EventoSpecs(){}
 
+    // 🔹 Buscar TODOS los eventos (exploración general)
     public static Specification<Evento> byFiltroBusqueda(DTOBusquedaEventos f) {
         return Specification.allOf(
                 textoLike(f.texto()),
@@ -23,14 +25,20 @@ public final class EventoSpecs {
         );
     }
 
-    public static Specification<Evento> byFiltroMisEventos(DTOBusquedaMisEventos f) {
+    // 🔹 Buscar SOLO mis eventos (organizador / administrador / participante)
+    public static Specification<Evento> byFiltroMisEventos(DTOBusquedaMisEventos f, String username) {
         return Specification.allOf(
                 textoLike(f.texto()),
-                rangoFechaInterseca(f.fechaDesde(), f.fechaHasta())
+                rangoFechaInterseca(f.fechaDesde(), f.fechaHasta()),
+                Specification.anyOf(
+                        f.organizador() ? esOrganizador(username) : null,
+                        f.administrador() ? esAdministrador(username) : null,
+                        f.participante() ? esParticipante(username) : null
+                )
         );
     }
 
-    // ---- helpers ----
+    // ---- helpers comunes ----
     static Specification<Evento> textoLike(String t) {
         if (t == null || t.isBlank()) return null;
         String like = "%" + t.trim().toLowerCase() + "%";
@@ -58,7 +66,7 @@ public final class EventoSpecs {
     static Specification<Evento> conDisciplinasEvento(List<Long> ids) {
         if (ids == null || ids.isEmpty()) return null;
         return (root, cq, cb) -> {
-            var join = root.join("disciplinasEvento"); // List<DisciplinaEvento>
+            var join = root.join("disciplinasEvento");
             cq.distinct(true);
             return join.get("id").in(ids);
         };
@@ -66,7 +74,6 @@ public final class EventoSpecs {
 
     static Specification<Evento> conModos(List<Long> ids) {
         if (ids == null || ids.isEmpty()) return null;
-        // Usamos ManyToOne (rápido). Si preferís intermedia, cambia a eventosModoEvento.join("modoEvento")
         return (root, cq, cb) -> root.get("modoEvento").get("id").in(ids);
     }
 
@@ -74,5 +81,24 @@ public final class EventoSpecs {
         if (!flag) return null;
         return (root, cq, cb) -> cb.isNull(root.get("espacio"));
     }
-}
 
+    // ---- helpers para MIS EVENTOS ----
+    // ---- helpers para MIS EVENTOS ----
+    static Specification<Evento> esOrganizador(String username) {
+        return (root, cq, cb) ->
+                cb.equal(root.join("organizador", JoinType.LEFT).get("username"), username);
+    }
+
+    static Specification<Evento> esAdministrador(String username) {
+        return (root, cq, cb) ->
+                cb.equal(root.join("administradoresEvento", JoinType.LEFT)
+                            .join("usuario", JoinType.LEFT).get("username"), username);
+    }
+
+    static Specification<Evento> esParticipante(String username) {
+        return (root, cq, cb) ->
+                cb.equal(root.join("inscripciones", JoinType.LEFT)
+                            .join("usuario", JoinType.LEFT).get("username"), username);
+    }
+
+}

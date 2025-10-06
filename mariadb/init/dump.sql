@@ -29,11 +29,11 @@ INSERT INTO medio_de_pago (nombre)
 -- =========================
 INSERT INTO comision_por_inscripcion (fecha_desde, fecha_hasta, monto_limite, porcentaje)
 SELECT NOW(), NULL, 100000.00, 5.00
-WHERE NOT EXISTS (SELECT 1 FROM comision_por_inscripcion);
+  WHERE NOT EXISTS (SELECT 1 FROM comision_por_inscripcion);
 
 INSERT INTO comision_por_organizacion (fecha_desde, fecha_hasta, monto_limite, porcentaje)
 SELECT NOW(), NULL, 250000.00, 7.50
-WHERE NOT EXISTS (SELECT 1 FROM comision_por_organizacion);
+  WHERE NOT EXISTS (SELECT 1 FROM comision_por_organizacion);
 
 -- =========================
 -- Disciplina (tiene fecha_hora_alta/baja opcionales)
@@ -67,15 +67,15 @@ WHERE NOT EXISTS (SELECT 1 FROM modo_evento WHERE nombre='Individual');
 -- =========================
 INSERT INTO tipo_inscripcion_evento (nombre, descripcion, fecha_hora_alta)
 SELECT 'Inscripción por Usuario', NULL, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripción por Usuario');
+  WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripción por Usuario');
 
 INSERT INTO tipo_inscripcion_evento (nombre, descripcion, fecha_hora_alta)
 SELECT 'Inscripcion por Administrador', NULL, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripcion por Administrador');
+  WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripcion por Administrador');
 
 INSERT INTO tipo_inscripcion_evento (nombre, descripcion, fecha_hora_alta)
 SELECT 'Inscripcion Usuario/Administrador', NULL, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripcion Usuario/Administrador');
+  WHERE NOT EXISTS (SELECT 1 FROM tipo_inscripcion_evento WHERE nombre='Inscripcion Usuario/Administrador');
 
 -- =========================
 -- EstadoDenunciaEvento (fecha_hora_alta nullable)
@@ -101,12 +101,12 @@ ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 -- TipoUsuarioGrupo (fecha_hora_alta NOT NULL)
 -- =========================
 INSERT INTO tipo_usuario_grupo (nombre, fecha_hora_alta)
-SELECT 'Miembro', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Miembro');
+  SELECT 'Miembro', NOW()
+  WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Miembro');
 
 INSERT INTO tipo_usuario_grupo (nombre, fecha_hora_alta)
-SELECT 'Administrador', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Administrador');
+  SELECT 'Administrador', NOW()
+  WHERE NOT EXISTS (SELECT 1 FROM tipo_usuario_grupo WHERE nombre='Administrador');
 
 -- =========================
 -- EstadoSEP  (¡OJO! tu entidad usa @Table(name = "EstadoSEP"))
@@ -138,12 +138,12 @@ WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE nombre='Público');
 -- TipoExcepcionHorarioEspacio (fecha_hora_alta NOT NULL)
 -- =========================
 INSERT INTO tipo_excepcion_horario_espacio (nombre, fecha_hora_alta)
-SELECT 'Completa', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Completa');
+  SELECT 'Completa', NOW()
+  WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Completa');
 
 INSERT INTO tipo_excepcion_horario_espacio (nombre, fecha_hora_alta)
-SELECT 'Externa', NOW()
-WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Externa');
+  SELECT 'Externa', NOW()
+  WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Externa');
 
 -- =========================
 -- Permiso (tu entidad no tiene fecha)
@@ -246,7 +246,7 @@ WHERE p.nombre IN (
   'VisionEventos','VisionEspacios','ParticipacionGrupos','CreacionGrupos','AdministracionGrupos',
   'AdministracionEspaciosPublicos','SolicitudEspaciosPublicos','AdministracionParametros',
   'AdministracionMascota','AdministracionRoles','AdministracionUsuarios','RealizacionBackup',
-  'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios'
+  'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios','DenunciaEventos'
 )
   AND NOT EXISTS (
     SELECT 1 FROM rol_permiso rp
@@ -520,16 +520,16 @@ INSERT INTO denuncia_evento (titulo, descripcion, evento_id, inscripcion_id, den
 SELECT 'Juego brusco','Faltas fuertes no sancionadas.',
        (SELECT id FROM evento WHERE nombre='Fecha 1' LIMIT 1),
        NULL,
-       (SELECT id FROM usuario WHERE username='mara' LIMIT 1)
+       (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM denuncia_evento WHERE titulo='Juego brusco');
 
 INSERT INTO denuncia_evento_estado
 (descripcion, fecha_hora_desde, fecha_hora_hasta, estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
-SELECT 'Creada por mara', NOW(), NULL,
+SELECT 'Creada por sergioalbino', NOW(), NULL,
        (SELECT id FROM estado_denuncia_evento WHERE nombre='Ingresado' LIMIT 1),
        (SELECT id FROM denuncia_evento WHERE titulo='Juego brusco' LIMIT 1),
        NULL
-WHERE NOT EXISTS (SELECT 1 FROM denuncia_evento_estado WHERE descripcion='Creada por mara' AND denuncia_evento_id=(SELECT id FROM denuncia_evento WHERE titulo='Juego brusco' LIMIT 1));
+WHERE NOT EXISTS (SELECT 1 FROM denuncia_evento_estado WHERE descripcion='Creada por sergioalbino' AND denuncia_evento_id=(SELECT id FROM denuncia_evento WHERE titulo='Juego brusco' LIMIT 1));
 
 INSERT INTO denuncia_evento_estado
 (descripcion, fecha_hora_desde, fecha_hora_hasta, estado_denuncia_evento_id, denuncia_evento_id, responsable_id)
@@ -618,10 +618,10 @@ START TRANSACTION;
 -- ===================================================================
 SET @u_sergio := (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1);
 SET @u_admin  := (SELECT id FROM usuario WHERE username='adminevt'     LIMIT 1);
-SET @u_mara   := (SELECT id FROM usuario WHERE username='mara'         LIMIT 1);
-SET @u_carol  := (SELECT id FROM usuario WHERE username='carol'        LIMIT 1);
-SET @u_luly   := (SELECT id FROM usuario WHERE username='luly'         LIMIT 1);
-SET @u_sam    := (SELECT id FROM usuario WHERE username='sam'          LIMIT 1);
+SET @u_mara   := (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1);
+SET @u_carol  := (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1);
+SET @u_luly   := (SELECT id FROM usuario WHERE username='sergioalbino' LIMIT 1);
+SET @u_sam    := (SELECT id FROM usuario WHERE username='adminevt'     LIMIT 1);
 
 -- Asegurar que exista el estado "Rechazada"
 INSERT INTO estado_denuncia_evento (nombre, descripcion, fecha_hora_alta)
