@@ -715,13 +715,12 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
                         .apellido(u.getApellido())
                         .mail(u.getMail())
                         .dni(u.getDni())
-                        .fechaNacimiento(
-                                u.getFechaNacimiento() != null ? u.getFechaNacimiento().toLocalDate() : null
-                        )
+                        .fechaNacimiento( u.getFechaNacimiento() != null ? u.getFechaNacimiento().toLocalDate() : null )
                         .build()
                 )
                 .toList();
         }
+
 
 
         @Override
@@ -801,11 +800,12 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
                         .apellido(u.getApellido())
                         .mail(u.getMail())
                         .dni(u.getDni())
-                        .fechaNacimiento(u.getFechaNacimiento() != null ? u.getFechaNacimiento().toLocalDate() : null)
+                        .fechaNacimiento( u.getFechaNacimiento() != null ? u.getFechaNacimiento().toLocalDate() : null )
                         .build()
                 )
                 .toList();
         }
+
 
         @Override
         @Transactional

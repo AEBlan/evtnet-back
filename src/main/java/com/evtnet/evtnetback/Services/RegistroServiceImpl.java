@@ -144,8 +144,9 @@ public class RegistroServiceImpl extends BaseServiceImpl <Registro, Long> implem
             .nombre(u.getNombre())
             .apellido(u.getApellido())
             .dni(u.getDni())
-            .fechaNacimiento(u.getFechaNacimiento().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+            //.fechaNacimiento(u.getFechaNacimiento().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
             .build()).toList();
+        
     }
     
 }
