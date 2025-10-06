@@ -248,7 +248,7 @@ WHERE p.nombre IN (
   'VisionEventos','VisionEspacios','ParticipacionGrupos','CreacionGrupos','AdministracionGrupos',
   'AdministracionEspaciosPublicos','SolicitudEspaciosPublicos','AdministracionParametros',
   'AdministracionMascota','AdministracionRoles','AdministracionUsuarios','RealizacionBackup',
-  'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios'
+  'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios','DenunciaEventos'
 )
   AND NOT EXISTS (
     SELECT 1 FROM rol_permiso rp
