@@ -5,13 +5,20 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/java:1-21-bullseye",
 
+	"mounts": ["source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"],
+
 	"features": {
-		"ghcr.io/devcontainers/features/java:1": {
-			"version": "none",
-			"installMaven": "true",
-			"installGradle": "false"
-		}
+	"ghcr.io/devcontainers/features/docker-in-docker:2": {
+		"version": "latest"
+	},
+	"ghcr.io/devcontainers/features/java:1": {
+		"version": "none",
+		"installMaven": "true",
+		"installGradle": "false"
 	}
+	}
+
+	
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
