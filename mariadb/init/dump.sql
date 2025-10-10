@@ -1234,231 +1234,147 @@ ON DUPLICATE KEY UPDATE calificacion_id = VALUES(calificacion_id);
 INSERT INTO registro (nombre, nombre_formateado)
   SELECT "UsuariosGrupos", "Usuarios y Grupos";
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "usuario";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "UsuariosGrupos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "usuario");
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "grupo";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "UsuariosGrupos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "grupo");
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "inicio_sesion";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "UsuariosGrupos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "inicio_sesion");
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "calificacion";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "UsuariosGrupos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "calificacion");
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "usuario_grupo";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "UsuariosGrupos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "usuario_grupo");
-
+  
 
 
 
 INSERT INTO registro (nombre, nombre_formateado)
   SELECT "Eventos", "Eventos";
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "evento";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Eventos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "evento");
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "superevento";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Eventos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "superevento");
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "inscripcion";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Eventos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "inscripcion");
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "denuncia";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Eventos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "denuncia");
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "administrador_evento";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "administrador_superevento";
 
 
 
 INSERT INTO registro (nombre, nombre_formateado)
   SELECT "Espacios", "Espacios";
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "espacio_privado";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Espacios"), (SELECT id FROM tipo_registro WHERE nombre LIKE "espacio_privado");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "espacio_publico";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Espacios"), (SELECT id FROM tipo_registro WHERE nombre LIKE "espacio_publico");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "subespacio";
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "solicitud_espacio_publico";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Espacios"), (SELECT id FROM tipo_registro WHERE nombre LIKE "solicitud_espacio_publico");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "cronograma";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Espacios"), (SELECT id FROM tipo_registro WHERE nombre LIKE "cronograma");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "reseña";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Espacios"), (SELECT id FROM tipo_registro WHERE nombre LIKE "reseña");
-
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "administrador_espacio_privado";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "encargado_subespacio";
+  
 
 
 
 INSERT INTO registro (nombre, nombre_formateado)
   SELECT "Pagos", "Pagos";
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "pago";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Pagos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "pago");
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "devolucion";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Pagos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "devolucion");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "cobro_comision";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Pagos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "cobro_comision");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "pago_comision";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Pagos"), (SELECT id FROM tipo_registro WHERE nombre LIKE "pago_comision");
-
+  
 
 
 
 INSERT INTO registro (nombre, nombre_formateado)
   SELECT "Parametros", "Parámetros";
 
-INSERT INTO tipo_registro (nombre)
+INSERT INTO entidad_registro (nombre)
   SELECT "tipo_calificacion";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "tipo_calificacion");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "motivo_calificacion";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "motivo_calificacion");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "disciplina";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "disciplina");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "rol";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "rol");
-
-INSERT INTO tipo_registro (nombre)
-  SELECT "estado_denuncia";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "estado_denuncia");
-
-INSERT INTO tipo_registro (nombre)
-  SELECT "estado_sep";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "estado_sep");
-
-INSERT INTO tipo_registro (nombre)
-  SELECT "modo_evento";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "modo_evento");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "icono_caracteristica";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "icono_caracteristica");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "comision_inscripcion";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "comision_inscripcion");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "comision_organizacion";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "comision_organizacion");
-
-INSERT INTO tipo_registro (nombre)
-  SELECT "medio_pago";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "medio_pago");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "parametro_sistema";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "parametro_sistema");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "imagen_mascota";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "imagen_mascota");
-
-INSERT INTO tipo_registro (nombre)
+  
+INSERT INTO entidad_registro (nombre)
   SELECT "instancia_mascota";
-INSERT INTO registro_tipo_registro (registro_id, tipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM tipo_registro WHERE nombre LIKE "instancia_mascota");
 
 
 
-INSERT INTO subtipo_registro (nombre)
+
+INSERT INTO accion_registro (nombre)
   SELECT "creacion";
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "UsuariosGrupos"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "creacion");
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Eventos"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "creacion");
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Espacios"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "creacion");
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "creacion");
 
-
-INSERT INTO subtipo_registro (nombre)
+INSERT INTO accion_registro (nombre)
   SELECT "eliminacion";
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "UsuariosGrupos"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "eliminacion");
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Eventos"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "eliminacion");
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Espacios"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "eliminacion");
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "eliminacion");
 
-
-INSERT INTO subtipo_registro (nombre)
+INSERT INTO accion_registro (nombre)
   SELECT "modificacion";
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "UsuariosGrupos"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "modificacion");
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Eventos"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "modificacion");
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Espacios"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "modificacion");
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Parametros"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "modificacion");
 
+INSERT INTO accion_registro (nombre)
+  SELECT "restauracion";
 
-INSERT INTO subtipo_registro (nombre)
+INSERT INTO accion_registro (nombre)
   SELECT "ejecucion";
-INSERT INTO registro_subtipo_registro (registro_id, subtipo_registro_id)
-  SELECT (SELECT id FROM registro WHERE nombre LIKE "Pagos"), (SELECT id FROM subtipo_registro WHERE nombre LIKE "ejecucion");
+  
+
 
 --Reporte US2
 

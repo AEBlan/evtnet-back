@@ -38,14 +38,14 @@ public class RegistroController extends BaseControllerImpl<Registro, RegistroSer
         return ResponseEntity.ok(service.buscar(registro, filtros));
     }
     
-    @GetMapping("/obtenerTipos")
-    public ResponseEntity<List<String>> obtenerTipos(@RequestParam String registro) throws Exception {
-        return ResponseEntity.ok(service.obtenerTipos(registro));
+    @GetMapping("/obtenerEntidades")
+    public ResponseEntity<List<String>> obtenerEntidades(@RequestParam String registro) throws Exception {
+        return ResponseEntity.ok(service.obtenerEntidades(registro));
     }
     
-    @GetMapping("/obtenerSubtipos")
-    public ResponseEntity<List<String>> obtenerSubtipos(@RequestParam String registro) throws Exception {
-        return ResponseEntity.ok(service.obtenerSubtipos(registro));
+    @GetMapping("/obtenerAcciones")
+    public ResponseEntity<List<String>> obtenerAcciones(@RequestParam String registro) throws Exception {
+        return ResponseEntity.ok(service.obtenerAcciones(registro));
     }
     
     @GetMapping("/buscarUsuarios")

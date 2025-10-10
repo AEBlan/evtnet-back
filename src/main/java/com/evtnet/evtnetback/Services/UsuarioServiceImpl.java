@@ -283,7 +283,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         if (permisos == null) permisos = List.of(); // por las dudas
     
         String token = jwtUtil.generateToken(u.getUsername(), permisos);
-        //registroSingleton.write("UsuariosGrupos", "inicio_sesion", "creacion", "El usuario se autenticó e inició sesión", u.getUsername());
+        registroSingleton.write("UsuariosGrupos", "inicio_sesion", "creacion", "El usuario se autenticó e inició sesión", u.getUsername());
         return DTOAuth.builder()
                 .token(token)
                 .permisos(permisos)
@@ -333,8 +333,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .fechaNacimiento(parseFechaNacimiento(body.getFechaNacimiento()))
                 .contrasena(passwordEncoder.encode(body.getPassword()))
                 .fechaHoraAlta(LocalDateTime.now())
+                .rolesUsuario(new ArrayList<>())
                 .build();
-        usuarioRepository.save(u);
+        u = usuarioRepository.save(u);
 
         Rol rolPend = rolRepository.findByNombre("PendienteConfirmacion")
                 .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmacion"));
@@ -343,7 +344,10 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                     RolUsuario.builder().usuario(u).rol(rolPend).fechaHoraAlta(LocalDateTime.now()).build()
             );
         }
-        
+
+        u = usuarioRepository.findByUsername(u.getUsername())
+            .orElseThrow(() -> new Exception("Usuario no encontrado"));
+
         enviarCodigo(body.getMail());
         return authFromUser(u);
     }
