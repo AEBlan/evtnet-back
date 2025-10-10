@@ -7,6 +7,8 @@ import com.evtnet.evtnetback.Services.UsuarioService.FotoResponseString;
 import com.evtnet.evtnetback.Services.UsuarioServiceImpl;
 import com.evtnet.evtnetback.dto.usuarios.*;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
 import org.springframework.http.MediaType;
@@ -123,22 +125,29 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     }
 
     @GetMapping("/obtenerFotoDePerfil")
-    public ResponseEntity<BlobJson> obtenerFotoDePerfil(@RequestParam String username) throws Exception {
+    public ResponseEntity<byte[]> obtenerFotoDePerfil(@RequestParam String username) throws Exception {
         var foto = service.obtenerFotoDePerfil(username); // ← unificado (ver punto 3)
+    
         if (foto == null || foto.getBytes() == null || foto.getBytes().length == 0) {
             // devolver un PNG mínimo para no romper el front (1x1 transparente)
             byte[] fallback = java.util.Base64.getDecoder().decode(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9UoQXlUAAAAASUVORK5CYII="
             );
-            return ResponseEntity.ok(
-                new BlobJson(new String(fallback, StandardCharsets.ISO_8859_1), "image/png")
-            );
-        }
-        String binString = new String(foto.getBytes(), StandardCharsets.ISO_8859_1);
-        String ct = (foto.getContentType() == null || foto.getContentType().isBlank())
-                ? "application/octet-stream" : foto.getContentType();
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Type", "image/png");
 
-        return ResponseEntity.ok(new BlobJson(binString, ct));
+            return ResponseEntity.ok()
+            .headers(headers)
+            .body(fallback);
+        }
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Type", foto.getContentType());
+
+        return ResponseEntity.ok()
+        .headers(headers)
+        .body(foto.getBytes());
     }
     
     @GetMapping("/obtenerImagenDeCalificacion")
@@ -161,13 +170,25 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     }
 
      @PutMapping(value = "/editarPerfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Void> editarPerfil(@RequestPart("datos") DTOEditarPerfil datos,
-                                             @RequestPart(value = "foto", required = false) MultipartFile foto) throws Exception {
+    public ResponseEntity<Void> editarPerfil(@RequestParam("nombre") String nombre,
+                                            @RequestParam("apellido") String apellido,
+                                            @RequestParam("dni") String dni,
+                                            @RequestParam("fechaNacimiento") Long fechaNacimiento,
+                                            @RequestParam("cbu") String cbu,
+                                            @RequestParam(value = "fotoDePerfil", required = false) MultipartFile foto) throws Exception {
         byte[] bytes = (foto != null && !foto.isEmpty()) ? foto.getBytes() : null;
-        String nombre = (foto != null) ? foto.getOriginalFilename() : null;
+        String nombreFoto = (foto != null) ? foto.getOriginalFilename() : null;
         String ct     = (foto != null) ? foto.getContentType() : null;
 
-        service.editarPerfil(datos, bytes, nombre, ct);
+        DTOEditarPerfil datos = DTOEditarPerfil.builder()
+                                                .nombre(nombre)
+                                                .apellido(apellido)
+                                                .dni(dni)
+                                                .fechaNacimiento(fechaNacimiento)
+                                                .cbu(cbu)
+                                                .build();
+
+        service.editarPerfil(datos, bytes, nombreFoto, ct);
         return ResponseEntity.noContent().build();
     }
 

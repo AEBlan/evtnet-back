@@ -288,6 +288,11 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .token(token)
                 .permisos(permisos)
                 .username(u.getUsername())
+                .user(DTOAuth.User.builder()
+                    .nombre(u.getNombre())
+                    .apellido(u.getApellido())
+                    .roles(u.getRolesUsuario().stream().map(r -> r.getRol().getNombre()).toList())
+                    .build())
                 .build();
     }
 
@@ -667,7 +672,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             Files.write(destino, foto, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
             // Guardar SOLO el nombre en DB (como en registerConFoto)
-            u.setFotoPerfil(destino.toString()); // ruta absoluta
+            u.setFotoPerfil(filename); // ruta absoluta
 
         }
 
