@@ -62,11 +62,8 @@ public class DTOEventoCreate {
     private Long superEventoId;
 
     // Acepta "tipoInscripcion"
-    @JsonAlias("tipoInscripcion")
-    private Long tipoInscripcionEventoId;
-
-    // El front manda "modos": [id,...] -> se toma el primero
-    private Long modoEventoId;
+    /*@JsonAlias("tipoInscripcion")
+    private Long tipoInscripcionEventoId;*/
 
     //private Long administradorEventoId;
 
@@ -91,14 +88,6 @@ public class DTOEventoCreate {
             if (ubicacion.getLongitud() != null) {
                 this.longitudUbicacion = BigDecimal.valueOf(ubicacion.getLongitud());
             }
-        }
-    }
-
-    // "modos": [3, ...] -> primer elemento a modoEventoId
-    @JsonProperty("modos")
-    public void setModos(List<Long> modos) {
-        if (modos != null && !modos.isEmpty()) {
-            this.modoEventoId = modos.get(0);
         }
     }
 

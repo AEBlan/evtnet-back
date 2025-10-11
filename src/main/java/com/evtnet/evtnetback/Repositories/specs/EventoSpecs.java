@@ -6,13 +6,12 @@ import com.evtnet.evtnetback.dto.eventos.DTOBusquedaMisEventos;
 import com.evtnet.evtnetback.utils.TimeUtil;
 import org.springframework.data.jpa.domain.Specification;
 
-import jakarta.persistence.criteria.JoinType;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public final class EventoSpecs {
 
-    /* 
+    
     private EventoSpecs(){}
 
     // 🔹 Buscar TODOS los eventos (exploración general)
@@ -21,9 +20,9 @@ public final class EventoSpecs {
                 textoLike(f.texto()),
                 rangoFechaInterseca(f.fechaDesde(), f.fechaHasta()),
                 precioMax(f.precioLimite()),
-                conDisciplinasEvento(f.disciplinas()),
+                conDisciplinasEvento(f.disciplinas())
                 //conModos(f.modos()),
-                espaciosNoRegistrados(f.espaciosNoRegistrados())
+                //espaciosNoRegistrados(f.espaciosNoRegistrados())
         );
     }
 
@@ -83,5 +82,54 @@ public final class EventoSpecs {
         if (!flag) return null;
         return (root, cq, cb) -> cb.isNull(root.get("espacio"));
     }*/
+
+    static Specification<Evento> esOrganizador(String username) {
+        if (username == null || username.isBlank()) return null;
+        return (root, cq, cb) -> {
+            var joinAdmin = root.join("administradoresEvento");
+            var joinTipo = joinAdmin.join("tipoAdministradorEvento");
+            var joinUsuario = joinAdmin.join("usuario");
+            
+            cq.distinct(true);
+            
+            return cb.and(
+                cb.equal(joinUsuario.get("username"), username),
+                cb.equal(joinTipo.get("nombre"), "Organizador"),
+                cb.isNull(joinAdmin.get("fechaHoraBaja"))
+            );
+        };
+    }
+
+    static Specification<Evento> esAdministrador(String username) {
+        if (username == null || username.isBlank()) return null;
+        return (root, cq, cb) -> {
+            var joinAdmin = root.join("administradoresEvento");
+            var joinTipo = joinAdmin.join("tipoAdministradorEvento");
+            var joinUsuario = joinAdmin.join("usuario");
+            
+            cq.distinct(true);
+            
+            return cb.and(
+                cb.equal(joinUsuario.get("username"), username),
+                cb.equal(joinTipo.get("nombre"), "Administrador"),
+                cb.isNull(joinAdmin.get("fechaHoraBaja"))
+            );
+        };
+    }
+
+    static Specification<Evento> esParticipante(String username) {
+        if (username == null || username.isBlank()) return null;
+        return (root, cq, cb) -> {
+            var joinInscripcion = root.join("inscripciones");
+            var joinUsuario = joinInscripcion.join("usuario");
+            
+            cq.distinct(true);
+            
+            return cb.and(
+                cb.equal(joinUsuario.get("username"), username),
+                cb.isNull(joinInscripcion.get("fechaHoraBaja"))
+            );
+        };
+    }
 }
 

@@ -31,7 +31,6 @@ public class DTOModificarEvento {
     private Ubicacion ubicacion;
 
     private List<ItemIdNombre> disciplinas;
-    private List<ItemIdNombre> modos;
 
     //private List<TipoInscripcion> tiposInscripcion;
 
