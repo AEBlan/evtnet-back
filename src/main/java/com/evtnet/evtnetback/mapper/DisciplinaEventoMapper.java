@@ -15,7 +15,7 @@ import org.mapstruct.Named;
     builder = @Builder(disableBuilder = true) // ⬅️ evitar usar Lombok Builder
 )
 public interface DisciplinaEventoMapper {
-
+ /* *
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "evento", ignore = true)
     @Mapping(target = "disciplina", ignore = true)
@@ -32,5 +32,5 @@ public interface DisciplinaEventoMapper {
         ref.setId(d.getId());
         ref.setNombre(d.getNombre());
         return ref;
-    }
+    }*/
 }

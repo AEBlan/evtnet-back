@@ -2,6 +2,8 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.evtnet.evtnetback.Entities.*;
+
 import java.time.LocalDateTime;
 
 @Data
@@ -11,8 +13,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class RolPermiso extends Base {
 
-    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
     // n..1 -> rol
     @ManyToOne(optional = false)

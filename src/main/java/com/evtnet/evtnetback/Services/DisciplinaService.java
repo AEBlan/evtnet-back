@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface DisciplinaService {
     List<DTODisciplinaRef> buscar(String text) throws Exception;
-    List<DTODisciplinaRef> buscarPorEspacio(String text, Long espacioId) throws Exception;
+    List<DTODisciplinaRef> buscarPorSubEspacio(String texto, Long subEspacioId)throws Exception;
     Page<DTODisciplinas> buscarDisciplinas(Pageable pageable, DTOBusquedaDisciplina filtros) throws Exception;
     DTODisciplinas obtenerDisciplinaCompleta(Long id) throws Exception;
     void altaDisciplina(DTODisciplinas disciplina) throws Exception;

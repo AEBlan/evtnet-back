@@ -28,7 +28,7 @@ public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
     @Query("""
            select u
            from Usuario u
-           where u.fechaBaja is null
+           where u.fechaHoraBaja is null
              and (
                  lower(u.username) like lower(concat('%', :q, '%'))
               or lower(u.nombre)   like lower(concat('%', :q, '%'))

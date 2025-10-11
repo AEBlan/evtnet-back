@@ -3,6 +3,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -28,8 +29,8 @@ public class InstanciaMascota extends Base {
     @Column(name = "selector")
     private String selector;
 
-    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
     // 1 -> 0..n secuencias
     @OneToMany(mappedBy = "instanciaMascota", fetch = FetchType.EAGER)

@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public final class EventoSpecs {
+
+    /* 
     private EventoSpecs(){}
 
     public static Specification<Evento> byFiltroBusqueda(DTOBusquedaEventos f) {
@@ -18,7 +20,7 @@ public final class EventoSpecs {
                 rangoFechaInterseca(f.fechaDesde(), f.fechaHasta()),
                 precioMax(f.precioLimite()),
                 conDisciplinasEvento(f.disciplinas()),
-                conModos(f.modos()),
+                //conModos(f.modos()),
                 espaciosNoRegistrados(f.espaciosNoRegistrados())
         );
     }
@@ -64,7 +66,7 @@ public final class EventoSpecs {
         };
     }
 
-    static Specification<Evento> conModos(List<Long> ids) {
+    /*static Specification<Evento> conModos(List<Long> ids) {
         if (ids == null || ids.isEmpty()) return null;
         // Usamos ManyToOne (rápido). Si preferís intermedia, cambia a eventosModoEvento.join("modoEvento")
         return (root, cq, cb) -> root.get("modoEvento").get("id").in(ids);
@@ -73,6 +75,6 @@ public final class EventoSpecs {
     static Specification<Evento> espaciosNoRegistrados(boolean flag) {
         if (!flag) return null;
         return (root, cq, cb) -> cb.isNull(root.get("espacio"));
-    }
+    }*/
 }
 

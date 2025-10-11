@@ -1,8 +1,6 @@
 package com.evtnet.evtnetback.mapper;
 
 import com.evtnet.evtnetback.Entities.Evento;
-import com.evtnet.evtnetback.Entities.EventoModoEvento;
-import com.evtnet.evtnetback.Entities.ModoEvento;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.utils.TimeUtil;
 
@@ -11,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public final class EventoSearchMapper {
+public final class EventoSearchMapper {/* 
     private EventoSearchMapper(){}
 
     public static DTOResultadoBusquedaEventos toResultadoBusqueda(Evento e) {
@@ -115,5 +113,5 @@ public final class EventoSearchMapper {
                 administrador,
                 null
         );
-    }
+    }*/
 }

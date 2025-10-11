@@ -26,8 +26,8 @@ public class DTOEventoCreate {
     private BigDecimal precioOrganizacion;
 
     private Long superEventoId;            // opcional si lo usás
-    private Long tipoInscripcionEventoId;  // opcional
-    private Long modoEventoId;             // opcional
+    //private Long tipoInscripcionEventoId;  // opcional
+    //private Long modoEventoId;             // opcional
     private Long administradorEventoId;    // opcional
     private Long espacioId;                // opcional
 

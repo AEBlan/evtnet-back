@@ -2,6 +2,8 @@ package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.*;
 import com.evtnet.evtnetback.Repositories.*;
+import com.evtnet.evtnetback.Services.UsuarioService.FotoResponse;
+import com.evtnet.evtnetback.Services.UsuarioService.FotoResponseString;
 import com.evtnet.evtnetback.dto.usuarios.*;
 import com.evtnet.evtnetback.security.JwtUtil;
 import com.evtnet.evtnetback.util.CurrentUser;
@@ -11,6 +13,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import lombok.extern.slf4j.Slf4j;
+import com.evtnet.evtnetback.Repositories.BaseRepository;
 
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.data.jpa.domain.Specification;
@@ -56,6 +59,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final ChatRepository chatRepository;
     private final DenunciaEventoRepository denunciaEventoRepository;
     private final RegistroSingleton registroSingleton;
+    
     //private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepository;
     //private final EstadoDenunciaEventoRepository estadoDenunciaEventoRepository;
 
@@ -1337,58 +1341,67 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         var u = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
-        // Organizador -> Usuario.evento (organiza)
+        // --- Organizador ---
         List<DTOEventosUsuario.Organizador> organizador = new ArrayList<>();
-        if (u.getEvento() != null) {
-            for (Evento e : u.getEvento()) {
-                organizador.add(
-                    DTOEventosUsuario.Organizador.builder()
+        for (AdministradorEvento ae : u.getAdministradoresEvento()) {
+            Evento e = ae.getEvento();
+            if (e == null) continue;
+
+            String tipo = ae.getTipoAdministradorEvento() != null
+                    ? ae.getTipoAdministradorEvento().getNombre()
+                    : "";
+
+            // si el tipo es "Organizador"
+            if (tipo.equalsIgnoreCase("Organizador")) {
+                organizador.add(DTOEventosUsuario.Organizador.builder()
                         .id(e.getId())
                         .nombre(e.getNombre())
                         .fechaDesde(e.getFechaHoraInicio())
                         .fechaHasta(e.getFechaHoraFin())
-                        .build()
-                );
+                        .build());
             }
         }
 
-        // Administrador -> Usuario.administracionesEvento
+        // --- Administrador ---
         List<DTOEventosUsuario.Administrador> administrador = new ArrayList<>();
-        if (u.getAdministracionesEvento() != null) {
-            for (AdministradorEvento ae : u.getAdministracionesEvento()) {
-                Evento ev = ae.getEvento();
+        for (AdministradorEvento ae : u.getAdministradoresEvento()) {
+            Evento e = ae.getEvento();
+            if (e == null) continue;
 
+            String tipo = ae.getTipoAdministradorEvento() != null
+                    ? ae.getTipoAdministradorEvento().getNombre()
+                    : "";
+
+            if (tipo.equalsIgnoreCase("Administrador")) {
                 List<DTOEventosUsuario.Periodo> periodos = new ArrayList<>();
                 periodos.add(new DTOEventosUsuario.Periodo(
-                    ae.getFechaHoraAlta(),
-                    ae.getFechaHoraBaja()
+                        ae.getFechaHoraAlta(),
+                        ae.getFechaHoraBaja()
                 ));
 
-                administrador.add(
-                    DTOEventosUsuario.Administrador.builder()
-                        .id(ev.getId())
-                        .nombre(ev.getNombre())
-                        .fechaDesde(ev.getFechaHoraInicio())
-                        .fechaHasta(ev.getFechaHoraFin())
+                administrador.add(DTOEventosUsuario.Administrador.builder()
+                        .id(e.getId())
+                        .nombre(e.getNombre())
+                        .fechaDesde(e.getFechaHoraInicio())
+                        .fechaHasta(e.getFechaHoraFin())
                         .periodos(periodos)
-                        .build()
-                );
+                        .build());
             }
         }
 
-        // Participante -> Usuario.inscripciones
+        // --- Participante ---
         List<DTOEventosUsuario.Participante> participante = new ArrayList<>();
         if (u.getInscripciones() != null) {
             for (Inscripcion ins : u.getInscripciones()) {
-                Evento ev = ins.getEvento();
-                participante.add(
-                    DTOEventosUsuario.Participante.builder()
-                        .id(ev.getId())
-                        .nombre(ev.getNombre())
-                        .fechaDesde(ev.getFechaHoraInicio())
-                        .fechaHasta(ev.getFechaHoraFin())
-                        .build()
-                );
+                Evento e = ins.getEvento();
+                if (e != null) {
+                    participante.add(DTOEventosUsuario.Participante.builder()
+                            .id(e.getId())
+                            .nombre(e.getNombre())
+                            .fechaDesde(e.getFechaHoraInicio())
+                            .fechaHasta(e.getFechaHoraFin())
+                            .build());
+                }
             }
         }
 
@@ -1399,47 +1412,44 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .build();
     }
 
+
     @Override
     public DTOEspaciosUsuario adminObtenerEspaciosUsuario(String username) throws Exception {
         var u = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+            .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
-        // Propietario -> Usuario.espacio
         List<DTOEspaciosUsuario.Propietario> propietario = new ArrayList<>();
-        if (u.getEspacio() != null) {
-            for (Espacio es : u.getEspacio()) {
-                propietario.add(
-                    DTOEspaciosUsuario.Propietario.builder()
-                        .id(es.getId())
-                        .nombre(es.getNombre())
-                        .fechaDesde(es.getFechaHoraAlta())
-                        .fechaHasta(es.getFechaHoraBaja())
-                        .build()
-                );
-            }
-        }
-
-        // Administrador -> Usuario.administradorEspacio
         List<DTOEspaciosUsuario.Administrador> administrador = new ArrayList<>();
-        if (u.getAdministradorEspacio() != null) {
-            for (AdministradorEspacio ae : u.getAdministradorEspacio()) {
+
+        if (u.getAdministradoresEspacio() != null) {
+            for (AdministradorEspacio ae : u.getAdministradoresEspacio()) {
                 Espacio es = ae.getEspacio();
+                if (es == null || ae.getTipoAdministradorEspacio() == null) continue;
 
-                List<DTOEspaciosUsuario.Periodo> periodos = new ArrayList<>();
-                periodos.add(new DTOEspaciosUsuario.Periodo(
-                    ae.getFechaHoraAlta(),
-                    ae.getFechaHoraBaja()
-                ));
+                String tipo = ae.getTipoAdministradorEspacio().getNombre();
 
-                administrador.add(
-                    DTOEspaciosUsuario.Administrador.builder()
-                        .id(es.getId())
-                        .nombre(es.getNombre())
-                        .fechaDesde(es.getFechaHoraAlta())
-                        .fechaHasta(es.getFechaHoraBaja())
-                        .periodos(periodos)
-                        .build()
-                );
+                if (tipo.equalsIgnoreCase("Propietario")) {
+                    propietario.add(DTOEspaciosUsuario.Propietario.builder()
+                            .id(es.getId())
+                            .nombre(es.getNombre())
+                            .fechaDesde(es.getFechaHoraAlta())
+                            .fechaHasta(es.getFechaHoraBaja())
+                            .build());
+                } else if (tipo.equalsIgnoreCase("Administrador")) {
+                    List<DTOEspaciosUsuario.Periodo> periodos = new ArrayList<>();
+                    periodos.add(new DTOEspaciosUsuario.Periodo(
+                            ae.getFechaHoraAlta(),
+                            ae.getFechaHoraBaja()
+                    ));
+
+                    administrador.add(DTOEspaciosUsuario.Administrador.builder()
+                            .id(es.getId())
+                            .nombre(es.getNombre())
+                            .fechaDesde(es.getFechaHoraAlta())
+                            .fechaHasta(es.getFechaHoraBaja())
+                            .periodos(periodos)
+                            .build());
+                }
             }
         }
 
@@ -1448,52 +1458,52 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .administrador(administrador)
                 .build();
     }
+    
 
     @Override
     public DTOSupereventosUsuario adminObtenerSupereventosUsuario(String username) throws Exception {
-        Usuario u = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+            Usuario u = usuarioRepository.findByUsername(username)
+            .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
-        // Organizador -> u.getSuperEvento()
-        List<DTOSupereventosUsuario.Organizador> organizador = new ArrayList<>();
-        if (u.getSuperEvento() != null) {
-            for (SuperEvento se : u.getSuperEvento()) {
-                var rango = rangoSE(se);
-                organizador.add(DTOSupereventosUsuario.Organizador.builder()
-                        .id(se.getId())
-                        .nombre(se.getNombre())
-                        .fechaDesde(rango.getKey())
-                        .fechaHasta(rango.getValue())
-                        .build());
+            List<DTOSupereventosUsuario.Organizador> organizador = new ArrayList<>();
+            List<DTOSupereventosUsuario.Administrador> administrador = new ArrayList<>();
+
+            if (u.getAdministradoresSuperEvento() != null) {
+                for (AdministradorSuperEvento ase : u.getAdministradoresSuperEvento()) {
+                    SuperEvento se = ase.getSuperEvento();
+                    if (se == null || ase.getTipoAdministradorSuperEvento() == null) continue;
+
+                    String tipo = ase.getTipoAdministradorSuperEvento().getNombre();
+                    var rango = rangoSE(se);
+
+                    if (tipo.equalsIgnoreCase("Organizador")) {
+                        organizador.add(DTOSupereventosUsuario.Organizador.builder()
+                                .id(se.getId())
+                                .nombre(se.getNombre())
+                                .fechaDesde(rango.getKey())
+                                .fechaHasta(rango.getValue())
+                                .build());
+                    } else if (tipo.equalsIgnoreCase("Administrador")) {
+                        List<DTOSupereventosUsuario.Periodo> periodos = new ArrayList<>();
+                        periodos.add(new DTOSupereventosUsuario.Periodo(
+                                ase.getFechaHoraAlta(), ase.getFechaHoraBaja()));
+
+                        administrador.add(DTOSupereventosUsuario.Administrador.builder()
+                                .id(se.getId())
+                                .nombre(se.getNombre())
+                                .fechaDesde(rango.getKey())
+                                .fechaHasta(rango.getValue())
+                                .periodos(periodos)
+                                .build());
+                    }
+                }
             }
+
+            return DTOSupereventosUsuario.builder()
+                    .organizador(organizador)
+                    .administrador(administrador)
+                    .build();
         }
-
-        // Administrador -> u.getAdministradoresSuperEvento()
-        List<DTOSupereventosUsuario.Administrador> administrador = new ArrayList<>();
-        if (u.getAdministradoresSuperEvento() != null) {
-            for (AdministradorSuperEvento ase : u.getAdministradoresSuperEvento()) {
-                SuperEvento se = ase.getSuperEvento();
-                var rango = rangoSE(se);
-
-                List<DTOSupereventosUsuario.Periodo> periodos = new ArrayList<>();
-                periodos.add(new DTOSupereventosUsuario.Periodo(
-                        ase.getFechaHoraAlta(), ase.getFechaHoraBaja()));
-
-                administrador.add(DTOSupereventosUsuario.Administrador.builder()
-                        .id(se.getId())
-                        .nombre(se.getNombre())
-                        .fechaDesde(rango.getKey())
-                        .fechaHasta(rango.getValue())
-                        .periodos(periodos)
-                        .build());
-            }
-        }
-
-        return DTOSupereventosUsuario.builder()
-                .organizador(organizador)
-                .administrador(administrador)
-                .build();
-    }
     // GRupo y interracciones
     // ================== NUEVOS MÉTODOS PARA GRUPOS E INTERACCIONES ==================
     @Override

@@ -22,15 +22,12 @@ import java.util.*;
 
 @Service
 @Transactional
-public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements EventoService {
+public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements EventoService { 
 
     private final EventoRepository eventoRepo;
     private final DisciplinaEventoRepository disciplinaEventoRepo;
     private final DisciplinaRepository disciplinaBaseRepo;
-    private final ModoEventoRepository modoRepo;
-    private final TipoInscripcionEventoRepository tipoInscripcionRepo;
     private final EspacioRepository espacioRepo;
-    private final EventoModoEventoRepository eventoModoEventoRepo;
     private final InscripcionRepository inscripcionRepo;
     private final AdministradorEventoRepository administradorEventoRepo;
     private final UsuarioRepository usuarioRepo;
@@ -41,10 +38,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
             EventoRepository eventoRepo,
             DisciplinaEventoRepository disciplinaEventoRepo,
             DisciplinaRepository disciplinaBaseRepo,
-            ModoEventoRepository modoRepo,
-            TipoInscripcionEventoRepository tipoInscripcionRepo,
             EspacioRepository espacioRepo,
-            EventoModoEventoRepository eventoModoEventoRepo,
             InscripcionRepository inscripcionRepo,
             AdministradorEventoRepository administradorEventoRepo,
             UsuarioRepository usuarioRepo,
@@ -55,17 +49,14 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
         this.eventoRepo = eventoRepo;
         this.disciplinaEventoRepo = disciplinaEventoRepo;
         this.disciplinaBaseRepo = disciplinaBaseRepo;
-        this.modoRepo = modoRepo;
-        this.tipoInscripcionRepo = tipoInscripcionRepo;
         this.espacioRepo = espacioRepo;
-        this.eventoModoEventoRepo = eventoModoEventoRepo;
         this.inscripcionRepo = inscripcionRepo;
         this.administradorEventoRepo = administradorEventoRepo;
         this.usuarioRepo = usuarioRepo;
         this.comprobanteRepo = comprobanteRepo;
         this.invitadoRepo = invitadoRepo;
     }
-
+    /* 
     @Override
     @Transactional
     public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) {
@@ -487,5 +478,5 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
         int horas = Math.floorDiv(rem, 60);
         int mins = rem - horas * 60;
         return new int[]{dias, horas, mins};
-    }
+    }*/
 }

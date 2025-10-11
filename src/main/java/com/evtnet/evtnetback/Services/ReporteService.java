@@ -1,21 +1,18 @@
 package com.evtnet.evtnetback.Services;
 
+import com.evtnet.evtnetback.Entities.AdministradorEspacio;
 import com.evtnet.evtnetback.Entities.Espacio;
 import com.evtnet.evtnetback.Repositories.EspacioRepository;
 import com.evtnet.evtnetback.Repositories.ReporteRepository;
 import com.evtnet.evtnetback.dto.reportes.*;
-import com.evtnet.evtnetback.util.CurrentUser; // ajusta el paquete si difiere
+import com.evtnet.evtnetback.util.CurrentUser;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.time.*;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,43 +21,6 @@ public class ReporteService {
 
     private final ReporteRepository reporteRepository;
     private final EspacioRepository espacioRepository;
-
-    public DTOReportePersonsasEnEventosEnEspacio generarPersonasEnEventosEnEspacio(
-            Long espacioId, long fechaDesdeMs, long fechaHastaMs) throws Exception {
-
-        if (espacioId == null) throw new IllegalArgumentException("espacioId es requerido");
-        if (fechaDesdeMs <= 0 || fechaHastaMs <= 0) throw new IllegalArgumentException("Fechas inválidas");
-        if (fechaDesdeMs >= fechaHastaMs) throw new IllegalArgumentException("El rango de fechas es inválido");
-
-        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("No autenticado"));
-        Espacio espacio = espacioRepository.findById(espacioId)
-                .orElseThrow(() -> new IllegalArgumentException("Espacio no encontrado"));
-        if (espacio.getPropietario() == null
-                || espacio.getPropietario().getUsername() == null
-                || !username.equals(espacio.getPropietario().getUsername())) {
-            throw new SecurityException("No posee permisos para este espacio");
-        }
-
-        ZoneId tz = ZoneId.systemDefault();
-        LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
-        LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
-
-        List<DatoLocal> filas = reporteRepository.reportePersonasPorEventoEnEspacio(espacioId, desde, hasta);
-
-        List<DTOReportePersonsasEnEventosEnEspacio.Dato> datos = filas.stream()
-                .map(r -> DTOReportePersonsasEnEventosEnEspacio.Dato.builder()
-                        .evento(r.getEvento())
-                        .fechaDesde(r.getFechaDesde().atZone(tz).toInstant())
-                        .fechaHasta(r.getFechaHasta().atZone(tz).toInstant())
-                        .participantes(r.getParticipantes())
-                        .build())
-                .toList();
-
-        return DTOReportePersonsasEnEventosEnEspacio.builder()
-                .fechaHoraGeneracion(Instant.now())
-                .datos(datos)
-                .build();
-    }
 
     public DTOReporteEventosPorEspacio generarEventosPorEspacio(
             List<Long> espaciosIds, long fechaDesdeMs, long fechaHastaMs) throws Exception {
@@ -72,15 +32,19 @@ public class ReporteService {
 
         String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("No autenticado"));
 
-        // Verificamos que todos los espacios existan y sean del usuario actual
         List<Espacio> espacios = espacioRepository.findAllById(espaciosIds);
         if (espacios.size() != new HashSet<>(espaciosIds).size())
             throw new IllegalArgumentException("Alguno de los espacios no existe");
 
+        // 🔹 Verificar que todos pertenezcan al usuario actual
         boolean todosPropios = espacios.stream().allMatch(e ->
-                e.getPropietario() != null &&
-                username.equals(e.getPropietario().getUsername())
+                e.getAdministradoresEspacio().stream()
+                        .anyMatch(ae -> ae.getTipoAdministradorEspacio() != null &&
+                                ae.getTipoAdministradorEspacio().getNombre().equalsIgnoreCase("PROPIETARIO") &&
+                                ae.getUsuario() != null &&
+                                ae.getUsuario().getUsername().equalsIgnoreCase(username))
         );
+
         if (!todosPropios)
             throw new SecurityException("No posee permisos sobre los espacios seleccionados");
 
@@ -90,7 +54,6 @@ public class ReporteService {
         LocalDateTime desde = LocalDateTime.ofInstant(iDesde, tz);
         LocalDateTime hasta = LocalDateTime.ofInstant(iHasta, tz);
 
-        // Query de conteo
         var filas = reporteRepository.contarEventosPorEspacio(espaciosIds, desde, hasta);
 
         Map<Long, Long> conteos = filas.stream()
@@ -116,4 +79,91 @@ public class ReporteService {
                 .datos(datos)
                 .build();
     }
+
+    public DTOReporteParticipantesPorRangoTemporal generarParticipantesPorRangoTemporal(
+            boolean todosLosEspacios,
+            List<Long> espaciosIds,
+            long fechaDesdeMs,
+            long fechaHastaMs,
+            int anios,
+            int meses,
+            int dias,
+            int horas,
+            String username
+    ) throws Exception {
+
+        if (fechaDesdeMs >= fechaHastaMs)
+            throw new IllegalArgumentException("Rango de fechas inválido");
+
+        ZoneId tz = ZoneId.systemDefault();
+        LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
+        LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
+
+        Period periodo = Period.of(anios, meses, dias);
+        Duration duracion = Duration.ofHours(horas);
+        List<LocalDateTime[]> intervalos = new ArrayList<>();
+        LocalDateTime cursor = desde;
+        while (cursor.isBefore(hasta)) {
+            LocalDateTime next = cursor.plus(periodo).plus(duracion);
+            if (next.isAfter(hasta)) next = hasta;
+            intervalos.add(new LocalDateTime[]{cursor, next});
+            cursor = next;
+        }
+
+        List<Espacio> espacios = todosLosEspacios
+                ? espacioRepository.findByPropietarioUsername(username)
+                : espacioRepository.findAllById(espaciosIds);
+
+        List<DTOReporteParticipantesPorRangoTemporal.Dato> datos = new ArrayList<>();
+
+        for (Espacio e : espacios) {
+            for (LocalDateTime[] par : intervalos) {
+                long count = reporteRepository.contarParticipantesPorRango(
+                        e.getId(), par[0], par[1]);
+                datos.add(DTOReporteParticipantesPorRangoTemporal.Dato.builder()
+                        .espacio(e.getNombre())
+                        .fechaDesde(par[0].atZone(tz).toInstant())
+                        .fechaHasta(par[1].atZone(tz).toInstant())
+                        .participantes(count)
+                        .build());
+            }
+        }
+
+        return DTOReporteParticipantesPorRangoTemporal.builder()
+                .fechaHoraGeneracion(Instant.now())
+                .datos(datos)
+                .build();
+    }
+    public DTOReportePersonsasEnEventosEnEspacio generarPersonasEnEventosEnEspacio(
+        Long espacioId, long fechaDesdeMs, long fechaHastaMs) throws Exception {
+
+        if (espacioId == null)
+                throw new IllegalArgumentException("espacioId es requerido");
+        if (fechaDesdeMs >= fechaHastaMs)
+                throw new IllegalArgumentException("El rango de fechas es inválido");
+
+        var espacio = espacioRepository.findById(espacioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
+
+        ZoneId tz = ZoneId.systemDefault();
+        LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
+        LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
+
+        var filas = reporteRepository.reportePersonasPorEventoEnEspacio(espacioId, desde, hasta);
+
+        var datos = filas.stream()
+                .map(f -> DTOReportePersonsasEnEventosEnEspacio.Dato.builder()
+                        .evento(f.getEvento())
+                        .fechaDesde(f.getFechaDesde().atZone(tz).toInstant())
+                        .fechaHasta(f.getFechaHasta().atZone(tz).toInstant())
+                        .participantes(f.getParticipantes())
+                        .build())
+                .toList();
+
+        return DTOReportePersonsasEnEventosEnEspacio.builder()
+                .fechaHoraGeneracion(Instant.now())
+                .datos(datos)
+                .build();
+        }
+
 }

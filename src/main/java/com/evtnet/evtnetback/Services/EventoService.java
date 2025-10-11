@@ -4,7 +4,7 @@ import com.evtnet.evtnetback.Entities.Evento;
 import com.evtnet.evtnetback.dto.eventos.*;
 import java.util.List;
 
-public interface EventoService extends BaseService<Evento, Long> {
+public interface EventoService extends BaseService<Evento, Long> { /* 
     List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro);
     List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro);
     DTOEvento obtenerEventoDetalle(long idEvento);
@@ -19,5 +19,5 @@ public interface EventoService extends BaseService<Evento, Long> {
     void desinscribirse(long idEvento);
     Number obtenerMontoDevolucionCancelacion(long idEvento, String username);
     DTOModificarEvento obtenerDatosModificacionEvento(long id);
-    void modificarEvento(DTOModificarEvento dto);
+    void modificarEvento(DTOModificarEvento dto);*/
 }

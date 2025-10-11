@@ -1,11 +1,11 @@
 package com.evtnet.evtnetback.Entities;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -22,10 +22,7 @@ public class Espacio extends Base {
     @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-
-    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
 
     @Column(name = "direccion_ubicacion")
@@ -44,20 +41,11 @@ public class Espacio extends Base {
     private List<ImagenEspacio> imagenesEspacio;
 
     @OneToMany(mappedBy = "espacio")
-    private List<ConfiguracionHorarioEspacio> configuracionesHorario;
-
-    @OneToMany(mappedBy = "espacio")
     private List<ResenaEspacio> resenasEspacio;
-
-    @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DisciplinaEspacio> disciplinasEspacio;
 
     @ManyToOne
     @JoinColumn(name = "tipo_espacio_id")
     private TipoEspacio tipoEspacio;
-
-    @OneToMany(mappedBy = "espacio", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Caracteristica> caracteristicas;
 
     @ManyToOne
     @JoinColumn(name = "solicitud_espacio_publico_id")
@@ -66,9 +54,15 @@ public class Espacio extends Base {
     @OneToMany(mappedBy = "espacio", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Chat> chats;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "propietario_id", nullable = false)
-    private Usuario propietario;
+    @ManyToOne
+    @JoinColumn(name = "estado_espacio_id")
+    private EstadoEspacio estadoEspacio;
+
+    @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DocumentacionEspacio> documentacionEspacios;
+
+    @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SubEspacio> subEspacios;
 
 
 }

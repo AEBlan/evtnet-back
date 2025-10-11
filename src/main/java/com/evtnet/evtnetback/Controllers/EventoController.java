@@ -17,7 +17,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EventoController {
 
-    private final EventoService service;
+    private final EventoService service; /* 
 
     @PutMapping("/buscar")
     public ResponseEntity<List<DTOResultadoBusquedaEventos>> buscar(@RequestBody DTOBusquedaEventos filtro) {
@@ -94,5 +94,5 @@ public class EventoController {
     public ResponseEntity<Void> modificarEvento(@RequestBody DTOModificarEvento dto) {
         service.modificarEvento(dto);
         return ResponseEntity.ok().build();
-    }
+    }*/
 }

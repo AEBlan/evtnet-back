@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -20,8 +21,8 @@ public class TipoEspacio extends Base {
     @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
     // 1 tipo_espacio -> 0..n espacios
     @OneToMany(mappedBy = "tipoEspacio", fetch = FetchType.EAGER)

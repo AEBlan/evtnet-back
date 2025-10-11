@@ -3,6 +3,7 @@ package com.evtnet.evtnetback.Controllers;
 import com.evtnet.evtnetback.Services.ReporteService;
 import com.evtnet.evtnetback.dto.reportes.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 
 
 import java.util.List;
@@ -38,4 +39,22 @@ public class ReporteController {
         var dto = reporteService.generarEventosPorEspacio(espacios, fechaDesdeMs, fechaHastaMs);
         return ResponseEntity.ok(dto);
     }
+    
+    @GetMapping("/generarParticipantesPorRangoTemporal")
+    public ResponseEntity<DTOReporteParticipantesPorRangoTemporal> generarParticipantesPorRangoTemporal(
+            @RequestParam boolean todosLosEspacios,
+            @RequestParam(required = false) List<Long> espacios,
+            @RequestParam long fechaDesde,
+            @RequestParam long fechaHasta,
+            @RequestParam int anios,
+            @RequestParam int meses,
+            @RequestParam int dias,
+            @RequestParam int horas,
+            Authentication auth
+    ) throws Exception {
+        return ResponseEntity.ok(reporteService.generarParticipantesPorRangoTemporal(
+                todosLosEspacios, espacios, fechaDesde, fechaHasta, anios, meses, dias, horas, auth.getName()
+        ));
+    }
+
 }

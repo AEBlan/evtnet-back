@@ -26,8 +26,8 @@ public class DTOEventoResponse {
     private BigDecimal precioOrganizacion;
 
     private Long superEventoId;
-    private Long tipoInscripcionEventoId;
-    private Long modoEventoId;
+    //private Long tipoInscripcionEventoId;
+    //private Long modoEventoId;
     private Long administradorEventoId;
     private Long espacioId;
 

@@ -1,7 +1,8 @@
 package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
-
+import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 import java.util.List;
 
 @Data
@@ -18,8 +19,17 @@ public class EstadoSEP extends Base {
     
     @Column(name = "descripcion")
     private String descripcion;
+
+    private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
     
     // Relaciones
     @OneToMany(mappedBy = "estadoSEP")
     private List<SEPEstado> sepEstados;
+
+    @OneToMany(mappedBy = "estadoOrigen")
+    private List<TransicionEstadoSEP> transicionesDesde;
+
+    @OneToMany(mappedBy = "estadoDestino")
+    private List<TransicionEstadoSEP> transicionesHacia;
 } 

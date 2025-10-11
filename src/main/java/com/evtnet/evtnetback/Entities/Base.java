@@ -16,11 +16,5 @@ public class Base implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "fecha_baja")
-    private LocalDateTime fechaBaja;
-
-    @Column(name = "fecha_hora_baja")
-    private LocalDateTime fechaHoraBaja;
     
 }

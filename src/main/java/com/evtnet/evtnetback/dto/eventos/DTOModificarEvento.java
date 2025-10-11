@@ -27,7 +27,7 @@ public class DTOModificarEvento {
     private List<ItemIdNombre> disciplinas;
     private List<ItemIdNombre> modos;
 
-    private List<TipoInscripcion> tiposInscripcion;
+    //private List<TipoInscripcion> tiposInscripcion;
 
     private BigDecimal precioInscripcion;
     private BigDecimal comisionInscripcion;
@@ -57,8 +57,8 @@ public class DTOModificarEvento {
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class ItemIdNombre { private Long id; private String nombre; }
 
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class TipoInscripcion { private Long id; private String nombre; private boolean seleccionado; }
+    //@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    //public static class TipoInscripcion { private Long id; private String nombre; private boolean seleccionado; }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Superevento { private Long id; private String nombre; private String descripcion; }

@@ -2,7 +2,7 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.evtnet.evtnetback.Entities.*;
 import java.time.LocalDateTime;
 
 @Data
@@ -14,13 +14,9 @@ import java.time.LocalDateTime;
 @Builder
 public class AdministradorEvento extends Base {
 
-    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-
-    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
 
-    // 🔹 MUCHOS administradores → UN mismo usuario (quién administra)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
@@ -29,6 +25,10 @@ public class AdministradorEvento extends Base {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "evento_id", nullable = false)
     private Evento evento;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tipo_administrador_evento_id", nullable = false)
+    private TipoAdministradorEvento tipoAdministradorEvento;
 
 
 }

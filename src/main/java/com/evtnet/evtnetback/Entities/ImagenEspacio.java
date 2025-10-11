@@ -3,6 +3,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import jakarta.validation.constraints.Pattern;  // para @Pattern
 import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 
 
 @Data 
@@ -22,8 +23,8 @@ public class ImagenEspacio extends Base {
     @Column(name = "orden")
     private Integer orden;
 
-    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
     @ManyToOne
     @JoinColumn(name = "espacio_id", nullable = false)

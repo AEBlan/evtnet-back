@@ -3,6 +3,8 @@ package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
+import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -26,16 +28,11 @@ public class DenunciaEvento extends Base {
     @JoinColumn(name = "evento_id", nullable = false)
     private Evento evento;
 
-    // (opcional) la denuncia puede estar asociada a una inscripción concreta
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "inscripcion_id")
-    private Inscripcion inscripcion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "denunciante_id", nullable = false)
     private Usuario denunciante;
 
-    // 1 -> N Estados de la denuncia
     @OneToMany(mappedBy = "denunciaEvento")
     private List<DenunciaEventoEstado> estados;
 }
