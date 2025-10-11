@@ -2,7 +2,7 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.evtnet.evtnetback.Entities.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,10 +18,7 @@ public class CalificacionTipo extends Base {
     @Column(name = "nombre")
     private String nombre;
 
-    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-
-    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
 
     @OneToMany(mappedBy = "calificacionTipo")

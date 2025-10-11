@@ -2,6 +2,8 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 import java.util.List;
 
 @Data
@@ -19,6 +21,9 @@ public class SuperEvento extends Base {
     @Column(name = "descripcion")
     private String descripcion;
 
+    private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
+
     // 1 super_evento -> 0..n eventos
     @OneToMany(mappedBy = "superEvento", fetch = FetchType.EAGER)
     private List<Evento> eventos;
@@ -31,7 +36,4 @@ public class SuperEvento extends Base {
     @OneToMany(mappedBy = "superEvento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Chat> chats;
 
-    @ManyToOne(optional = false, fetch = FetchType.EAGER)
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
 }

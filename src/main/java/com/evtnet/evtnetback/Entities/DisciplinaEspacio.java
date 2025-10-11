@@ -2,15 +2,12 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "disciplina_espacio",
-       indexes = {
-         @Index(name = "ix_de_disciplina", columnList = "disciplina_id"),
-         @Index(name = "ix_de_espacio", columnList = "espacio_id")
-       })
+@Table(name = "disciplina_espacio")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

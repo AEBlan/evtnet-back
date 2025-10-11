@@ -28,7 +28,7 @@ public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
     @Query("""
            select u
            from Usuario u
-           where u.fechaBaja is null
+           where u.fechaHoraBaja is null
              and (
                  lower(u.username) like lower(concat('%', :q, '%'))
               or lower(u.nombre)   like lower(concat('%', :q, '%'))
@@ -63,7 +63,7 @@ public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
     //Query para buscar no inscrptos en un evento
     @Query("""
     select u from Usuario u
-    where u.fechaBaja is null
+    where u.fechaHoraBaja is null
       and (lower(u.username) like lower(concat('%', :texto, '%'))
         or lower(u.nombre) like lower(concat('%', :texto, '%'))
         or lower(u.apellido) like lower(concat('%', :texto, '%')))
@@ -79,7 +79,7 @@ public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
       from Usuario u
       join Inscripcion i on i.usuario.id = u.id
       where i.evento.id = :idEvento
-        and u.fechaBaja is null
+        and u.fechaHoraBaja is null
         and (
             lower(u.username) like lower(concat('%', :texto, '%'))
             or lower(u.nombre)   like lower(concat('%', :texto, '%'))

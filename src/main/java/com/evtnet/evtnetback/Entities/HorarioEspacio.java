@@ -1,7 +1,7 @@
 package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.evtnet.evtnetback.Entities.*;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 
@@ -25,6 +25,9 @@ public class HorarioEspacio extends Base {
 
     @Column(name = "precio_organizacion")
     private BigDecimal precioOrganizacion;
+
+    @Column(name ="adicional_por_inscripcion")
+    private int adiciconalPorInscripcion;
 
     // relación con configuración 
     @ManyToOne

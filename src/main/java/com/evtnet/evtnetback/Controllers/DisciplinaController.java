@@ -24,12 +24,17 @@ public class DisciplinaController {
         catch (Exception e) { return ResponseEntity.badRequest().build(); }
     }
 
-    @GetMapping("/buscarPorEspacio")
-    public ResponseEntity<List<DTODisciplinaRef>> buscarPorEspacio(
-            @RequestParam String text, @RequestParam Long espacioId) {
-        try { return ResponseEntity.ok(service.buscarPorEspacio(text, espacioId)); }
-        catch (Exception e) { return ResponseEntity.badRequest().build(); }
+    @GetMapping("/buscarPorSubespacio")
+    public ResponseEntity<List<DTODisciplinaRef>> buscarPorSubespacio(
+            @RequestParam String text,
+            @RequestParam Long subespacioId) {
+        try {
+            return ResponseEntity.ok(service.buscarPorSubEspacio(text, subespacioId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
+
 
     @PutMapping ("/buscarDisciplinas")
     public ResponseEntity buscarDisciplinas(@RequestParam(name = "page", defaultValue = "0") int page, @RequestBody DTOBusquedaDisciplina filtros) {

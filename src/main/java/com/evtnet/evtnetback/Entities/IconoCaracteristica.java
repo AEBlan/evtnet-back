@@ -4,6 +4,7 @@ import lombok.*;
 import jakarta.validation.constraints.Pattern;  // para @Pattern
 import java.util.List;
 import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 
 
 @Data
@@ -18,8 +19,8 @@ public class IconoCaracteristica extends Base {
     @Column(name = "imagen", nullable = false, length = 512)
     private String imagen;
 
-    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
     // 1 icono -> muchas características
     @OneToMany(mappedBy = "iconoCaracteristica")

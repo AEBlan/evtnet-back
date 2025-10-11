@@ -1,7 +1,7 @@
 package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.evtnet.evtnetback.Entities.*;
 import java.time.LocalDateTime;
 
 @Data
@@ -34,7 +34,4 @@ public class ResenaEspacio extends Base {
     @JoinColumn(name = "usuario_id", nullable = false) 
     private Usuario usuario;
     
-    @ManyToOne
-    @JoinColumn(name = "administrador_espacio_id")
-    private AdministradorEspacio administradorEspacio;
 } 

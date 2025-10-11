@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
-
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -19,9 +19,8 @@ public class Rol extends Base {
     @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
-
+    private LocalDateTime fechaHoraBaja;
 
     // 1 rol -> 0..n rol_permiso
     @OneToMany(mappedBy = "rol")

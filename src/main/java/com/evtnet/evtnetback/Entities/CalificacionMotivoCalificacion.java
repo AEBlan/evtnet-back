@@ -2,18 +2,13 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(
-    name = "calificacion_motivo_calificacion",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_calif_motivo_por_calificacion",
-            columnNames = {"calificacion_id", "motivo_calificacion_id"}
-        )
-    }
+    name = "calificacion_motivo_calificacion"
 )
 @NoArgsConstructor
 @AllArgsConstructor

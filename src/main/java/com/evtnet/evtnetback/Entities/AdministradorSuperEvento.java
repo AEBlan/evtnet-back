@@ -2,30 +2,20 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.evtnet.evtnetback.Entities.*;
 import java.time.LocalDateTime;
 
-
+@Entity
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Entity
-@Table(
-    name = "administrador_super_evento",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_admin_superevento_organizador",
-            columnNames = {"super_evento_id", "usuario_id"}
-        )
-    }
+@Table(name = "administrador_super_evento"
 )
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class AdministradorSuperEvento extends Base {
 
-    @Column(name = "fecha_hora_alta")
     private LocalDateTime fechaHoraAlta;
-
-    @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
 
     // muchos administradores -> un super evento
@@ -36,4 +26,8 @@ public class AdministradorSuperEvento extends Base {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tipo_administrador_super_evento_id", nullable = false)
+    private TipoAdministradorSuperEvento tipoAdministradorSuperEvento;
 }

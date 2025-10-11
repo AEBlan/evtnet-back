@@ -3,6 +3,7 @@ package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -16,11 +17,8 @@ public class SEPEstado extends Base {
     @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(name = "fecha_hora_hasta")
-    private LocalDateTime fechaHoraHasta;
-
-    @Column(name = "fecha_hora_desde", nullable = false)
-    private LocalDateTime fechaHoraDesde;
+    private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
     // n..1: muchas filas -> un EstadoSEP
     @ManyToOne(optional = false)

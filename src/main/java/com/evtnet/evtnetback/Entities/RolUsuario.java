@@ -3,6 +3,7 @@ package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -13,8 +14,8 @@ import java.time.LocalDateTime;
 @Builder
 public class RolUsuario extends Base {
 
-    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
     // muchas asignaciones -> un rol
     @ManyToOne(optional = false, fetch = FetchType.EAGER)

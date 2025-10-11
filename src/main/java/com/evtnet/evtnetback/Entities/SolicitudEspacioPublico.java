@@ -5,6 +5,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -31,8 +32,8 @@ public class SolicitudEspacioPublico extends Base {
     @Column(name = "direccion_ubicacion")
     private String direccionUbicacion;
 
-    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
     @Column(name = "justificacion")
     private String justificacion;

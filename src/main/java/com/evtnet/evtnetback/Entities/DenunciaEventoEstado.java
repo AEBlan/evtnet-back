@@ -3,16 +3,12 @@ package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "denuncia_evento_estado",
-       indexes = {
-         @Index(name = "ix_dee_denuncia", columnList = "denuncia_evento_id"),
-         @Index(name = "ix_dee_estado", columnList = "estado_denuncia_evento_id"),
-         @Index(name = "ix_dee_responsable", columnList = "responsable_id")
-       })
+@Table(name = "denuncia_evento_estado")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

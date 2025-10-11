@@ -1,15 +1,14 @@
 package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.evtnet.evtnetback.Entities.*;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "grupo", indexes = {
-    @Index(name = "ix_grupo_chat", columnList = "chat_id")
-})
+@Table(name = "grupo")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -20,6 +19,11 @@ public class Grupo extends Base {
 
     @Column(name = "descripcion")
     private String descripcion;
+
+    @Column(name = "fecha_hora_alta", nullable = false)
+    private LocalDateTime fechaHoraAlta;
+    @Column(name = "fecha_hora_baja")
+    private LocalDateTime fechaHoraBaja;
 
     @OneToMany(mappedBy = "grupo")
     private List<UsuarioGrupo> usuariosGrupo;

@@ -2,14 +2,15 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.evtnet.evtnetback.Entities.SubEspacio;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
-@ToString(exclude = {"disciplinasEvento", "inscripciones", "eventosModoEvento", "porcentajesReintegroCancelacion", "denunciasEvento"})
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "evento")
@@ -29,15 +30,6 @@ public class Evento extends Base {
 
     @Column(name = "fecha_hora_fin") // antes: fechaHoraFin
     private LocalDateTime fechaHoraFin;
-
-    @Column(name = "direccion_ubicacion")
-    private String direccionUbicacion;
-
-    @Column(name = "longitud_ubicacion")
-    private BigDecimal longitudUbicacion;
-
-    @Column(name = "latitud_ubicacion")
-    private BigDecimal latitudUbicacion;
 
     @Column(name = "precio_inscripcion")
     private BigDecimal precioInscripcion;
@@ -62,19 +54,12 @@ public class Evento extends Base {
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<Inscripcion> inscripciones;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tipo_inscripcion_evento_id")
-    private TipoInscripcionEvento tipoInscripcionEvento;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "modo_evento_id")
-    private ModoEvento modoEvento;
+    //@ManyToOne(fetch = FetchType.LAZY)
+    //@JoinColumn(name = "tipo_inscripcion_evento_id")
+    //private TipoInscripcionEvento tipoInscripcionEvento;
 
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AdministradorEvento> administradoresEvento;
-
-    @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
-    private List<EventoModoEvento> eventosModoEvento;
 
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<PorcentajeReintegroCancelacionInscripcion> porcentajesReintegroCancelacion;
@@ -83,8 +68,8 @@ public class Evento extends Base {
     private List<DenunciaEvento> denunciasEvento;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "espacio_id")
-    private Espacio espacio;
+    @JoinColumn(name = "subespacio_id", nullable = false)
+    private SubEspacio subEspacio;
 
     @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Chat> chats;
@@ -92,7 +77,7 @@ public class Evento extends Base {
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<ComprobantePago> comprobantesPago;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organizador_id")
-    private Usuario organizador;
+    @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
+    private List<EventoEstado> eventosEstado;
+    
 }

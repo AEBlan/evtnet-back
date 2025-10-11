@@ -2,16 +2,13 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(
-    name = "caracteristica",
-    uniqueConstraints = {
-        // opcional: evita dos características con mismo nombre en un mismo espacio
-        @UniqueConstraint(name = "uk_caracteristica_nombre_por_espacio", columnNames = {"espacio_id", "nombre"})
-    }
+    name = "caracteristica"
 )
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,11 +18,10 @@ public class Caracteristica extends Base {
     @Column(name = "nombre", nullable = false)
     private String nombre;
 
-
     // muchas características -> un espacio (FK vive aquí)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "espacio_id", nullable = false)
-    private Espacio espacio;
+    @JoinColumn(name = "subespacio_id", nullable = false)
+    private SubEspacio subEspacio;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "icono_caracteristica_id") // FK en BD (snake_case)

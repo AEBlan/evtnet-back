@@ -2,7 +2,7 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.evtnet.evtnetback.Entities.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -65,10 +65,10 @@ public class Usuario extends Base {
     private List<SolicitudEspacioPublico> solicitudesEspacioPublico;
 
     @OneToMany(mappedBy = "usuario")
-    private List<AdministradorEvento> administracionesEvento;
+    private List<AdministradorEvento> administradoresEvento;
 
     @OneToMany(mappedBy = "usuario")
-    private List<AdministradorEspacio> administradorEspacio;
+    private List<AdministradorEspacio> administradoresEspacio;
 
     @OneToMany(mappedBy = "usuario")
     private List<AdministradorSuperEvento> administradoresSuperEvento;
@@ -86,10 +86,10 @@ public class Usuario extends Base {
     private List<UsuarioInstanciaMascota> usuarioInstanciaMascota;
 
     @OneToMany(mappedBy = "cobro")
-    private List<ComprobantePago> comprobantePagosCobro;
+    private List<ItemComprobantePago> itemComprobantePagosCobro;
 
     @OneToMany(mappedBy = "pago")
-    private List<ComprobantePago> comprobantePagosPago;
+    private List<ItemComprobantePago> itemComprobantePagosPago;
 
     @OneToMany(mappedBy = "usuario")
     private List<Mensaje> mensajes;
@@ -107,13 +107,12 @@ public class Usuario extends Base {
     private List<SEPEstado> sepEstados;
 
     @OneToMany(mappedBy = "usuario")
-    private List<SuperEvento> superEvento;
+    private List<EncargadoSubEspacio> encargadoSubEspacios;
 
-    @OneToMany(mappedBy = "propietario")
-    private List<Espacio> espacio;
 
-    @OneToMany(mappedBy = "organizador")
-    private List<Evento> evento;
+
+
+    
 
     
 }

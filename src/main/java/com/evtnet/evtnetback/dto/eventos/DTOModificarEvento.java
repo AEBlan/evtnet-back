@@ -30,9 +30,10 @@ public class DTOModificarEvento {
     private String direccion;            // ⚡ vacío si no hay
     private Ubicacion ubicacion;
 
-    private List<ItemIdNombre> disciplinas;   // ⚡ lista vacía si no hay
-    private List<ItemIdNombre> modos;         // ⚡ lista vacía
-    private List<TipoInscripcion> tiposInscripcion; // ⚡ lista vacía
+    private List<ItemIdNombre> disciplinas;
+    private List<ItemIdNombre> modos;
+
+    //private List<TipoInscripcion> tiposInscripcion;
 
     private BigDecimal precioInscripcion;
     private BigDecimal comisionInscripcion;
@@ -68,12 +69,8 @@ public class DTOModificarEvento {
         private String nombre;    // ⚡ vacío si no hay
     }
 
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class TipoInscripcion { 
-        private Long id;          // ⚡ 0 si no hay
-        private String nombre;    // ⚡ vacío si no hay
-        private boolean seleccionado; 
-    }
+    //@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    //public static class TipoInscripcion { private Long id; private String nombre; private boolean seleccionado; }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Superevento { 

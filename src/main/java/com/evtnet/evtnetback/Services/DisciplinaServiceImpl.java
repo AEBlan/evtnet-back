@@ -1,29 +1,47 @@
 package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.Disciplina;
-import com.evtnet.evtnetback.Entities.Usuario;
-import com.evtnet.evtnetback.Repositories.BaseRepository;
 import com.evtnet.evtnetback.Repositories.DisciplinaRepository;
+import com.evtnet.evtnetback.Repositories.DisciplinaSubEspacioRepository;
 import com.evtnet.evtnetback.dto.disciplinas.DTOBusquedaDisciplina;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinaRef;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinas;
+
+import com.evtnet.evtnetback.Repositories.SubEspacioRepository;
+
+import com.evtnet.evtnetback.Entities.DisciplinaSubEspacio;
+import com.evtnet.evtnetback.Entities.SubEspacio;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class DisciplinaServiceImpl extends BaseServiceImpl<Disciplina, Long> implements DisciplinaService {
+
     private final DisciplinaRepository disciplinaRepository;
-    public DisciplinaServiceImpl(DisciplinaRepository disciplinaRepository, BaseRepository<Disciplina, Long> repo) {
-        super(repo);
-        this.disciplinaRepository=disciplinaRepository;
+    private final DisciplinaSubEspacioRepository disciplinaSubEspacioRepository;
+    private final SubEspacioRepository subEspacioRepository;
+
+    public DisciplinaServiceImpl(
+            DisciplinaRepository disciplinaRepository,
+            DisciplinaSubEspacioRepository disciplinaSubEspacioRepository,
+            SubEspacioRepository subEspacioRepository
+    ) {
+        super(disciplinaRepository);
+        this.disciplinaRepository = disciplinaRepository;
+        this.disciplinaSubEspacioRepository = disciplinaSubEspacioRepository;
+        this.subEspacioRepository = subEspacioRepository;
     }
 
     @Override
@@ -37,21 +55,26 @@ public class DisciplinaServiceImpl extends BaseServiceImpl<Disciplina, Long> imp
     }
 
     @Override
-    public List<DTODisciplinaRef> buscarPorEspacio(String text, Long espacioId) throws Exception {
-        String q = text == null ? "" : text.trim().toLowerCase();
-        return findAll().stream()
-                .filter(d -> d.getDisciplinasEspacio() != null)
-                .filter(d -> d.getDisciplinasEspacio().stream()
-                              .anyMatch(de -> de.getEspacio() != null &&
-                                              Objects.equals(de.getEspacio().getId(), espacioId)))
-                .filter(d -> d.getNombre() != null &&
-                             (q.isEmpty() || d.getNombre().toLowerCase().contains(q)))
+    public List<DTODisciplinaRef> buscarPorSubEspacio(String text, Long subespacioId) throws Exception {
+        if (subespacioId == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe indicar el subespacio");
+
+        SubEspacio subespacio = subEspacioRepository.findById(subespacioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Subespacio no encontrado"));
+
+        List<DisciplinaSubEspacio> relaciones = disciplinaSubEspacioRepository.findBySubEspacio(subespacio);
+
+        return relaciones.stream()
+                .map(DisciplinaSubEspacio::getDisciplina)
+                .filter(d -> text == null || text.isBlank()
+                        || d.getNombre().toLowerCase().contains(text.toLowerCase())
+                        || (d.getDescripcion() != null && d.getDescripcion().toLowerCase().contains(text.toLowerCase())))
                 .map(d -> new DTODisciplinaRef(d.getId(), d.getNombre()))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Page<DTODisciplinas> buscarDisciplinas(Pageable pageable, DTOBusquedaDisciplina filtros)throws Exception {
+    public Page<DTODisciplinas> buscarDisciplinas(Pageable pageable, DTOBusquedaDisciplina filtros) throws Exception {
         Specification<Disciplina> spec = Specification.where(null);
 
         if (filtros != null) {
@@ -62,47 +85,47 @@ public class DisciplinaServiceImpl extends BaseServiceImpl<Disciplina, Long> imp
                         cb.like(cb.lower(root.get("descripcion")), q)
                 ));
             }
-            if(filtros.getFechaDesde()!=null){
+            if (filtros.getFechaDesde() != null) {
                 LocalDateTime fechaDesde = Instant.ofEpochMilli(filtros.getFechaDesde())
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
+                        .atZone(ZoneId.systemDefault()).toLocalDateTime();
                 spec = spec.and((root, cq, cb) ->
                         cb.greaterThanOrEqualTo(root.get("fechaHoraAlta"), fechaDesde));
             }
-            if(filtros.getFechaHasta()!=null){
+            if (filtros.getFechaHasta() != null) {
                 LocalDateTime fechaHasta = Instant.ofEpochMilli(filtros.getFechaHasta())
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
+                        .atZone(ZoneId.systemDefault()).toLocalDateTime();
                 spec = spec.and((root, cq, cb) ->
-                        cb.greaterThanOrEqualTo(root.get("fechaHoraAlta"), fechaHasta));
+                        cb.lessThanOrEqualTo(root.get("fechaHoraAlta"), fechaHasta));
             }
         }
 
         Page<Disciplina> disciplinas = disciplinaRepository.findAll(spec, pageable);
-        return disciplinas
-                .map(d-> DTODisciplinas.builder()
+        return disciplinas.map(d ->
+                DTODisciplinas.builder()
                         .id(d.getId())
                         .nombre(d.getNombre())
                         .descripcion(d.getDescripcion())
-                        .fechaAlta(d.getFechaHoraAlta() == null ? null
-                                : d.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                        .fechaBaja(d.getFechaHoraBaja()==null ? null
-                                :d.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                        .fechaAlta(d.getFechaHoraAlta() == null ? null :
+                                d.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                        .fechaBaja(d.getFechaHoraBaja() == null ? null :
+                                d.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                         .build()
-            );
+        );
     }
 
     @Override
-    public DTODisciplinas obtenerDisciplinaCompleta(Long id){
-        Disciplina disciplina = disciplinaRepository.findById(id).get();
+    public DTODisciplinas obtenerDisciplinaCompleta(Long id) {
+        Disciplina disciplina = disciplinaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Disciplina no encontrada"));
+
         return DTODisciplinas.builder()
                 .id(disciplina.getId())
                 .nombre(disciplina.getNombre())
                 .descripcion(disciplina.getDescripcion())
-                .fechaAlta(disciplina.getFechaHoraAlta() == null ? null
-                        : disciplina.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                .fechaBaja(disciplina.getFechaHoraAlta() == null ? null
-                        : disciplina.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                .fechaAlta(disciplina.getFechaHoraAlta() == null ? null :
+                        disciplina.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                .fechaBaja(disciplina.getFechaHoraBaja() == null ? null :
+                        disciplina.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                 .build();
     }
 
@@ -116,7 +139,7 @@ public class DisciplinaServiceImpl extends BaseServiceImpl<Disciplina, Long> imp
     }
 
     @Override
-    public void modificarDisciplina(DTODisciplinas disciplina)throws Exception{
+    public void modificarDisciplina(DTODisciplinas disciplina) throws Exception {
         disciplinaRepository.update(disciplina.getId(), disciplina.getNombre(), disciplina.getDescripcion());
     }
 
@@ -125,4 +148,3 @@ public class DisciplinaServiceImpl extends BaseServiceImpl<Disciplina, Long> imp
         disciplinaRepository.delete(id, LocalDateTime.now());
     }
 }
-

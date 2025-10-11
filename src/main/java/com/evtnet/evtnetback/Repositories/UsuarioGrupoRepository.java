@@ -71,7 +71,7 @@ public interface UsuarioGrupoRepository extends BaseRepository <UsuarioGrupo, Lo
        join fetch ug.grupo g
        join fetch ug.tipoUsuarioGrupo t
        where g.id = :grupoId
-       and ug.fechaBaja is null
+       and ug.fechaHoraBaja is null
        """)
     List<UsuarioGrupo> miembrosActivosConTodo(@Param("grupoId") Long grupoId);
 

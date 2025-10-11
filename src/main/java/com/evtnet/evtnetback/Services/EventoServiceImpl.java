@@ -35,15 +35,12 @@ import java.util.*;
 
 @Service
 @Transactional
-public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements EventoService {
+public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements EventoService { 
 
     private final EventoRepository eventoRepo;
     private final DisciplinaEventoRepository disciplinaEventoRepo;
     private final DisciplinaRepository disciplinaBaseRepo;
-    private final ModoEventoRepository modoRepo;
-    private final TipoInscripcionEventoRepository tipoInscripcionRepo;
     private final EspacioRepository espacioRepo;
-    private final EventoModoEventoRepository eventoModoEventoRepo;
     private final InscripcionRepository inscripcionRepo;
     private final AdministradorEventoRepository administradorEventoRepo;
     private final UsuarioRepository usuarioRepo;
@@ -60,50 +57,41 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     @Value("${app.timezone:UTC}") // por defecto UTC si no está configurado
     private String appTimezone;
 
-public EventoServiceImpl(
-        EventoRepository eventoRepo,
-        DisciplinaEventoRepository disciplinaEventoRepo,
-        DisciplinaRepository disciplinaBaseRepo,
-        ModoEventoRepository modoRepo,
-        TipoInscripcionEventoRepository tipoInscripcionRepo,
-        EspacioRepository espacioRepo,
-        EventoModoEventoRepository eventoModoEventoRepo,
-        InscripcionRepository inscripcionRepo,
-        AdministradorEventoRepository administradorEventoRepo,
-        UsuarioRepository usuarioRepo,
-        ComprobantePagoRepository comprobanteRepo,
-        InvitadoRepository invitadoRepo,
-        DenunciaEventoRepository denunciaEventoRepo,
-        EstadoDenunciaEventoRepository estadoDenunciaRepo,
-        DenunciaEventoEstadoRepository denunciaEventoEstadoRepo,
-        SuperEventoRepository superEventoRepo,
-		MercadoPagoSingleton mercadoPagoSingleton,
-		ParametroSistemaRepository parametroRepo
-
-) {
-    super(eventoRepo);
-    this.eventoRepo = eventoRepo;
-    this.disciplinaEventoRepo = disciplinaEventoRepo;
-    this.disciplinaBaseRepo = disciplinaBaseRepo;
-    this.modoRepo = modoRepo;
-    this.tipoInscripcionRepo = tipoInscripcionRepo;
-    this.espacioRepo = espacioRepo;
-    this.eventoModoEventoRepo = eventoModoEventoRepo;
-    this.inscripcionRepo = inscripcionRepo;
-    this.administradorEventoRepo = administradorEventoRepo;
-    this.usuarioRepo = usuarioRepo;
-    this.comprobanteRepo = comprobanteRepo;
-    this.invitadoRepo = invitadoRepo;
-    this.denunciaEventoRepo = denunciaEventoRepo;
-    this.estadoDenunciaRepo = estadoDenunciaRepo;
-    this.denunciaEventoEstadoRepo = denunciaEventoEstadoRepo;
-    this.superEventoRepo = superEventoRepo;
-	this.mercadoPagoSingleton = mercadoPagoSingleton;
+    public EventoServiceImpl(
+            EventoRepository eventoRepo,
+            DisciplinaEventoRepository disciplinaEventoRepo,
+            DisciplinaRepository disciplinaBaseRepo,
+            EspacioRepository espacioRepo,
+            InscripcionRepository inscripcionRepo,
+            AdministradorEventoRepository administradorEventoRepo,
+            UsuarioRepository usuarioRepo,
+            ComprobantePagoRepository comprobanteRepo,
+            InvitadoRepository invitadoRepo,
+            DenunciaEventoRepository denunciaEventoRepo,
+            EstadoDenunciaEventoRepository estadoDenunciaRepo,
+            DenunciaEventoEstadoRepository denunciaEventoEstadoRepo,
+            SuperEventoRepository superEventoRepo,
+                MercadoPagoSingleton mercadoPagoSingleton,
+                ParametroSistemaRepository parametroRepo
+    ) {
+        super(eventoRepo);
+        this.eventoRepo = eventoRepo;
+        this.disciplinaEventoRepo = disciplinaEventoRepo;
+        this.disciplinaBaseRepo = disciplinaBaseRepo;
+        this.espacioRepo = espacioRepo;
+        this.inscripcionRepo = inscripcionRepo;
+        this.administradorEventoRepo = administradorEventoRepo;
+        this.usuarioRepo = usuarioRepo;
+        this.comprobanteRepo = comprobanteRepo;
+        this.invitadoRepo = invitadoRepo;
+        this.denunciaEventoRepo = denunciaEventoRepo;
+        this.estadoDenunciaRepo = estadoDenunciaRepo;
+        this.denunciaEventoEstadoRepo = denunciaEventoEstadoRepo;
+        this.superEventoRepo = superEventoRepo;
+        this.mercadoPagoSingleton = mercadoPagoSingleton;
 	this.parametroRepo = parametroRepo;
-    
-}
-
-
+    }
+    /* 
     @Override
     @Transactional
     public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) {
@@ -1121,16 +1109,5 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
         int horas = Math.floorDiv(rem, 60);
         int mins = rem - horas * 60;
         return new int[]{dias, horas, mins};
-    }
-
-    private String resolveUsername(String maybeUsername) {
-        String u = (maybeUsername == null) ? "" : maybeUsername.trim();
-        if (!u.isEmpty()) return u;
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
-            throw new HttpErrorException(401, "No hay usuario autenticado");
-        }
-        return auth.getName();
-    }
-
+    }*/
 }

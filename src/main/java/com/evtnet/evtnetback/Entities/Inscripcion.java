@@ -4,6 +4,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -14,12 +15,10 @@ import java.util.List;
 @Builder
 public class Inscripcion extends Base {
 
-    // --- Atributos (respeta DER) ---
-    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
-    // NO agrego fecha_hora_baja: ya heredás fecha_baja en Base
-
+    // --- Atributos ---
     @Column(name = "precio_inscripcion", precision = 15, scale = 2)
     private BigDecimal precioInscripcion;
 

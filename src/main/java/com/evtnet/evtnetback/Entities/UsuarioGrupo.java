@@ -2,6 +2,7 @@ package com.evtnet.evtnetback.Entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.evtnet.evtnetback.Entities.*;
 import java.time.LocalDateTime;
 
 @Data
@@ -13,8 +14,8 @@ import java.time.LocalDateTime;
 @Builder
 public class UsuarioGrupo extends Base {
 
-    @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
     // n..1: muchos registros -> un usuario
     @ManyToOne(optional = false, fetch = FetchType.EAGER)

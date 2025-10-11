@@ -26,12 +26,9 @@ public class DTOEventoResponse {
     private BigDecimal precioOrganizacion;
 
     private Long superEventoId;
-    private Long tipoInscripcionEventoId;
-    private Long modoEventoId;
-    //private Long administradorEventoId;
-    // Flag calculado en el back: indica si el usuario autenticado es administrador
-    private boolean administrador;
-
+    //private Long tipoInscripcionEventoId;
+    //private Long modoEventoId;
+    private Long administradorEventoId;
     private Long espacioId;
 
     // 👇 DisciplinaEvento ya asociadas al evento (sin recursión)

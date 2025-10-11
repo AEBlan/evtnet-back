@@ -4,34 +4,32 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.evtnet.evtnetback.Entities.*;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(
-    name = "configuracion_horario_espacio",
-    indexes = {
-        @Index(name = "ix_conf_he_espacio", columnList = "espacio_id")
-    }
+    name = "configuracion_horario_espacio"
 )
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ConfiguracionHorarioEspacio extends Base {
 
-    @Column(name = "dias_hacia_adelante")
-    private Integer diasHaciaAdelante;
+    @Column(name = "dias_anteelacion", nullable = false)
+    private Integer diasAntelacion;
 
-    @Column(name = "fecha_desde")
+    @Column(name = "fecha_desde", nullable = false)
     private LocalDateTime fechaDesde;
 
-    @Column(name = "fecha_hasta")
+    @Column(name = "fecha_hasta", nullable = false)
     private LocalDateTime fechaHasta;
 
     // N -> 1 Espacio (dueño FK: esta tabla)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "espacio_id", nullable = false)
-    private Espacio espacio;
+    @JoinColumn(name = "subespacio_id", nullable = false)
+    private SubEspacio subEspacio;
 
     // 1 -> N HorarioEspacio (inverso en HorarioEspacio)
     @OneToMany(mappedBy = "configuracionHorarioEspacio",
