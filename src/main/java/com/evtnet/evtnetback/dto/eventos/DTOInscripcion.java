@@ -11,7 +11,7 @@ public class DTOInscripcion {
     private String username;
     private List<Invitado> invitados;
     private BigDecimal precioInscripcion;
-    private DTOPago datosPago; // puede ser null
+    private List<DTOPago> datosPago; // puede ser null
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Invitado { private String nombre; private String apellido; private String dni; }

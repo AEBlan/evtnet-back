@@ -20,9 +20,9 @@ public interface EventoService extends BaseService<Evento, Long> {
 
     // 👇 NUEVOS (para que @Override sea válido)
     DTOEventoParaInscripcion obtenerEventoParaInscripcion(long id);
-    boolean verificarDatosPrePago(DTOInscripcion dto);
-    void inscribirse(DTOInscripcion dto);
-    void desinscribirse(long idEvento);
+    DTOVerificacionPrePago verificarDatosPrePago(DTOInscripcion dto) throws Exception;
+    void inscribirse(DTOInscripcion dto) throws Exception;
+    void desinscribirse(long idEvento) throws Exception;
     Number obtenerMontoDevolucionCancelacion(long idEvento, String username);
     DTOModificarEvento obtenerDatosModificacionEvento(long id);
     void modificarEvento(DTOModificarEvento dto);

@@ -7,10 +7,13 @@ import com.evtnet.evtnetback.Repositories.specs.EventoSpecs;
 import com.evtnet.evtnetback.dto.disciplinaevento.DTODisciplinaEventoCreate;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
+import com.evtnet.evtnetback.dto.usuarios.DTOPreferenciaPago;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import com.evtnet.evtnetback.mapper.EventoSearchMapper;
+import com.evtnet.evtnetback.util.CurrentUser;
+import com.evtnet.evtnetback.util.MercadoPagoSingleton;
+
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,7 +22,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import com.evtnet.evtnetback.Repositories.specs.DenunciaEventoSpecs;
-import java.util.ArrayList; import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import java.time.ZoneId;
@@ -27,8 +29,6 @@ import java.time.ZonedDateTime;
 
 
 import java.math.RoundingMode;
-import java.util.Comparator;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -53,6 +53,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final EstadoDenunciaEventoRepository estadoDenunciaRepo;
     private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepo;
     private final SuperEventoRepository superEventoRepo; // 👈 Agregar esto
+	private final MercadoPagoSingleton mercadoPagoSingleton;
+	private final ParametroSistemaRepository parametroRepo;
     private static final ZoneId ZONA_ARG = ZoneId.of("America/Argentina/Buenos_Aires");
 
     @Value("${app.timezone:UTC}") // por defecto UTC si no está configurado
@@ -74,7 +76,9 @@ public EventoServiceImpl(
         DenunciaEventoRepository denunciaEventoRepo,
         EstadoDenunciaEventoRepository estadoDenunciaRepo,
         DenunciaEventoEstadoRepository denunciaEventoEstadoRepo,
-        SuperEventoRepository superEventoRepo
+        SuperEventoRepository superEventoRepo,
+		MercadoPagoSingleton mercadoPagoSingleton,
+		ParametroSistemaRepository parametroRepo
 
 ) {
     super(eventoRepo);
@@ -94,6 +98,8 @@ public EventoServiceImpl(
     this.estadoDenunciaRepo = estadoDenunciaRepo;
     this.denunciaEventoEstadoRepo = denunciaEventoEstadoRepo;
     this.superEventoRepo = superEventoRepo;
+	this.mercadoPagoSingleton = mercadoPagoSingleton;
+	this.parametroRepo = parametroRepo;
     
 }
 
@@ -296,54 +302,86 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
                 .build();
     }
 
-        @Override
-        @Transactional
-        public boolean verificarDatosPrePago(DTOInscripcion dto) {
-        Evento e = eventoRepo.findById(dto.getIdEvento())
-                .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+	@Override
+	@Transactional
+	public DTOVerificacionPrePago verificarDatosPrePago(DTOInscripcion dto) throws Exception {
+		boolean valido = verificarDatosPrePagoBool(dto);
 
-        String username = resolveUsername(dto.getUsername()); // ← tomar del token si viene vacío
+		ArrayList<DTOPreferenciaPago> prefs = new ArrayList<>();
 
-         // ya inscripto (solo si tiene una inscripción activa)
-        if (inscripcionRepo.countActivasByEventoIdAndUsuarioUsername(e.getId(), username) > 0) 
-        return false;
+		if (valido) {
+			//TO-DO
+			//Generar preferencias para pagar
+			//Está hardcodeado para no tener problemas mientras cambian las entidades
+			//Hay que revisar TODO ESTO
+			Evento e = eventoRepo.findById(dto.getIdEvento())
+				.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-        // Zona configurada en application.properties
-        ZoneId zone = ZoneId.of(appTimezone);
+			BigDecimal comision = new BigDecimal(0.1);
 
-        // ahora en zona ARG
-        ZonedDateTime ahora = ZonedDateTime.now(zone);
+			String url = "/Evento/" + e.getId() + "/Inscribirme";
 
-       // inicio interpretado directamente en la zona configurada (sin forzar UTC)
-        ZonedDateTime inicio = e.getFechaHoraInicio().atZone(zone);
+			Usuario organizador = e.getOrganizador();
 
-        if (ahora.isAfter(inicio)) {
-                return false; // bloquear solo si ya pasó
-        }
+			prefs.add(mercadoPagoSingleton.createPreference("Inscripción a evento " + e.getNombre(), e.getPrecioInscripcion(), comision, organizador, url));
 
-        // capacidad de participantes
-        int actuales = inscripcionRepo.countParticipantesEfectivos(e.getId());
-        int nuevos = 1 + (dto.getInvitados() != null ? dto.getInvitados().size() : 0);
-        Integer limite = e.getCantidadMaximaParticipantes();
-        if (limite != null && actuales + nuevos > limite) return false;
+            Usuario propietario = e.getOrganizador();
 
-        // límite de invitados por inscripción
-        if (e.getCantidadMaximaInvitados() != null && dto.getInvitados() != null &&
-                dto.getInvitados().size() > e.getCantidadMaximaInvitados()) return false;
+			prefs.add(mercadoPagoSingleton.createPreference("Adicional a espacio por inscripción a evento " + e.getNombre(), e.getPrecioInscripcion(), comision, propietario, url));
+		}
 
-        // precio mínimo
-        if (dto.getPrecioInscripcion() != null && e.getPrecioInscripcion() != null &&
-                dto.getPrecioInscripcion().compareTo(e.getPrecioInscripcion()) < 0) return false;
+		return DTOVerificacionPrePago.builder()
+			.valido(valido)
+			.preferencias(prefs)
+			.build();
+	}
 
-        return true;
-        }
+	private boolean verificarDatosPrePagoBool(DTOInscripcion dto) {
+		Evento e = eventoRepo.findById(dto.getIdEvento())
+				.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+		
+		String username = CurrentUser.getUsername().orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+
+		// ya inscripto (solo si tiene una inscripción activa)
+		if (inscripcionRepo.countActivasByEventoIdAndUsuarioUsername(e.getId(), username) > 0) 
+		return false;
+
+		// Zona configurada en application.properties
+		ZoneId zone = ZoneId.of(appTimezone);
+
+		// ahora en zona ARG
+		ZonedDateTime ahora = ZonedDateTime.now(zone);
+
+		// inicio interpretado directamente en la zona configurada (sin forzar UTC)
+		ZonedDateTime inicio = e.getFechaHoraInicio().atZone(zone);
+
+		if (ahora.isAfter(inicio)) {
+				return false; // bloquear solo si ya pasó
+		}
+
+		// capacidad de participantes
+		int actuales = inscripcionRepo.countParticipantesEfectivos(e.getId());
+		int nuevos = 1 + (dto.getInvitados() != null ? dto.getInvitados().size() : 0);
+		Integer limite = e.getCantidadMaximaParticipantes();
+		if (limite != null && actuales + nuevos > limite) return false;
+
+		// límite de invitados por inscripción
+		if (e.getCantidadMaximaInvitados() != null && dto.getInvitados() != null &&
+				dto.getInvitados().size() > e.getCantidadMaximaInvitados()) return false;
+
+		// precio mínimo
+		if (dto.getPrecioInscripcion() != null && e.getPrecioInscripcion() != null &&
+				dto.getPrecioInscripcion().compareTo(e.getPrecioInscripcion()) < 0) return false;
+
+		return true;
+	}
 
 
 
         @Override 
         @Transactional
-        public void inscribirse(DTOInscripcion dto) {
-        if (!verificarDatosPrePago(dto))
+        public void inscribirse(DTOInscripcion dto) throws Exception {
+        if (!verificarDatosPrePagoBool(dto))
                 throw new HttpErrorException(400, "Datos inválidos para inscribirse");
 
         Evento e = eventoRepo.findById(dto.getIdEvento())
@@ -352,6 +390,8 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
         String username = resolveUsername(dto.getUsername()); // ← token si falta
         Usuario u = usuarioRepo.findByUsername(username)
                 .orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+
+        mercadoPagoSingleton.verifyPayments(dto.getDatosPago());
 
         Inscripcion ins = new Inscripcion();
         ins.setEvento(e);
@@ -385,12 +425,16 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
 
         @Override
         @Transactional
-        public void desinscribirse(long idEvento) {
+        public void desinscribirse(long idEvento) throws Exception {
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
         
             Inscripcion ins = inscripcionRepo.findActivaByEventoIdAndUsuarioUsername(idEvento, username)
             .orElseThrow(() -> new HttpErrorException(404, "No existe inscripción activa"));
             
+			//TO-DO: colocar el payment id, extraído del comprobante
+			String paymentId = "abcd";
+			mercadoPagoSingleton.refundPayment(paymentId);
+
             // Eliminar invitados asociados
             invitadoRepo.deleteByInscripcionId(ins.getId());
         
