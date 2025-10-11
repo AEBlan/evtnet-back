@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +34,9 @@ public class RegistroSingleton {
 
     private final Path baseDir;
 
+    //Poner a true para no escribir logs
+    private final boolean preventWrite = true;
+
     public RegistroSingleton(@Value("${app.storage.logs}") String basePath, RegistroRepository repository, RequestUtils requestUtils, UsuarioRepository usuarioRepository) {
         this.repository = repository;
         this.requestUtils = requestUtils;
@@ -55,18 +57,6 @@ public class RegistroSingleton {
         if(!optRegistro.isPresent()) {
             throw new Exception("No se encontró el registro");
         }
-
-        Registro reg = optRegistro.get();
-
-        if (!reg.getTipos().stream().map(t -> t.getNombre()).toList().contains(tipo)) {
-            throw new Exception("El tipo no corresponde al registro");
-        }
-
-        if (!reg.getSubtipos().stream().map(t -> t.getNombre()).toList().contains(subtipo)) {
-            throw new Exception("El subtipo no corresponde al registro");
-        }
-
-        
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
@@ -92,6 +82,8 @@ public class RegistroSingleton {
         file.getParentFile().mkdirs();
 
         boolean fileExists = file.exists();
+
+        if (preventWrite) return;
         
         try (FileWriter writer = new FileWriter(file, true)) {
             // If file doesn't exist or is empty, write headers first

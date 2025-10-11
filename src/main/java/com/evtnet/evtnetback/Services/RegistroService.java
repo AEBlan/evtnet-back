@@ -14,8 +14,8 @@ public interface RegistroService extends BaseService <Registro, Long> {
 
     List<DTORegistro> buscar(String registro, DTOFiltrosRegistro filtros) throws Exception;
 
-    List<String> obtenerTipos(String registro) throws Exception;
-    List<String> obtenerSubtipos(String registro) throws Exception;
+    List<String> obtenerEntidades(String registro) throws Exception;
+    List<String> obtenerAcciones(String registro) throws Exception;
 
     List<DTOBusquedaUsuario> buscarUsuarios(String texto) throws Exception;
 }

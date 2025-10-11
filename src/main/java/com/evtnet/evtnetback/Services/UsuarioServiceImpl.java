@@ -287,11 +287,16 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         if (permisos == null) permisos = List.of(); // por las dudas
     
         String token = jwtUtil.generateToken(u.getUsername(), permisos);
-        //registroSingleton.write("UsuariosGrupos", "inicio_sesion", "creacion", "El usuario se autenticó e inició sesión", u.getUsername());
+        registroSingleton.write("UsuariosGrupos", "inicio_sesion", "creacion", "El usuario se autenticó e inició sesión", u.getUsername());
         return DTOAuth.builder()
                 .token(token)
                 .permisos(permisos)
                 .username(u.getUsername())
+                .user(DTOAuth.User.builder()
+                    .nombre(u.getNombre())
+                    .apellido(u.getApellido())
+                    .roles(u.getRolesUsuario().stream().map(r -> r.getRol().getNombre()).toList())
+                    .build())
                 .build();
     }
 
@@ -332,8 +337,9 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .fechaNacimiento(parseFechaNacimiento(body.getFechaNacimiento()))
                 .contrasena(passwordEncoder.encode(body.getPassword()))
                 .fechaHoraAlta(LocalDateTime.now())
+                .rolesUsuario(new ArrayList<>())
                 .build();
-        usuarioRepository.save(u);
+        u = usuarioRepository.save(u);
 
         Rol rolPend = rolRepository.findByNombre("PendienteConfirmacion")
                 .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmacion"));
@@ -342,7 +348,10 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                     RolUsuario.builder().usuario(u).rol(rolPend).fechaHoraAlta(LocalDateTime.now()).build()
             );
         }
-        
+
+        u = usuarioRepository.findByUsername(u.getUsername())
+            .orElseThrow(() -> new Exception("Usuario no encontrado"));
+
         enviarCodigo(body.getMail());
         return authFromUser(u);
     }
@@ -671,7 +680,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             Files.write(destino, foto, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
             // Guardar SOLO el nombre en DB (como en registerConFoto)
-            u.setFotoPerfil(destino.toString()); // ruta absoluta
+            u.setFotoPerfil(filename); // ruta absoluta
 
         }
 

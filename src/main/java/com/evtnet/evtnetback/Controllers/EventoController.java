@@ -74,18 +74,18 @@ public class EventoController {
     }
 
     @PutMapping("/verificarDatosPrePago")
-    public ResponseEntity<Map<String, Boolean>> verificarDatosPrePago(@RequestBody DTOInscripcion dto) {
-        return ResponseEntity.ok(Map.of("valido", service.verificarDatosPrePago(dto)));
+    public ResponseEntity<DTOVerificacionPrePago> verificarDatosPrePago(@RequestBody DTOInscripcion dto) throws Exception {
+        return ResponseEntity.ok(service.verificarDatosPrePago(dto));
     }
 
     @PostMapping("/inscribirse")
-    public ResponseEntity<Void> inscribirse(@RequestBody DTOInscripcion dto) {
+    public ResponseEntity<Void> inscribirse(@RequestBody DTOInscripcion dto) throws Exception {
         service.inscribirse(dto);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/desinscribirse")
-    public ResponseEntity<Void> desinscribirse(@RequestParam long idEvento) {
+    public ResponseEntity<Void> desinscribirse(@RequestParam long idEvento) throws Exception {
         service.desinscribirse(idEvento);
         return ResponseEntity.ok().build();
     }
