@@ -60,19 +60,20 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     List<Evento> findAllByOrganizador_Username(@Param("username") String username);
 
     @Query("""
-    select distinct e
-    from Evento e
-    left join fetch e.espacio esp
-    left join fetch e.superEvento se
-    left join fetch e.disciplinasEvento de
-    left join fetch de.disciplina d
-    left join fetch e.eventosModoEvento eme
-    left join fetch eme.modoEvento me
-    left join fetch e.inscripciones i
-    left join fetch i.usuario u
-    where e.id = :id
-""")
-Optional<Evento> findByIdForDetalleSoloActivas(@Param("id") long id);
+        select distinct e
+        from Evento e
+        left join fetch e.subEspacio sub
+        left join fetch sub.espacio esp
+        left join fetch e.superEvento se
+        left join fetch e.disciplinasEvento de
+        left join fetch de.disciplina d
+        left join fetch e.inscripciones i 
+        left join fetch i.usuario u
+        where (
+            (e.fechaHoraInicio <= :hasta and e.fechaHoraFin >= :desde)
+        )
+    """)
+    Optional<Evento> findByIdForDetalleSoloActivas(@Param("id") long id);
 
 
 
