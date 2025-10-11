@@ -4,10 +4,17 @@ package com.evtnet.evtnetback.Controllers;
 import com.evtnet.evtnetback.dto.comunes.CantidadResponse;
 import com.evtnet.evtnetback.dto.comunes.IdResponse;
 import com.evtnet.evtnetback.dto.eventos.*;
+import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
 import com.evtnet.evtnetback.Services.EventoService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+
 
 import java.util.List;
 import java.util.Map;
@@ -25,8 +32,12 @@ public class EventoController {
     }
 
     @PutMapping("/buscarMisEventos")
-    public ResponseEntity<List<DTOResultadoBusquedaMisEventos>> buscarMisEventos(@RequestBody DTOBusquedaMisEventos filtro) {
-        return ResponseEntity.ok(service.buscarMisEventos(filtro));
+    public ResponseEntity<List<DTOResultadoBusquedaMisEventos>> buscarMisEventos(
+            @RequestBody DTOBusquedaMisEventos filtro,
+            Authentication authentication   // ✅ se inyecta el usuario logueado
+    ) {
+        String username = authentication.getName(); // ✅ nombre del usuario del token JWT
+        return ResponseEntity.ok(service.buscarMisEventos(filtro, username));
     }
 
     @GetMapping("/obtenerEvento")

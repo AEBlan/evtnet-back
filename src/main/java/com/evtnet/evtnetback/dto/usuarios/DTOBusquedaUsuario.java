@@ -1,6 +1,8 @@
 // DTOResultadoBusquedaUsuario.java
 package com.evtnet.evtnetback.dto.usuarios;
 
+import java.time.LocalDate;
+
 import lombok.*;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -10,5 +12,6 @@ public class DTOBusquedaUsuario {
     private String apellido;
     private String mail;
     private String dni;
-    private Long   fechaNacimiento;    // epoch ms (front lo mapea a Date)
+    private LocalDate fechaNacimiento;  
+    //private Long fechaNacimiento;    // epoch ms (front lo mapea a Date)
 }

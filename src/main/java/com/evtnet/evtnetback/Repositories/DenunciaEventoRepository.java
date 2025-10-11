@@ -2,6 +2,7 @@ package com.evtnet.evtnetback.Repositories;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.*;
 
 import com.evtnet.evtnetback.Entities.DenunciaEvento;
@@ -9,6 +10,7 @@ import com.evtnet.evtnetback.dto.usuarios.DTODenunciaUsuario;
 
 import com.evtnet.evtnetback.Repositories.BaseRepository;
 
+@Repository
 public interface DenunciaEventoRepository extends BaseRepository <DenunciaEvento, Long> {
    @Query("""
         SELECT DISTINCT de

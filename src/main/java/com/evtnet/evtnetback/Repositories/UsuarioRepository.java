@@ -59,4 +59,41 @@ public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
     @Query("select u from Usuario u where lower(u.username) in :usernames")
     List<Usuario> findAllByUsernameInLower(@Param("usernames") List<String> usernames);
 
+
+    //Query para buscar no inscrptos en un evento
+    @Query("""
+    select u from Usuario u
+    where u.fechaBaja is null
+      and (lower(u.username) like lower(concat('%', :texto, '%'))
+        or lower(u.nombre) like lower(concat('%', :texto, '%'))
+        or lower(u.apellido) like lower(concat('%', :texto, '%')))
+      and u.id not in (
+          select i.usuario.id from Inscripcion i where i.evento.id = :idEvento
+      )
+    """)
+    List<Usuario> buscarNoInscriptos(@Param("idEvento") Long idEvento,
+                                    @Param("texto") String texto);
+
+    @Query("""
+      select u
+      from Usuario u
+      join Inscripcion i on i.usuario.id = u.id
+      where i.evento.id = :idEvento
+        and u.fechaBaja is null
+        and (
+            lower(u.username) like lower(concat('%', :texto, '%'))
+            or lower(u.nombre)   like lower(concat('%', :texto, '%'))
+            or lower(u.apellido) like lower(concat('%', :texto, '%'))
+        )
+        and u.id not in (
+            select ae.usuario.id
+            from AdministradorEvento ae
+            where ae.evento.id = :idEvento
+     )
+    """)
+    List<Usuario> buscarUsuariosNoAdministradores(@Param("idEvento") Long idEvento,
+                                                  @Param("texto") String texto);
+                                  
+                                  
+
 }

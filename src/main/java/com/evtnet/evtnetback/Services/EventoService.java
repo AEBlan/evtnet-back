@@ -2,11 +2,17 @@ package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.Evento;
 import com.evtnet.evtnetback.dto.eventos.*;
+import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
+
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+
 
 public interface EventoService extends BaseService<Evento, Long> { /* 
     List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro);
-    List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro);
+    List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro, String username);
     DTOEvento obtenerEventoDetalle(long idEvento);
     DTODatosCreacionEvento obtenerDatosCreacionEvento(Long idEspacioOrNull);
     long crearEvento(DTOEventoCreate req);

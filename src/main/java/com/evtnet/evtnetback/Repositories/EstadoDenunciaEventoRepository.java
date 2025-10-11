@@ -1,5 +1,7 @@
 package com.evtnet.evtnetback.Repositories;
 
+import org.springframework.stereotype.Repository;
+
 import com.evtnet.evtnetback.Entities.EstadoDenunciaEvento;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
