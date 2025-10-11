@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public final class EventoSearchMapper {/* 
+public final class EventoSearchMapper { 
     private EventoSearchMapper(){}
 
     public static DTOResultadoBusquedaEventos toResultadoBusqueda(Evento e) {
@@ -29,7 +29,7 @@ public final class EventoSearchMapper {/*
                 e.getNombre(),
                 TimeUtil.toMillis(e.getFechaHoraInicio()),
                 e.getPrecioInscripcion() == null ? null : e.getPrecioInscripcion().doubleValue(),
-                e.getEspacio() == null ? null : e.getEspacio().getNombre(),
+                e.getSubEspacio().getEspacio().getNombre(),
                 disciplinas,
                 null
         );
@@ -41,32 +41,14 @@ public final class EventoSearchMapper {/*
                 e.getNombre(),
                 TimeUtil.toMillis(e.getFechaHoraInicio()),
                 TimeUtil.toMillis(e.getFechaHoraFin()),
-                e.getEspacio() == null ? "" : e.getEspacio().getNombre(),
+                e.getSubEspacio().getEspacio().getNombre(),
                 "participante",
                 e.getInscripciones() == null ? null : e.getInscripciones().size()
         );
     }
 
     public static DTOEvento toDTOEvento(Evento e, boolean inscripto, boolean administrador) {
-        DTOEvento.Espacio espacio = (e.getEspacio() == null)
-                ? null
-                : new DTOEvento.Espacio(e.getEspacio().getId(), e.getEspacio().getNombre());
-
-        // Modos (principal + adicionales)
-        List<String> modos = new ArrayList<>();
-        if (e.getModoEvento() != null && e.getModoEvento().getNombre() != null) {
-            modos.add(e.getModoEvento().getNombre());
-        }
-        if (e.getEventosModoEvento() != null) {
-            modos.addAll(
-                e.getEventosModoEvento().stream()
-                    .map(EventoModoEvento::getModoEvento)
-                    .filter(Objects::nonNull)
-                    .map(ModoEvento::getNombre)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList())
-            );
-        }
+        DTOEvento.Espacio espacio = new DTOEvento.Espacio(e.getSubEspacio().getEspacio().getId(), e.getSubEspacio().getEspacio().getNombre());
 
         // Disciplinas desde DisciplinaEvento -> Disciplina.nombre
         List<String> disciplinas = (e.getDisciplinasEvento() == null)
@@ -88,8 +70,8 @@ public final class EventoSearchMapper {/*
                     .collect(Collectors.toList());
 
         DTOEvento.Ubicacion ubic = new DTOEvento.Ubicacion(
-                e.getLatitudUbicacion() == null ? null : e.getLatitudUbicacion().doubleValue(),
-                e.getLongitudUbicacion() == null ? null : e.getLongitudUbicacion().doubleValue()
+                e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(),
+                e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()
         );
 
         DTOEvento.Superevento sup = (e.getSuperEvento() == null)
@@ -102,10 +84,9 @@ public final class EventoSearchMapper {/*
                 TimeUtil.toMillis(e.getFechaHoraInicio()),
                 TimeUtil.toMillis(e.getFechaHoraFin()),
                 e.getPrecioInscripcion() == null ? 0d : e.getPrecioInscripcion().doubleValue(),
-                modos,
                 disciplinas,
                 espacio,
-                e.getDireccionUbicacion(),
+                e.getSubEspacio().getEspacio().getDireccionUbicacion(),
                 ubic,
                 sup,
                 inscripto,
@@ -113,5 +94,5 @@ public final class EventoSearchMapper {/*
                 administrador,
                 null
         );
-    }*/
+    }
 }

@@ -52,6 +52,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final SuperEventoRepository superEventoRepo; // 👈 Agregar esto
 	private final MercadoPagoSingleton mercadoPagoSingleton;
 	private final ParametroSistemaRepository parametroRepo;
+	private final TipoAdministradorEventoRepository tipoAdminEventoRepo;
     private static final ZoneId ZONA_ARG = ZoneId.of("America/Argentina/Buenos_Aires");
 
     @Value("${app.timezone:UTC}") // por defecto UTC si no está configurado
@@ -71,8 +72,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
             EstadoDenunciaEventoRepository estadoDenunciaRepo,
             DenunciaEventoEstadoRepository denunciaEventoEstadoRepo,
             SuperEventoRepository superEventoRepo,
-                MercadoPagoSingleton mercadoPagoSingleton,
-                ParametroSistemaRepository parametroRepo
+			MercadoPagoSingleton mercadoPagoSingleton,
+			ParametroSistemaRepository parametroRepo,
+			TipoAdministradorEventoRepository tipoAdminEventoRepo
     ) {
         super(eventoRepo);
         this.eventoRepo = eventoRepo;
@@ -89,9 +91,11 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
         this.denunciaEventoEstadoRepo = denunciaEventoEstadoRepo;
         this.superEventoRepo = superEventoRepo;
         this.mercadoPagoSingleton = mercadoPagoSingleton;
-	this.parametroRepo = parametroRepo;
+		this.parametroRepo = parametroRepo;
+		this.tipoAdminEventoRepo = tipoAdminEventoRepo;
+
     }
-    /* 
+     
     @Override
     @Transactional
     public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) {
@@ -123,11 +127,6 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
     if (e.getDisciplinasEvento() != null) {
         e.getDisciplinasEvento().forEach(de -> {
             if (de.getDisciplina() != null) de.getDisciplina().getNombre();
-        });
-    }
-    if (e.getEventosModoEvento() != null) {
-        e.getEventosModoEvento().forEach(eme -> {
-            if (eme.getModoEvento() != null) eme.getModoEvento().getNombre();
         });
     }
 
@@ -165,88 +164,74 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
             nombreEspacio = esp.getNombre();
         }
 
-        var tipos = tipoInscripcionRepo.findAll().stream()
-                .map(t -> new DTODatosCreacionEvento.TipoInscripcion(t.getId(), t.getNombre()))
-                .toList();
-
         double comision = 0.12;
         int diasHaciaAdelante = 30;
 
-        return new DTODatosCreacionEvento(nombreEspacio, tipos, comision, null, null, diasHaciaAdelante);
+        return new DTODatosCreacionEvento(nombreEspacio, comision, null, null, diasHaciaAdelante);
     }
 
     @Override
     @Transactional
-    public long crearEvento(DTOEventoCreate r) {
-    if (r.getFechaHoraInicio() == null || r.getFechaHoraFin() == null) {
-        throw new HttpErrorException(400, "Fecha/hora de inicio y fin son requeridas");
-    }
+    public long crearEvento(DTOEventoCreate r) throws Exception {
+		if (r.getFechaHoraInicio() == null || r.getFechaHoraFin() == null) {
+			throw new HttpErrorException(400, "Fecha/hora de inicio y fin son requeridas");
+		}
 
-    Evento e = new Evento();
-    e.setNombre(r.getNombre());
-    e.setDescripcion(r.getDescripcion());
-    e.setFechaHoraInicio(r.getFechaHoraInicio());
-    e.setFechaHoraFin(r.getFechaHoraFin());
-    e.setDireccionUbicacion(r.getDireccionUbicacion());
-    e.setLatitudUbicacion(r.getLatitudUbicacion());
-    e.setLongitudUbicacion(r.getLongitudUbicacion());
-    e.setPrecioInscripcion(r.getPrecioInscripcion());
-    e.setCantidadMaximaInvitados(r.getCantidadMaximaInvitados());
-    e.setCantidadMaximaParticipantes(r.getCantidadMaximaParticipantes());
-    e.setPrecioOrganizacion(r.getPrecioOrganizacion());
+		Evento e = new Evento();
+		e.setNombre(r.getNombre());
+		e.setDescripcion(r.getDescripcion());
+		e.setFechaHoraInicio(r.getFechaHoraInicio());
+		e.setFechaHoraFin(r.getFechaHoraFin());
+		e.setPrecioInscripcion(r.getPrecioInscripcion());
+		e.setCantidadMaximaInvitados(r.getCantidadMaximaInvitados());
+		e.setCantidadMaximaParticipantes(r.getCantidadMaximaParticipantes());
+		e.setPrecioOrganizacion(r.getPrecioOrganizacion());
 
-    // 🔹 Asignar organizador (usuario autenticado)
-    String username = SecurityContextHolder.getContext().getAuthentication().getName();
-    Usuario organizador = usuarioRepo.findByUsername(username)
-            .orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
-    e.setOrganizador(organizador);
+		// 🔹 Asignar organizador (usuario autenticado)
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
+		Usuario organizador = usuarioRepo.findByUsername(username)
+			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-// 🔹 Agregar automáticamente al organizador como administrador del evento
-    AdministradorEvento admin = AdministradorEvento.builder()
-    .evento(e)
-    .usuario(organizador)
-    .fechaHoraAlta(LocalDateTime.now())
-    .build();
+		TipoAdministradorEvento tipoAdmin = tipoAdminEventoRepo.findByNombreIgnoreCase("Organizador")
+			.orElseThrow(() -> new Exception("No se pudo vincular al usuario con el evento"));
 
-    if (e.getAdministradoresEvento() == null) {
-    e.setAdministradoresEvento(new ArrayList<>());
-    }
-    e.getAdministradoresEvento().add(admin);
+		// 🔹 Agregar automáticamente al organizador como administrador del evento
+		AdministradorEvento admin = AdministradorEvento.builder()
+			.evento(e)
+			.usuario(organizador)
+			.tipoAdministradorEvento(tipoAdmin)
+			.fechaHoraAlta(LocalDateTime.now())
+			.build();
 
-    if (r.getEspacioId() != null) {
-        Espacio esp = espacioRepo.findById(r.getEspacioId())
-                .orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado"));
-        e.setEspacio(esp);
-    }
-    if (r.getTipoInscripcionEventoId() != null) {
-        TipoInscripcionEvento tie = tipoInscripcionRepo.findById(r.getTipoInscripcionEventoId())
-                .orElseThrow(() -> new HttpErrorException(400, "Tipo de inscripción inválido"));
-        e.setTipoInscripcionEvento(tie);
-    }
-    if (r.getModoEventoId() != null) {
-        ModoEvento me = modoRepo.findById(r.getModoEventoId())
-                .orElseThrow(() -> new HttpErrorException(400, "Modo de evento inválido"));
-        e.setModoEvento(me);
-    }
-    
-    // Hijos DisciplinaEvento
-    List<DisciplinaEvento> hijos = new ArrayList<>();
-    if (r.getDisciplinasEvento() != null) {
-        for (DTODisciplinaEventoCreate deDto : r.getDisciplinasEvento()) {
-            Long disciplinaId = (deDto.getDisciplina() != null) ? deDto.getDisciplina().getId() : null;
-            if (disciplinaId == null) {
-                throw new HttpErrorException(400, "disciplina.id es requerido en cada disciplinasEvento");
-            }
-            Disciplina disciplina = disciplinaBaseRepo.findById(disciplinaId)
-                    .orElseThrow(() -> new HttpErrorException(400, "Disciplina no encontrada: id=" + disciplinaId));
+		if (e.getAdministradoresEvento() == null) {
+			e.setAdministradoresEvento(new ArrayList<>());
+		}
+		e.getAdministradoresEvento().add(admin);
 
-            hijos.add(DisciplinaEvento.builder().evento(e).disciplina(disciplina).build());
-        }
-    }
-    e.setDisciplinasEvento(hijos);
+		if (r.getEspacioId() != null) {
+			Espacio esp = espacioRepo.findById(r.getEspacioId())
+					.orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado"));
+			//e.setEspacio(esp);
+		}
+		
+		// Hijos DisciplinaEvento
+		List<DisciplinaEvento> hijos = new ArrayList<>();
+		if (r.getDisciplinasEvento() != null) {
+			for (DTODisciplinaEventoCreate deDto : r.getDisciplinasEvento()) {
+				Long disciplinaId = (deDto.getDisciplina() != null) ? deDto.getDisciplina().getId() : null;
+				if (disciplinaId == null) {
+					throw new HttpErrorException(400, "disciplina.id es requerido en cada disciplinasEvento");
+				}
+				Disciplina disciplina = disciplinaBaseRepo.findById(disciplinaId)
+						.orElseThrow(() -> new HttpErrorException(400, "Disciplina no encontrada: id=" + disciplinaId));
 
-    eventoRepo.save(e);
-    return e.getId();
+				hijos.add(DisciplinaEvento.builder().evento(e).disciplina(disciplina).build());
+			}
+		}
+		e.setDisciplinasEvento(hijos);
+
+		eventoRepo.save(e);
+		return e.getId();
     }
 
 
@@ -262,16 +247,15 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
     public DTOEventoParaInscripcion obtenerEventoParaInscripcion(long idEvento) {
         // 🔁 cambia a findByIdForDetalle
         Evento e = eventoRepo.findByIdForDetalle(idEvento)
-                .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+            .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
         DTOEventoParaInscripcion.Espacio espacio = null;
-        if (e.getEspacio() != null) {
-            espacio = DTOEventoParaInscripcion.Espacio.builder()
-                    .id(e.getEspacio().getId())
-                    .nombre(e.getEspacio().getNombre())
-                    .descripcion(e.getEspacio().getDescripcion())
-                    .build();
-        }
+
+		espacio = DTOEventoParaInscripcion.Espacio.builder()
+			.id(e.getSubEspacio().getEspacio().getId())
+			.nombre(e.getSubEspacio().getEspacio().getNombre())
+			.descripcion(e.getSubEspacio().getEspacio().getDescripcion())
+			.build();
 
         return DTOEventoParaInscripcion.builder()
                 .nombre(e.getNombre())
@@ -280,10 +264,10 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
                 .fechaDesde(e.getFechaHoraInicio())
                 .fechaHasta(e.getFechaHoraFin())
                 .espacio(espacio)
-                .direccion(e.getDireccionUbicacion())
+                .direccion(e.getSubEspacio().getEspacio().getDireccionUbicacion())
                 .ubicacion(new DTOEventoParaInscripcion.Ubicacion(
-                        e.getLatitudUbicacion() != null ? e.getLatitudUbicacion().doubleValue() : null,
-                        e.getLongitudUbicacion() != null ? e.getLongitudUbicacion().doubleValue() : null))
+                        e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(),
+                        e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()))
                 .precioPorAsistente(e.getPrecioInscripcion())
                 .cantidadMaximaInvitados(e.getCantidadMaximaInvitados())
                 .limiteParticipantes(e.getCantidadMaximaParticipantes())
@@ -374,10 +358,13 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
 
         Evento e = eventoRepo.findById(dto.getIdEvento())
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
-
-        String username = resolveUsername(dto.getUsername()); // ← token si falta
+		
+		String username = CurrentUser.getUsername()
+			.orElseThrow(() -> new HttpErrorException(404, "Debe iniciar sesión antes de intentar inscribirse"));
+		//En este método, el que se inscribe el que lo llama. Username ESTABA en el DTO para cuando un admin lo inscribía
+        //String username = resolveUsername(dto.getUsername()); // ← token si falta
         Usuario u = usuarioRepo.findByUsername(username)
-                .orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+            .orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
         mercadoPagoSingleton.verifyPayments(dto.getDatosPago());
 
@@ -469,7 +456,7 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
 
         @Override
         @Transactional
-        public DTOModificarEvento obtenerDatosModificacionEvento(long idEvento) {
+        public DTOModificarEvento obtenerDatosModificacionEvento(long idEvento) throws Exception {
         // 🔁 cambia a findByIdForDetalle
         Evento e = eventoRepo.findByIdForDetalle(idEvento)
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
@@ -484,22 +471,6 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
                         de.getDisciplina().getId(), de.getDisciplina().getNombre()));
                 }
         }
-
-        List<DTOModificarEvento.ItemIdNombre> modos = new ArrayList<>();
-        if (e.getModoEvento() != null)
-                modos.add(new DTOModificarEvento.ItemIdNombre(e.getModoEvento().getId(), e.getModoEvento().getNombre()));
-        if (e.getEventosModoEvento() != null)
-                for (EventoModoEvento eme : e.getEventosModoEvento())
-                modos.add(new DTOModificarEvento.ItemIdNombre(eme.getModoEvento().getId(), eme.getModoEvento().getNombre()));
-
-        List<DTOModificarEvento.TipoInscripcion> tipos = tipoInscripcionRepo.findAll().stream()
-                .map(t -> DTOModificarEvento.TipoInscripcion.builder()
-                        .id(t.getId())
-                        .nombre(t.getNombre())
-                        .seleccionado(e.getTipoInscripcionEvento() != null &&
-                                Objects.equals(e.getTipoInscripcionEvento().getId(), t.getId()))
-                        .build())
-                .toList();
 
         List<DTOModificarEvento.RangoReintegro> rangos = new ArrayList<>();
         if (e.getPorcentajesReintegroCancelacion() != null) {
@@ -532,20 +503,18 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
                 .id(e.getId())
                 .nombre(e.getNombre() != null ? e.getNombre() : "")
                 .descripcion(e.getDescripcion() != null ? e.getDescripcion() : "")
-                .idEspacio(e.getEspacio() != null ? e.getEspacio().getId() : 0L)          // ⚡ nunca null
-                .nombreEspacio(e.getEspacio() != null ? e.getEspacio().getNombre() : "") // ⚡ nunca null
+                .idEspacio(e.getSubEspacio().getEspacio().getId())          // ⚡ nunca null
+                .nombreEspacio(e.getSubEspacio().getEspacio().getNombre()) // ⚡ nunca null
                 .usarCronograma(false)
                 .fechaDesde(e.getFechaHoraInicio())
                 .fechaHasta(e.getFechaHoraFin())
                 .horarioId(null)         // ⚡ nunca null
                 .precioOrganizacion(e.getPrecioOrganizacion() != null ? e.getPrecioOrganizacion() : BigDecimal.ZERO)
-                .direccion(e.getDireccionUbicacion() != null ? e.getDireccionUbicacion() : "")
+                .direccion(e.getSubEspacio().getEspacio().getDireccionUbicacion())
                 .ubicacion(new DTOModificarEvento.Ubicacion(
-                        e.getLatitudUbicacion() != null ? e.getLatitudUbicacion().doubleValue() : 0.0,
-                        e.getLongitudUbicacion() != null ? e.getLongitudUbicacion().doubleValue() : 0.0))
+                    e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(),
+                    e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()))
                 .disciplinas(disciplinas != null ? disciplinas : List.of()) // ⚡ lista vacía si no hay
-                .modos(modos != null ? modos : List.of())                   // ⚡ lista vacía
-                .tiposInscripcion(tipos != null ? tipos : List.of())        // ⚡ lista vacía
                 .precioInscripcion(e.getPrecioInscripcion() != null ? e.getPrecioInscripcion() : BigDecimal.ZERO)
                 .comisionInscripcion(BigDecimal.valueOf(0.12))
                 .cantidadMaximaParticipantes(e.getCantidadMaximaParticipantes() != null ? e.getCantidadMaximaParticipantes() : 0)
@@ -586,17 +555,19 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
         e.setDescripcion(dto.getDescripcion());
         e.setFechaHoraInicio(dto.getFechaDesde());
         e.setFechaHoraFin(dto.getFechaHasta());
-        e.setDireccionUbicacion(dto.getDireccion());
 
-        // Ubicación
-        if (dto.getUbicacion() != null) {
-                if (dto.getUbicacion().getLatitud() != null) {
-                e.setLatitudUbicacion(BigDecimal.valueOf(dto.getUbicacion().getLatitud()));
-                }
-                if (dto.getUbicacion().getLongitud() != null) {
-                e.setLongitudUbicacion(BigDecimal.valueOf(dto.getUbicacion().getLongitud()));
-                }
-        }
+		/* 
+		 * TO-DO: El precio de organización cambia según el horario del cronograma elegido,
+		 * y solo cuando lo hace un usuario no admin del espacio. Si no, es 0.
+		 * El precio de organización se debería setear en base al horario correspondiente,
+		 * y si ninguno coincide, tirar una excepción.
+		 * 
+		 * Siempre validar las cosas que dice la US, como de participantes >= 2, aunque lo haga el front también
+		 * 
+		 * La US también aclaraba que, cuando cambian los precios de inscripción u organización, 
+		 * puede requerirse un pago adicional o una devolución.
+		 * Dejemos lo del pago adicional para después, necesitamos modificar bastante el front y el back para eso.
+		 */
 
         // Precios y cantidades
         e.setPrecioInscripcion(dto.getPrecioInscripcion());
@@ -604,51 +575,18 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
         e.setCantidadMaximaInvitados(dto.getCantidadMaximaInvitados());
         e.setCantidadMaximaParticipantes(dto.getCantidadMaximaParticipantes());
 
-        // Espacio
-        if (dto.getIdEspacio() != null && dto.getIdEspacio() > 0) {
-                e.setEspacio(espacioRepo.findById(dto.getIdEspacio())
-                        .orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado")));
-        } else {
-                e.setEspacio(null);
-        }
-
         // Disciplinas
         if (dto.getDisciplinas() != null) {
-                if (e.getDisciplinasEvento() == null) e.setDisciplinasEvento(new ArrayList<>());
-                e.getDisciplinasEvento().clear();
-                for (DTOModificarEvento.ItemIdNombre it : dto.getDisciplinas()) {
-                Disciplina d = disciplinaBaseRepo.findById(it.getId())
-                        .orElseThrow(() -> new HttpErrorException(400, "Disciplina no encontrada"));
-                e.getDisciplinasEvento().add(DisciplinaEvento.builder()
-                        .evento(e).disciplina(d).build());
-                }
+			if (e.getDisciplinasEvento() == null) e.setDisciplinasEvento(new ArrayList<>());
+			e.getDisciplinasEvento().clear();
+			for (DTOModificarEvento.ItemIdNombre it : dto.getDisciplinas()) {
+			Disciplina d = disciplinaBaseRepo.findById(it.getId())
+					.orElseThrow(() -> new HttpErrorException(400, "Disciplina no encontrada"));
+			e.getDisciplinasEvento().add(DisciplinaEvento.builder()
+					.evento(e).disciplina(d).build());
+			}
         }
 
-        // Tipos de inscripción
-        if (dto.getTiposInscripcion() != null) {
-                dto.getTiposInscripcion().stream()
-                        .filter(DTOModificarEvento.TipoInscripcion::isSeleccionado)
-                        .findFirst()
-                        .ifPresent(sel -> e.setTipoInscripcionEvento(
-                                tipoInscripcionRepo.findById(sel.getId())
-                                        .orElseThrow(() -> new HttpErrorException(400, "Tipo inscripción inválido"))
-                        ));
-        }
-
-        // Modos
-        if (dto.getModos() != null && !dto.getModos().isEmpty()) {
-                ModoEvento principal = modoRepo.findById(dto.getModos().get(0).getId())
-                        .orElseThrow(() -> new HttpErrorException(400, "Modo de evento inválido"));
-                e.setModoEvento(principal);
-
-                if (e.getEventosModoEvento() == null) e.setEventosModoEvento(new ArrayList<>());
-                e.getEventosModoEvento().clear();
-                for (int i = 1; i < dto.getModos().size(); i++) {
-                ModoEvento me = modoRepo.findById(dto.getModos().get(i).getId())
-                        .orElseThrow(() -> new HttpErrorException(400, "Modo de evento inválido"));
-                e.getEventosModoEvento().add(EventoModoEvento.builder().evento(e).modoEvento(me).build());
-                }
-        }
 
         // Superevento
         if (dto.getSuperevento() != null && dto.getSuperevento().getId() != null && dto.getSuperevento().getId() > 0) {
@@ -659,18 +597,21 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
         }
 
         eventoRepo.save(e);
-        }
+    }
 
 
+	/*
+	 * TO-DO: No hay endpoint de esta función, no está en el controller
+	 */
     @Override
     @Transactional
-    public DTOInscripcionesEvento obtenerInscripciones(long idEvento, String texto) {
+    public DTOInscripcionesEvento obtenerInscripciones(long idEvento, String texto) throws Exception {
         Evento e = eventoRepo.findById(idEvento)
             .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
         String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
 
-         boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(idEvento, currentUser);
+        boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(idEvento, currentUser);
         boolean esOrganizador = e.getOrganizador() != null &&
             e.getOrganizador().getUsername().equals(currentUser);
 
@@ -721,7 +662,7 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
 
         @Override
         @Transactional
-        public DTODatosParaInscripcion obtenerDatosParaInscripcion(long idEvento, String username) {
+        public DTODatosParaInscripcion obtenerDatosParaInscripcion(long idEvento, String username) throws Exception {
                 Evento e = eventoRepo.findById(idEvento)
                         .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
@@ -795,7 +736,7 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
 
         @Override
         @Transactional
-        public DTOAdministradores obtenerAdministradores(long idEvento, String currentUser) {
+        public DTOAdministradores obtenerAdministradores(long idEvento, String currentUser) throws Exception {
         Evento e = eventoRepo.findById(idEvento)
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
@@ -874,7 +815,7 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
 
         @Override
         @Transactional
-        public void entregarOrganizador(long idEvento, String nuevoOrganizador) {
+        public void entregarOrganizador(long idEvento, String nuevoOrganizador) throws Exception {
         Evento e = eventoRepo.findById(idEvento)
                 .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
@@ -901,7 +842,8 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
            }
 
         // Cambiar organizador
-        e.setOrganizador(nuevo);
+		// TO-DO
+        //e.setOrganizador(nuevo);
         eventoRepo.save(e);
         }
 
@@ -940,39 +882,51 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
 
         @Override
         @Transactional
-        public Page<DTODenunciaEventoSimple> buscarDenuncias(DTOBusquedaDenunciasEventos filtro, int page) {
-        Pageable pageable = PageRequest.of(page, 20, switch (filtro.getOrden()) {
+        public Page<DTODenunciaEventoSimple> buscarDenuncias(DTOBusquedaDenunciasEventos filtro, int page) throws Exception {
+        	// TO-DO: Traer el pageSize de un parámetro del sistema
+			
+			Pageable pageable = PageRequest.of(page, 20, switch (filtro.getOrden()) {
                 case FECHA_DENUNCIA_ASC -> Sort.by("fechaHoraAlta").ascending();
                 case FECHA_DENUNCIA_DESC -> Sort.by("fechaHoraAlta").descending();
                 case FECHA_CAMBIO_ESTADO_ASC -> Sort.by("estados.fechaHoraDesde").ascending();
                 case FECHA_CAMBIO_ESTADO_DESC -> Sort.by("estados.fechaHoraDesde").descending();
-        });
+        	});
 
-        return denunciaEventoRepo.findAll(DenunciaEventoSpecs.byFiltro(filtro), pageable)
-                .map(d -> DTODenunciaEventoSimple.builder()
-                        .idDenuncia(d.getId())
-                        .titulo(d.getTitulo())
-                        .usernameDenunciante(d.getDenunciante().getUsername())
-                        .nombreEvento(d.getEvento().getNombre())
-                        .usernameOrganizador(d.getEvento().getOrganizador().getUsername())
-                        .estado(d.getEstados().isEmpty()
-                                ? "SIN_ESTADO"
-                                : d.getEstados().get(d.getEstados().size() - 1).getEstadoDenunciaEvento().getNombre())
-                        .fechaHoraUltimoCambio(d.getEstados().isEmpty()
-                                ? null
-                                : d.getEstados().get(d.getEstados().size() - 1).getFechaHoraDesde())
-                        // ✅ Usamos la fecha del primer estado como "ingreso" de la denuncia
-                        .fechaHoraIngreso(d.getEstados().isEmpty()
-                                ? null
-                                : d.getEstados().get(0).getFechaHoraDesde())
-                        .build());
+        	return denunciaEventoRepo.findAll(DenunciaEventoSpecs.byFiltro(filtro), pageable)
+                .map(d -> {
+					String organizador = "";
+
+					try {
+						organizador = d.getEvento().getOrganizador().getUsername();
+					} catch (Exception e) {
+						organizador = "?";
+					}
+
+					return DTODenunciaEventoSimple.builder()
+					.idDenuncia(d.getId())
+					.titulo(d.getTitulo())
+					.usernameDenunciante(d.getDenunciante().getUsername())
+					.nombreEvento(d.getEvento().getNombre())
+					.usernameOrganizador(organizador)
+					.estado(d.getEstados().isEmpty()
+							? "SIN_ESTADO"
+							: d.getEstados().get(d.getEstados().size() - 1).getEstadoDenunciaEvento().getNombre())
+					.fechaHoraUltimoCambio(d.getEstados().isEmpty()
+							? null
+							: d.getEstados().get(d.getEstados().size() - 1).getFechaHoraDesde())
+					// ✅ Usamos la fecha del primer estado como "ingreso" de la denuncia
+					.fechaHoraIngreso(d.getEstados().isEmpty()
+							? null
+							: d.getEstados().get(0).getFechaHoraDesde())
+					.build();
+				});
         }
 
 
 
         @Override
         @Transactional
-        public DTODenunciaEventoCompleta obtenerDenunciaCompleta(long idDenuncia) {
+        public DTODenunciaEventoCompleta obtenerDenunciaCompleta(long idDenuncia) throws Exception {
         DenunciaEvento d = denunciaEventoRepo.findById(idDenuncia)
                 .orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
 
@@ -1005,12 +959,10 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
                         .id(d.getEvento().getId())
                         .nombre(d.getEvento().getNombre())
                         .descripcion(d.getEvento().getDescripcion())
-                        .espacio(d.getEvento().getEspacio() != null
-                                ? DTODenunciaEventoCompleta.EspacioDTO.builder()
-                                        .nombre(d.getEvento().getEspacio().getNombre())
-                                        .direccion(d.getEvento().getDireccionUbicacion())
-                                        .build()
-                                : null)
+                        .espacio(DTODenunciaEventoCompleta.EspacioDTO.builder()
+							.nombre(d.getEvento().getSubEspacio().getEspacio().getNombre())
+							.direccion(d.getEvento().getSubEspacio().getEspacio().getDireccionUbicacion())
+							.build())
                         .fechaHoraInicio(d.getEvento().getFechaHoraInicio())
                         .fechaHoraFin(d.getEvento().getFechaHoraFin())
                         .participantes(d.getEvento().getInscripciones() != null ? d.getEvento().getInscripciones().size() : 0)
@@ -1109,5 +1061,5 @@ public DTOEvento obtenerEventoDetalle(long idEvento) {
         int horas = Math.floorDiv(rem, 60);
         int mins = rem - horas * 60;
         return new int[]{dias, horas, mins};
-    }*/
+    }
 }

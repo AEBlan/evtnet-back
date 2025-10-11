@@ -112,6 +112,39 @@ SELECT 'Externa', NOW()
 WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Externa');
 
 -- =========================
+-- TipoAdministradorEvento
+-- =========================
+INSERT INTO tipo_administrador_evento (nombre)
+SELECT "Organizador"
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_evento WHERE nombre='Organizador');
+
+INSERT INTO tipo_administrador_evento (nombre)
+SELECT "Administrador"
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_evento WHERE nombre='Administrador');
+
+-- =========================
+-- TipoAdministradorSuperEvento
+-- =========================
+INSERT INTO tipo_administrador_superevento (nombre)
+SELECT "Organizador"
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_superevento WHERE nombre='Organizador');
+
+INSERT INTO tipo_administrador_superevento (nombre)
+SELECT "Administrador"
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_superevento WHERE nombre='Administrador');
+
+-- =========================
+-- TipoAdministradorEspacio 
+-- =========================
+INSERT INTO tipo_administrador_espacio (nombre)
+SELECT "Propietario"
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_espacio WHERE nombre='Propietario');
+
+INSERT INTO tipo_administrador_espacio (nombre)
+SELECT "Administrador"
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_espacio WHERE nombre='Administrador');
+
+-- =========================
 -- Permiso (tu entidad no tiene fecha)
 -- =========================
 INSERT INTO permiso (nombre) SELECT 'HabilitarCuenta' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='HabilitarCuenta');
