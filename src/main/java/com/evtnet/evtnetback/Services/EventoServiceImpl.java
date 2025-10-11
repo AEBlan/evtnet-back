@@ -64,7 +64,11 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
             AdministradorEventoRepository administradorEventoRepo,
             UsuarioRepository usuarioRepo,
             ComprobantePagoRepository comprobanteRepo,
-            InvitadoRepository invitadoRepo
+            InvitadoRepository invitadoRepo,
+            DenunciaEventoRepository denunciaEventoRepo,
+            EstadoDenunciaEventoRepository estadoDenunciaRepo,
+            DenunciaEventoEstadoRepository denunciaEventoEstadoRepo,
+            SuperEventoRepository superEventoRepo
     ) {
         super(eventoRepo);
         this.eventoRepo = eventoRepo;
@@ -76,6 +80,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
         this.usuarioRepo = usuarioRepo;
         this.comprobanteRepo = comprobanteRepo;
         this.invitadoRepo = invitadoRepo;
+        this.denunciaEventoRepo = denunciaEventoRepo;
+        this.estadoDenunciaRepo = estadoDenunciaRepo;
+        this.denunciaEventoEstadoRepo = denunciaEventoEstadoRepo;
+        this.superEventoRepo = superEventoRepo;
     }
     /* 
     @Override
