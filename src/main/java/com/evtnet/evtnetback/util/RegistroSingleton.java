@@ -58,9 +58,7 @@ public class RegistroSingleton {
             throw new Exception("No se encontró el registro");
         }
 
-        if (descripcion.contains(",")) {
-            throw new Exception("La descripción en un registro no puede contener comas");
-        }
+        descripcion = descripcion.replace(",", ";");
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
