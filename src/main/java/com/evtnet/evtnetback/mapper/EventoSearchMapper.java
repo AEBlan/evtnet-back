@@ -4,14 +4,15 @@ import com.evtnet.evtnetback.Entities.Evento;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.utils.TimeUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public final class EventoSearchMapper { 
-    private EventoSearchMapper(){}
+public final class EventoSearchMapper {
 
+    private EventoSearchMapper() {}
+
+    // 🔹 Mapea resultados para la búsqueda general de eventos
     public static DTOResultadoBusquedaEventos toResultadoBusqueda(Evento e) {
         boolean esSuperevento = e.getSuperEvento() != null
                 && e.getFechaHoraInicio() == null && e.getFechaHoraFin() == null;
@@ -29,26 +30,75 @@ public final class EventoSearchMapper {
                 e.getNombre(),
                 TimeUtil.toMillis(e.getFechaHoraInicio()),
                 e.getPrecioInscripcion() == null ? null : e.getPrecioInscripcion().doubleValue(),
-                e.getSubEspacio().getEspacio().getNombre(),
+                e.getSubEspacio() != null && e.getSubEspacio().getEspacio() != null
+                        ? e.getSubEspacio().getEspacio().getNombre()
+                        : null,
                 disciplinas,
                 null
         );
     }
 
-    public static DTOResultadoBusquedaMisEventos toResultadoBusquedaMis(Evento e) {
+    // 🔹 Mapea resultados para "Mis Eventos" (incluye todos los roles)
+    public static DTOResultadoBusquedaMisEventos toResultadoBusquedaMis(Evento e, String username) {
+        String rol = "participante"; // valor por defecto
+
+        // 1️⃣ Verificar si es ORGANIZADOR o ADMINISTRADOR
+        if (e.getAdministradoresEvento() != null) {
+            var admin = e.getAdministradoresEvento().stream()
+                    .filter(a -> a.getUsuario() != null && a.getUsuario().getUsername().equals(username))
+                    .filter(a -> a.getFechaHoraBaja() == null)
+                    .findFirst()
+                    .orElse(null);
+
+            if (admin != null && admin.getTipoAdministradorEvento() != null) {
+                String tipo = admin.getTipoAdministradorEvento().getNombre();
+                if ("Organizador".equalsIgnoreCase(tipo)) {
+                    rol = "organizador";
+                } else if ("Administrador".equalsIgnoreCase(tipo)) {
+                    rol = "administrador";
+                }
+            }
+        }
+
+        // 2️⃣ Si no es admin ni organizador, revisar si es PARTICIPANTE
+        if ("participante".equals(rol) && e.getInscripciones() != null) {
+            boolean inscripto = e.getInscripciones().stream()
+                    .anyMatch(i -> i.getUsuario() != null
+                            && i.getUsuario().getUsername().equals(username)
+                            && i.getFechaHoraBaja() == null);
+            if (inscripto) rol = "participante";
+        }
+
+        // 3️⃣ Si no tiene rol anterior, revisar si es ENCARGADO
+        if ("participante".equals(rol) && e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
+                var encargado = e.getSubEspacio().getEncargadoSubEspacio();
+                if (encargado.getUsuario() != null
+                        && encargado.getUsuario().getUsername().equals(username)
+                        && encargado.getFechaHoraBaja() == null) {
+                rol = "encargado";
+                }
+        }
+    
+
         return new DTOResultadoBusquedaMisEventos(
                 e.getId(),
                 e.getNombre(),
                 TimeUtil.toMillis(e.getFechaHoraInicio()),
                 TimeUtil.toMillis(e.getFechaHoraFin()),
-                e.getSubEspacio().getEspacio().getNombre(),
-                "participante",
+                e.getSubEspacio() != null && e.getSubEspacio().getEspacio() != null
+                        ? e.getSubEspacio().getEspacio().getNombre()
+                        : null,
+                rol,
                 e.getInscripciones() == null ? null : e.getInscripciones().size()
         );
     }
 
+    // 🔹 Conversión detallada de un Evento (por id)
     public static DTOEvento toDTOEvento(Evento e, boolean inscripto, boolean administrador) {
-        DTOEvento.Espacio espacio = new DTOEvento.Espacio(e.getSubEspacio().getEspacio().getId(), e.getSubEspacio().getEspacio().getNombre());
+        DTOEvento.Espacio espacio = new DTOEvento.Espacio(
+                e.getSubEspacio().getEspacio().getId(),
+                e.getSubEspacio().getEspacio().getNombre()
+        );
 
         // Disciplinas desde DisciplinaEvento -> Disciplina.nombre
         List<String> disciplinas = (e.getDisciplinasEvento() == null)
