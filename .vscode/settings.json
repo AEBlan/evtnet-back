@@ -2,5 +2,6 @@
     "java.configuration.updateBuildConfiguration": "disabled",
     "java.compile.nullAnalysis.mode": "automatic",
     "cSpell.words": [
-    ]
+    ],
+    "java.autobuild.enabled": false
 }
