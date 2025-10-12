@@ -58,6 +58,10 @@ public class RegistroSingleton {
             throw new Exception("No se encontró el registro");
         }
 
+        if (descripcion.contains(",")) {
+            throw new Exception("La descripción en un registro no puede contener comas");
+        }
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
         String filename = baseDir.resolve(registro).resolve(LocalDate.now().getYear() + "-" + String.format("%02d", LocalDate.now().getMonthValue()) + "-" + String.format("%02d", LocalDate.now().getDayOfMonth()) + ".csv").toAbsolutePath().toString();
