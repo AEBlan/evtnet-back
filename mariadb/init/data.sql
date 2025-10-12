@@ -3,20 +3,20 @@ USE `evtnet_db`;
 -- =========================
 -- ParametroSistema (sin fecha en tu entidad: lo dejo igual)
 -- =========================
-INSERT INTO parametro_sistema (nombre, valor)
-  SELECT 'longitudPagina', '20' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE nombre='longitudPagina');
-INSERT INTO parametro_sistema (nombre, valor)
-  SELECT 'eventsMascota', 'load,click,focus,focuslost,enter' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE nombre='eventsMascota');
-INSERT INTO parametro_sistema (nombre, valor)
-  SELECT 'c_u', '0.4' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE nombre='c_u');
-INSERT INTO parametro_sistema (nombre, valor)
-  SELECT 'c_d', '0.35' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE nombre='c_d');
-INSERT INTO parametro_sistema (nombre, valor)
-  SELECT 'c_p', '0.25' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE nombre='c_p');
-INSERT INTO parametro_sistema (nombre, valor)
-  SELECT 'c_e', '0.3' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE nombre='c_e');
-INSERT INTO parametro_sistema (nombre, valor)
-  SELECT 'dias_previos_resenas_orden', '365' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE nombre='dias_previos_resenas_orden');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'longitudPagina', 'longitudPagina', '20' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='longitudPagina');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'eventsMascota', 'eventsMascota', 'load,click,focus,blur' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='eventsMascota');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'c_u', 'c_u', '0.4' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_u');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'c_d', 'c_d', '0.35' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_d');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'c_p', 'c_p', '0.25' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_p');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'c_e','c_e', '0.3' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_e');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'dias_previos_resenas_orden', 'dias_previos_resenas_orden', '365' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='dias_previos_resenas_orden');
 
 
 -- =========================
@@ -278,3 +278,152 @@ WHERE p.nombre IN (
 
 -- Saneamos por si había filas antiguas sin fecha
 UPDATE rol_permiso SET fecha_hora_alta = NOW() WHERE fecha_hora_alta IS NULL;
+
+
+
+-- ===================================================================
+-- Registros, tipos y subtipos
+-- ===================================================================
+
+INSERT INTO registro (nombre, nombre_formateado)
+  SELECT "UsuariosGrupos", "Usuarios y Grupos";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "usuario";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "grupo";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "inicio_sesion";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "calificacion";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "usuario_grupo";
+  
+
+
+
+INSERT INTO registro (nombre, nombre_formateado)
+  SELECT "Eventos", "Eventos";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "evento";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "superevento";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "inscripcion";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "denuncia";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "administrador_evento";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "administrador_superevento";
+
+
+
+INSERT INTO registro (nombre, nombre_formateado)
+  SELECT "Espacios", "Espacios";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "espacio_privado";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "espacio_publico";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "subespacio";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "solicitud_espacio_publico";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "cronograma";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "reseña";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "administrador_espacio_privado";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "encargado_subespacio";
+  
+
+
+
+INSERT INTO registro (nombre, nombre_formateado)
+  SELECT "Pagos", "Pagos";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "pago";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "devolucion";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "cobro_comision";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "pago_comision";
+  
+
+
+
+INSERT INTO registro (nombre, nombre_formateado)
+  SELECT "Parametros", "Parámetros";
+
+INSERT INTO entidad_registro (nombre)
+  SELECT "tipo_calificacion";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "motivo_calificacion";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "disciplina";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "rol";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "icono_caracteristica";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "comision_inscripcion";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "comision_organizacion";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "parametro_sistema";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "imagen_mascota";
+  
+INSERT INTO entidad_registro (nombre)
+  SELECT "instancia_mascota";
+
+
+
+
+INSERT INTO accion_registro (nombre)
+  SELECT "creacion";
+
+INSERT INTO accion_registro (nombre)
+  SELECT "eliminacion";
+
+INSERT INTO accion_registro (nombre)
+  SELECT "modificacion";
+
+INSERT INTO accion_registro (nombre)
+  SELECT "restauracion";
+
+INSERT INTO accion_registro (nombre)
+  SELECT "ejecucion";

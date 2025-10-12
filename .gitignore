@@ -51,3 +51,4 @@ replay_pid*
 .Trashes
 ehthumbs.db
 Thumbs.db
+.vscode/settings.json
