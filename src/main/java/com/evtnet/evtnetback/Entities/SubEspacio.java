@@ -44,6 +44,6 @@ public class SubEspacio extends Base {
     private List<Evento> eventos;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "encargado_subespacio_id", nullable = false)
+    @JoinColumn(name = "encargado_subespacio_id")
     private EncargadoSubEspacio encargadoSubEspacio;
 }

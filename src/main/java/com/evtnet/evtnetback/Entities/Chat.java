@@ -58,7 +58,7 @@ public class Chat extends Base {
   private SuperEvento superEvento;
 
   // ---- N chats pueden pertenecer a un mismo espacio
-  @ManyToOne(fetch = FetchType.LAZY)
+  @OneToOne(cascade = CascadeType.ALL)
   @JoinColumn(name = "espacio_id")
   private Espacio espacio;
 
