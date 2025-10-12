@@ -8,7 +8,6 @@ public record DTOEvento(
     long fechaDesde,
     long fechaHasta,
     double precio,
-    List<String> modos,
     List<String> disciplinas,
     Espacio espacio,
     String direccion,

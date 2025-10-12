@@ -3,20 +3,15 @@ package com.evtnet.evtnetback.Entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.List;
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "tipo_registro")
+@Table(name = "entidad_registro")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TipoRegistro extends Base {
+public class EntidadRegistro extends Base {
 
     @Column(name = "nombre")
     private String nombre;
-
-    @ManyToMany(mappedBy = "tipos")
-    private List<Registro> registros;
 }

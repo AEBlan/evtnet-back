@@ -9,8 +9,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor 
 @Builder
 public class DTOPago {
-    private String metodo;       // ej: "MP", "EFECTIVO"
-    private BigDecimal monto;    // total abonado
-    private String referencia;   // id operación / nota
+    private BigDecimal paymentId;
+    private String status;
+    private String external_reference;
+    private String preference_id;
 }
 

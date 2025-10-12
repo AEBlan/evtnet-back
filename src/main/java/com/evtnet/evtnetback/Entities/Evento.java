@@ -79,5 +79,15 @@ public class Evento extends Base {
 
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
     private List<EventoEstado> eventosEstado;
+
+
+    public Usuario getOrganizador() throws Exception {
+        for (AdministradorEvento a : administradoresEvento) {
+            if (a.getTipoAdministradorEvento().getNombre() == "Organizador") {
+                return a.getUsuario();
+            };
+        }
+        throw new Exception("El evento no tiene un organizador");
+    }
     
 }

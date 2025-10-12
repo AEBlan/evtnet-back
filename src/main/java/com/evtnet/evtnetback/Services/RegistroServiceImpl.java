@@ -1,6 +1,5 @@
 package com.evtnet.evtnetback.Services;
 
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -105,13 +104,13 @@ public class RegistroServiceImpl extends BaseServiceImpl <Registro, Long> implem
     }
 
     @Override
-    public List<String> obtenerTipos(String registro) throws Exception {
-        return repository.obtenerTipos(registro);
+    public List<String> obtenerEntidades(String registro) throws Exception {
+        return repository.obtenerEntidades();
     }
 
     @Override
-    public List<String> obtenerSubtipos(String registro) throws Exception {
-        return repository.obtenerSubtipos(registro);
+    public List<String> obtenerAcciones(String registro) throws Exception {
+        return repository.obtenerAcciones();
     }
 
     @Override
