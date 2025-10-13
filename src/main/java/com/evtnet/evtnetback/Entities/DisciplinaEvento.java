@@ -3,6 +3,9 @@ package com.evtnet.evtnetback.Entities;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
+
 import com.evtnet.evtnetback.Entities.*;
 
 @Data
@@ -24,5 +27,8 @@ public class DisciplinaEvento extends Base {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "disciplina_id", nullable = false)
     private Disciplina disciplina;
+
+    private LocalDateTime fechaHoraAlta;
+    private LocalDateTime fechaHoraBaja;
 
 }

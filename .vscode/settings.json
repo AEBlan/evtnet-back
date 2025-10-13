@@ -3,5 +3,6 @@
     "java.compile.nullAnalysis.mode": "automatic",
     "cSpell.words": [
     ],
-    "java.autobuild.enabled": false
+    "java.autobuild.enabled": false,
+    "java.import.maven.enabled": true
 }
