@@ -2,6 +2,9 @@ package com.evtnet.evtnetback.Services;
 
 import com.evtnet.evtnetback.Entities.ParametroSistema;
 import com.evtnet.evtnetback.dto.parametroSistema.DTOParametroSistema;
+
+import java.math.BigDecimal;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -11,4 +14,7 @@ public interface ParametroSistemaService extends BaseService <ParametroSistema, 
     void altaParametroSistema(DTOParametroSistema parametroSistema) throws Exception;
     void modificarParametroSistema(DTOParametroSistema parametroSistema) throws Exception;
     void bajaParametroSistema(Long id) throws Exception;
+    BigDecimal getDecimal(String key, BigDecimal def);
+    Integer getInt(String key, Integer def);
+
 }

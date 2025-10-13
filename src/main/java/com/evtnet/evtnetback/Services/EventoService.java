@@ -13,7 +13,7 @@ import org.springframework.data.domain.PageRequest;
 public interface EventoService extends BaseService<Evento, Long> {  
     List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro);
     List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro, String username);
-    DTOEvento obtenerEventoDetalle(long idEvento);
+    DTOEventoDetalle obtenerEventoDetalle(long idEvento);
     DTODatosCreacionEvento obtenerDatosCreacionEvento(Long idEspacioOrNull);
     long crearEvento(DTOEventoCreate req) throws Exception;
     int obtenerCantidadEventosSuperpuestos(long idEspacio, long fechaDesdeMillis, long fechaHastaMillis);

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Repository
 public interface ParametroSistemaRepository extends BaseRepository <ParametroSistema, Long> {
@@ -22,4 +23,5 @@ public interface ParametroSistemaRepository extends BaseRepository <ParametroSis
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
 
     ParametroSistema findByNombre(String nombre);
+    Optional<ParametroSistema> findByIdentificador(String identificador);
 }

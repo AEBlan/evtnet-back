@@ -33,5 +33,6 @@ public interface DisciplinaSubEspacioRepository extends BaseRepository <Discipli
         WHERE ds.subEspacio.id = :idSubEspacio
     """)
     List<DisciplinaSubEspacio>findAllBySubespacio(@Param("idSubEspacio") Long idSubEspacio);
+    boolean existsBySubEspacioIdAndDisciplinaId(Long subEspacioId, Long disciplinaId);
 
 }

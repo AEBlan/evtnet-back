@@ -49,7 +49,11 @@ public class Chat extends Base {
   private Usuario usuario2;
 
   // ---- Chat de sala (un único ámbito) ----
-  @ManyToOne(fetch = FetchType.LAZY)
+  //@ManyToOne(fetch = FetchType.LAZY)
+  //@JoinColumn(name = "evento_id", unique = true)
+  //private Evento evento;
+
+  @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "evento_id", unique = true)
   private Evento evento;
 
