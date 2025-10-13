@@ -76,5 +76,4 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     Optional<Evento> findByIdForDetalleSoloActivas(@Param("id") long id);
 
 
-
 }

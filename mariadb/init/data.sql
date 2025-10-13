@@ -14,9 +14,15 @@ INSERT INTO parametro_sistema (identificador, nombre, valor)
 INSERT INTO parametro_sistema (identificador, nombre, valor)
   SELECT 'c_p', 'c_p', '0.25' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_p');
 INSERT INTO parametro_sistema (identificador, nombre, valor)
-  SELECT 'c_e','c_e', '0.3' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_e');
-INSERT INTO parametro_sistema (identificador, nombre, valor)
   SELECT 'dias_previos_resenas_orden', 'dias_previos_resenas_orden', '365' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='dias_previos_resenas_orden');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'comision_inscripcion', 'Comisión por inscripción a eventos', '0.1' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='comision_inscripcion');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'comision_organizacion', 'Comisión por organización de eventos', '0.15' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='comision_organizacion');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'ventana_de_eventos', 'Eventos pasados a considerar en una búsqueda', '20' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='ventana_de_eventos');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'cant_max_invitados_default', 'Cantidad máxima por defecto de invitados', '5' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='cant_max_invitados_default');
 
 
 -- =========================

@@ -13,18 +13,19 @@ public record DTOEventoDetalle(
     List<String> disciplinas,
     Espacio espacio,
     Subespacio subespacio,
-    boolean cancelado,
+    String estado,
     String motivoCancelacion,
     boolean cupoLleno,
-    String rolUsuario,
-    boolean puedeDenunciar,
-    boolean puedeCancelarInscripcion,
-    boolean puedeAdministrar,
-    boolean puedeChatear,
-    boolean puedeCompartir,
-    List<Inscripto> inscriptos
+    SuperEvento superevento,
+    boolean inscripto,
+    List<Inscripto> inscriptos,
+    
+    boolean administrador,
+    boolean organizador,
+    Long idChat
 ) {
     public record Espacio(long id, String nombre, String direccion, Double latitud, Double longitud) {}
     public record Subespacio(long id, String nombre, String descripcion) {}
-    public record Inscripto(String username, String nombre, String apellido, String fotoPerfil) {}
+    public record SuperEvento(long id, String nombre) {}
+    public record Inscripto(String username, String nombre, String apellido) {}
 }
