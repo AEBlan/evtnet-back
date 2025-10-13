@@ -1,5 +1,6 @@
 package com.evtnet.evtnetback.dto.espacios;
 
+import com.evtnet.evtnetback.Entities.EstadoEspacio;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,5 +28,7 @@ public class DTOEspacioEditar {
     private List<DTOArchivo> documentacion;
     private DTOEspacioEstado estado;
     private String username;
+    private List<DTOEstadoEspacio>estadosEspacio;
+    private boolean requiereAprobacion;
 }
 

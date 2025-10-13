@@ -23,4 +23,5 @@ public class DTOEspacio {
     private int cantidadImagenes;
     private boolean esAdmin;
     private Long idChat;
+    private DTOEspacioEstado estado;
 }

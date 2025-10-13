@@ -5,12 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DTOEspacioEstado {
+public class DTOResultadoBusquedaEventosPorEspacio {
     private Long id;
     private String nombre;
-    private String descripcion;
+    private Long fechaHoraInicio;
+    private double precio;
+    private List<String> disciplinas;
 }

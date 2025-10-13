@@ -25,13 +25,13 @@ public interface DisciplinaSubEspacioRepository extends BaseRepository <Discipli
         JOIN ds.subEspacio se
         WHERE se.id = :idSubEspacio
     """)
-    List<String>disciplinasNombre(@Param("idSubespacio") Long idSubespacio);
+    List<String>disciplinasNombre(@Param("idSubEspacio") Long idSubEspacio);
     @Query("""
-        SELECT d
+        SELECT ds
         FROM DisciplinaSubEspacio ds
         JOIN ds.disciplina d
         WHERE ds.subEspacio.id = :idSubEspacio
     """)
-    List<DTODisciplinas>findAllBySubespacio(@Param("idSubEspacio") Long idSubEspacio);
+    List<DisciplinaSubEspacio>findAllBySubespacio(@Param("idSubEspacio") Long idSubEspacio);
 
 }

@@ -13,6 +13,7 @@ public interface AdministradorEspacioRepository extends BaseRepository<Administr
         JOIN ae.usuario u
         WHERE ae.espacio.id = :id
           AND u.username = :username
+          AND ae.fechaHoraBaja is null
     """)
     AdministradorEspacio findByEspacioAndUser(@Param("id") Long id, @Param("username") String username);
 }

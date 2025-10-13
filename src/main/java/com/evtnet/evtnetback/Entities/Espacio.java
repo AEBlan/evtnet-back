@@ -37,6 +37,9 @@ public class Espacio extends Base {
     @Column(name = "bases_y_condiciones")
     private String basesYCondiciones;
 
+    @Column(name = "requiere_aprobar_eventos")
+    private Boolean requiereAprobarEventos;
+
     @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AdministradorEspacio> administradoresEspacio;
 

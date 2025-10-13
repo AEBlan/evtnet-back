@@ -1,4 +1,4 @@
-package com.evtnet.evtnetback.dto.espacios;
+package com.evtnet.evtnetback.dto.cronogramas;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DTOEspacioEstado {
-    private Long id;
-    private String nombre;
-    private String descripcion;
+public class DTOPeriodoDisponible {
+    private Long fechaHoraDesde;
+    private Long fechaHoraHasta;
 }

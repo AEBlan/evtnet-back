@@ -9,8 +9,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DTOEspacioEstado {
+public class DTOCaracteristicaSubEspacio {
     private Long id;
+    private Long idIconoCaracteristica;
+    private Long idEspacio;
     private String nombre;
-    private String descripcion;
+    private String urlIcono;
+    private String contentType;
 }

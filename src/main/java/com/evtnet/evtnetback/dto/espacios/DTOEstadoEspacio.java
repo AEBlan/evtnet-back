@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DTOEspacioEstado {
+public class DTOEstadoEspacio {
     private Long id;
     private String nombre;
     private String descripcion;

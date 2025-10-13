@@ -1,4 +1,4 @@
-package com.evtnet.evtnetback.dto.espacios;
+package com.evtnet.evtnetback.dto.imagenes;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DTOEspacioEstado {
+public class DTOObtenerImagenEspacio {
     private Long id;
-    private String nombre;
-    private String descripcion;
+    private String contentType;
+    private String content;
 }

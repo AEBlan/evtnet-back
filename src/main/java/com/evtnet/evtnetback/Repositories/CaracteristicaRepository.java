@@ -19,4 +19,13 @@ public interface CaracteristicaRepository extends BaseRepository <Caracteristica
 """)
     List<DTOCaracteristica> caracteristicas(@Param("idSubEspacio") Long idSubespacio);
 
+
+    @Query("""
+    SELECT c
+    FROM Caracteristica c
+    JOIN c.iconoCaracteristica ic
+    WHERE c.subEspacio.id = :idSubEspacio
+    """)
+    List<Caracteristica> findBySubEspacio(@Param("idSubEspacio")Long idSubEspacio);
+
 }

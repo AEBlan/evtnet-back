@@ -12,7 +12,7 @@ public interface EspacioEstadoRepository extends BaseRepository<EspacioEstado, L
         FROM EspacioEstado espacioEstado
         JOIN espacioEstado.estadoEspacio estadoEspacio
         WHERE espacioEstado.espacio.id = :idEspacio
-            AND espacioEstado.fechaHoraBaja is not null
+            AND espacioEstado.fechaHoraBaja is null
     """)
     EspacioEstado findActualByEspacio(@Param("idEspacio") Long idEspacio);
 

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import com.evtnet.evtnetback.Entities.AdministradorEspacio;
+import com.evtnet.evtnetback.dto.espacios.DTOResultadoBusquedaEventosPorEspacio;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -33,6 +34,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
         WHERE e.id = :id
           AND u.username = :username
           AND tae.nombre = :tipoAdmin
+          AND ae.fechaHoraBaja IS NULL
     """)
     boolean existsByIdAndPropietarioAdmin_Username(@Param("id") Long id, @Param("username") String username, @Param("tipoAdmin") String tipoAdmin);
     
@@ -61,6 +63,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
 
     @Query("""
     SELECT DISTINCT e FROM Espacio e
+    JOIN e.espacioEstado ee
     JOIN e.tipoEspacio te
     LEFT JOIN e.subEspacios sub
     LEFT JOIN sub.caracteristicas c
@@ -78,8 +81,82 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
         OR LOWER(c.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
         OR LOWER(d.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
       )
+      AND (:idDisciplina is not null AND d.id in (:idDisciplina))
+      AND ee.estadoEspacio.nombre like "Habilitado"
 """)
-    List<Espacio> findEspacios(@Param("text") String texto, @Param("tiposEspacio")List<Long>tiposEspacio, @Param("latitudDesde")BigDecimal latitudDesde, @Param("latitudHasta") BigDecimal latitudHasta, @Param("longitudDesde")BigDecimal longitudDesde, @Param("longitudHasta") BigDecimal longitudHasta);
+    List<Espacio> findEspacios(@Param("texto") String texto, @Param("tiposEspacio")List<Long>tiposEspacio, @Param("latitudDesde")BigDecimal latitudDesde, @Param("latitudHasta") BigDecimal latitudHasta, @Param("longitudDesde")BigDecimal longitudDesde, @Param("longitudHasta") BigDecimal longitudHasta, @Param("idDisciplina") List<Long> idDisciplina);
+
+    @Query("""
+    SELECT DISTINCT e FROM Espacio e
+    JOIN e.espacioEstado ee
+    JOIN e.tipoEspacio te
+    LEFT JOIN e.subEspacios sub
+    LEFT JOIN sub.caracteristicas c
+    LEFT JOIN sub.disciplinasSubespacio ds
+    LEFT JOIN ds.disciplina d
+    WHERE e.latitudUbicacion BETWEEN :latitudDesde AND :latitudHasta
+      AND e.longitudUbicacion BETWEEN :longitudDesde AND :longitudHasta
+      AND ee.estadoEspacio.nombre like "Habilitado"
+""")
+    List<Espacio> findEspaciosByUbicacion(@Param("latitudDesde")BigDecimal latitudDesde, @Param("latitudHasta") BigDecimal latitudHasta, @Param("longitudDesde")BigDecimal longitudDesde, @Param("longitudHasta") BigDecimal longitudHasta);
+
+    @Query("""
+    SELECT DISTINCT e FROM Espacio e
+    JOIN e.espacioEstado ee
+    LEFT JOIN e.subEspacios sub
+    LEFT JOIN sub.caracteristicas c
+    LEFT JOIN sub.disciplinasSubespacio ds
+    LEFT JOIN ds.disciplina d
+    WHERE (
+        LOWER(e.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
+        OR LOWER(e.descripcion) LIKE CONCAT('%', LOWER(:texto), '%')
+        OR LOWER(e.direccionUbicacion) LIKE CONCAT('%', LOWER(:texto), '%')
+        OR LOWER(sub.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
+        OR LOWER(sub.descripcion) LIKE CONCAT('%', LOWER(:texto), '%')        
+        OR LOWER(c.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
+        OR LOWER(d.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
+      )
+      AND ee.estadoEspacio.nombre like "Habilitado"
+""")
+    List<Espacio> findEspaciosByTexto(@Param("texto") String texto);
+
+    @Query("""
+    SELECT DISTINCT e FROM Espacio e
+    JOIN e.espacioEstado ee
+    JOIN e.tipoEspacio te
+    LEFT JOIN e.subEspacios sub
+    LEFT JOIN sub.caracteristicas c
+    LEFT JOIN sub.disciplinasSubespacio ds
+    LEFT JOIN ds.disciplina d
+    WHERE te.id IN (:tiposEspacio)
+      AND ee.estadoEspacio.nombre like "Habilitado"
+""")
+    List<Espacio> findEspaciosByTipo(@Param("tiposEspacio")List<Long>tiposEspacio);
+
+    @Query("""
+    SELECT DISTINCT e FROM Espacio e
+    JOIN e.espacioEstado ee
+    JOIN e.tipoEspacio te
+    LEFT JOIN e.subEspacios sub
+    LEFT JOIN sub.caracteristicas c
+    LEFT JOIN sub.disciplinasSubespacio ds
+    LEFT JOIN ds.disciplina d
+    WHERE d.id IN (:disciplinas)
+      AND ee.estadoEspacio.nombre like "Habilitado"
+""")
+    List<Espacio> findEspaciosByDisciplina(@Param("disciplinas")List<Long>disciplinas);
+
+    @Query("""
+    SELECT DISTINCT e FROM Espacio e
+    JOIN e.espacioEstado ee
+    JOIN e.tipoEspacio te
+    LEFT JOIN e.subEspacios sub
+    LEFT JOIN sub.caracteristicas c
+    LEFT JOIN sub.disciplinasSubespacio ds
+    LEFT JOIN ds.disciplina d
+    WHERE ee.estadoEspacio.nombre like "Habilitado"
+""")
+    List<Espacio> findAllHabilitados();
 
     @Query("""
     SELECT DISTINCT e FROM Espacio e
@@ -103,8 +180,9 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
         (:esAdmin = TRUE AND tae.nombre = 'Administrador' AND u.username=:username)
         OR (:esPropietario = TRUE AND tae.nombre = 'Propietario' AND u.username=:username)
       )
+      AND ae.fechaHoraBaja IS NULL
     """)
-    List<Espacio> findMisEspacios(@Param("text") String texto, @Param("esAdmin")boolean esAdmin, @Param("esPropietario")boolean esPropietario, @Param("username") String username);
+    List<Espacio> findMisEspacios(@Param("texto") String texto, @Param("esAdmin")boolean esAdmin, @Param("esPropietario")boolean esPropietario, @Param("username") String username);
 
     @Query("""
         SELECT tae.nombre
@@ -114,7 +192,11 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
         JOIN ae.tipoAdministradorEspacio tae
         WHERE e.id = :id
           AND u.username = :username
+          AND ae.fechaHoraBaja IS NULL
     """)
     String rolByEspacioUsername(@Param("id") Long id, @Param("username") String username);
+
+
+
 }
 

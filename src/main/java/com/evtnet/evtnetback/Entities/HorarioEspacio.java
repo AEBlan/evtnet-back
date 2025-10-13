@@ -27,7 +27,7 @@ public class HorarioEspacio extends Base {
     private BigDecimal precioOrganizacion;
 
     @Column(name ="adicional_por_inscripcion")
-    private int adiciconalPorInscripcion;
+    private BigDecimal adiciconalPorInscripcion;
 
     // relación con configuración 
     @ManyToOne
