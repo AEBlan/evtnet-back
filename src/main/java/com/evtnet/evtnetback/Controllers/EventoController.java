@@ -41,9 +41,10 @@ public class EventoController {
     }
 
     @GetMapping("/obtenerEvento")
-    public ResponseEntity<DTOEvento> obtenerEvento(@RequestParam long id) {
-        return ResponseEntity.ok(service.obtenerEventoDetalle(id));
+    public ResponseEntity<DTOEventoDetalle> obtenerEvento(@RequestParam long id) {
+    return ResponseEntity.ok(service.obtenerEventoDetalle(id));
     }
+
 
     @GetMapping("/obtenerDatosCreacionEvento")
     public ResponseEntity<DTODatosCreacionEvento> obtenerDatosCreacionEvento(@RequestParam String idEspacio) {

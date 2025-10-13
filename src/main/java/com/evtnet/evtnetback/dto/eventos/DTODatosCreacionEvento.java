@@ -1,15 +1,38 @@
 package com.evtnet.evtnetback.dto.eventos;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 public record DTODatosCreacionEvento(
     String nombreEspacio,
-    //List<TipoInscripcion> tiposInscripcion,
+    String nombreSubespacio,
     double comisionInscripcion,
     Boolean espacioPublico,
-    Boolean administrador,
-    int diasHaciaAdelante
+    Boolean requiereAprobarEventos,
+    Boolean esAdministradorEspacio,
+    Boolean puedeElegirHorarioLibre,
+    int diasHaciaAdelante,
+    int capacidadMaxima,
+    List<String> disciplinasSoportadas,
+    List<Cronograma> cronogramas
 ) {
-   // public record TipoInscripcion(long id, String nombre) {}
+    public record Cronograma(
+        Long id,
+        LocalDateTime fechaDesde,
+        LocalDateTime fechaHasta,
+        Integer diasAntelacion,
+        List<Horario> horarios
+    ) {}
+
+    public record Horario(
+        String diaSemana,
+        LocalTime horaDesde,
+        LocalTime horaHasta,
+        String precioOrganizacion,
+        Integer adicionalPorInscripcion
+    ) {}
 }
+
+
 
