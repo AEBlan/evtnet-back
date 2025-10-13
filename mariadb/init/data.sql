@@ -60,6 +60,35 @@ INSERT INTO estado_denuncia_evento (nombre, descripcion, fecha_hora_alta)
 SELECT 'Finalizado', NULL, NOW()
 WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Finalizado');
 
+-- ========================
+-- EstadoEspacio
+-- ========================
+INSERT INTO estado_espacio (id, nombre, descripcion)
+SELECT 1, 'En_revisión', "Se revisan los datos correspondientes al espacio"
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='En_revisión')
+
+INSERT INTO estado_espacio (id, nombre, descripcion)
+SELECT 2, 'Habilitado', "Se habilita el espacio para que se puedan organizar eventos en él"
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Habilitado')
+
+INSERT INTO estado_espacio (id, nombre, descripcion)
+SELECT 3, 'Oculto', "Se oculta el espacio para que no se puedan organizar eventos"
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Oculto')
+
+INSERT INTO estado_espacio (id, nombre, descripcion)
+SELECT 4, 'Observado', "Se observa para que el dueño revise los datos en caso de que alguno esté incorrecto o falte"
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Observado')
+
+INSERT INTO estado_espacio (id, nombre, descripcion)
+SELECT 5, 'Rechazado', "Se rechaza el espacio para que no se puedan organizar eventos"
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Rechazado')
+
+INSERT INTO estado_espacio (id, nombre, descripcion)
+SELECT 6, 'Clausurado', "Se clausura el espacio debido a irregularidades en el mismo"
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Clausurado')
+
+
+
 -- =========================
 -- CalificacionTipo (tiene fechas opcionales)
 -- =========================
@@ -105,6 +134,17 @@ WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE nombre='Privado');
 INSERT INTO tipo_espacio (nombre, descripcion, fecha_hora_alta)
 SELECT 'Público', NULL, NOW()
 WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE nombre='Público');
+
+-- =========================
+-- TipoAdministradorEspacio (fecha_hora_alta NOT NULL)
+-- =========================
+INSERT INTO tipo_administrador_espacio (nombre)
+SELECT 'Propietario'
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_espacio WHERE nombre='Propietario');
+
+INSERT INTO tipo_administrador_espacio (nombre)
+SELECT 'Administrador'
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_espacio WHERE nombre='Administrador');
 
 -- =========================
 -- TipoExcepcionHorarioEspacio (fecha_hora_alta NOT NULL)

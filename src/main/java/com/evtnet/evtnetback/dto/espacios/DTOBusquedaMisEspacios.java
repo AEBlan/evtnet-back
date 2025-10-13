@@ -1,8 +1,18 @@
 package com.evtnet.evtnetback.dto.espacios;
 
-public record DTOBusquedaMisEspacios(
-    String texto,
-    boolean propietario,
-    boolean administrador
-) {}
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class DTOBusquedaMisEspacios {
+    private String texto;
+    private boolean propietario;
+    private boolean administrador;
+    private String username;
+}
 

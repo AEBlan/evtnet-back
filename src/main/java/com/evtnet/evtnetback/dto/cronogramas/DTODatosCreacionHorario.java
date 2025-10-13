@@ -1,10 +1,19 @@
-// cronogramas/DTODatosCreacionHorario.java
 package com.evtnet.evtnetback.dto.cronogramas;
 
-public record DTODatosCreacionHorario(
-    String nombreEspacio,
-    long fechaDesde,
-    long fechaHasta,
-    double comision
-) {}
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class DTODatosCreacionHorario {
+    private String nombreSubEspacio;
+    private Long fechaDesde;
+    private Long fechaHasta;
+    private double comisionOrganizacion;
+    private double comisionInscripcion;
+}
 

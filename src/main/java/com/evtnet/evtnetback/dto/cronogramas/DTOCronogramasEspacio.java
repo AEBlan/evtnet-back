@@ -1,15 +1,29 @@
 package com.evtnet.evtnetback.dto.cronogramas;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
-public record DTOCronogramasEspacio(
-    String nombre,
-    List<Cronograma> cronogramas
-) {
-    public record Cronograma(
-        long id,
-        long fechaDesde,
-        long fechaHasta,
-        int diasHaciaAdelante
-    ) {}
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class DTOCronogramasEspacio{
+    private String nombre;
+    private List<DTOCronograma> cronogramas;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DTOCronograma {
+        private Long id;
+        private Long fechaDesde;
+        private Long fechaHasta;
+        private int diasHaciaAdelante;
+    }
 }

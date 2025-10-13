@@ -1,10 +1,11 @@
 package com.evtnet.evtnetback.Repositories;
 
+import com.evtnet.evtnetback.Entities.TipoAdministradorEspacio;
+import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-import com.evtnet.evtnetback.Entities.TipoAdministradorEspacio;
-
+@Repository
 public interface TipoAdministradorEspacioRepository extends BaseRepository<TipoAdministradorEspacio, Long> {
-    Optional<TipoAdministradorEspacio> findByNombreIgnoreCase(String nombre);
+    Optional<TipoAdministradorEspacio> findByNombre(String nombre);
 }

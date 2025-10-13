@@ -22,5 +22,6 @@ public interface ParametroSistemaRepository extends BaseRepository <ParametroSis
     @Query("UPDATE ParametroSistema ps SET ps.fechaHoraBaja = :fecha WHERE ps.id = :id")
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
 
+    ParametroSistema findByNombre(String nombre);
     Optional<ParametroSistema> findByIdentificador(String identificador);
 }
