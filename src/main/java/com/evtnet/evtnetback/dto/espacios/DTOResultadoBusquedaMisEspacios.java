@@ -1,10 +1,18 @@
 package com.evtnet.evtnetback.dto.espacios;
 
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record DTOResultadoBusquedaMisEspacios(
-    long id,
-    String nombre,
-    String rol,
-    List<String> disciplinas
-) {}
+import java.util.List;
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class DTOResultadoBusquedaMisEspacios {
+    private Long id;
+    private String nombre;
+    private String rol;
+    private List<String> disciplinas;
+}

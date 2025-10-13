@@ -93,7 +93,32 @@ public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
     """)
     List<Usuario> buscarUsuariosNoAdministradores(@Param("idEvento") Long idEvento,
                                                   @Param("texto") String texto);
-                                  
-                                  
+
+    @Query("""
+    SELECT u
+    FROM Usuario u
+    WHERE u.fechaHoraBaja IS NULL
+      AND (
+          LOWER(u.username) LIKE LOWER(CONCAT('%', :texto, '%'))
+          OR LOWER(u.nombre) LIKE LOWER(CONCAT('%', :texto, '%'))
+          OR LOWER(u.apellido) LIKE LOWER(CONCAT('%', :texto, '%'))
+      )
+      AND u.id NOT IN (
+          SELECT ae.usuario.id
+          FROM AdministradorEspacio ae
+          WHERE ae.espacio.id = :idEspacio
+      )
+    """)
+    List<Usuario> buscarUsuariosNoAdministradoresEspacio(@Param("idEspacio") Long idEspacio, @Param("texto") String texto);
+
+    @Query("""
+      select u
+      from Usuario u
+      join u.administradoresEspacio ae
+      where ae.espacio.id = :idEspacio
+        and u.fechaHoraBaja is null
+        and ae.fechaHoraBaja is null
+    """)
+    List<Usuario> buscarUsuariosAdministradoresEspacio(@Param("idEspacio") Long idEspacio);
 
 }

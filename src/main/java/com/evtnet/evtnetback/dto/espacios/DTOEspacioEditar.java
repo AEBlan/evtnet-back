@@ -1,19 +1,34 @@
 package com.evtnet.evtnetback.dto.espacios;
 
+import com.evtnet.evtnetback.Entities.EstadoEspacio;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
-public record DTOEspacioEditar(
-    long id,
-    String nombre,
-    String descripcion,
-    String direccion,
-    double latitud,
-    double longitud,
-    List<Disciplina> disciplinas,
-    boolean esAdmin,
-    boolean esPropietario,
-    boolean esPublico
-) {
-    public record Disciplina(long id, String nombre) {}
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class DTOEspacioEditar {
+
+    private Long id;
+    private String nombre;
+    private String descripcion;
+    private String direccion;
+    private double latitud;
+    private double longitud;
+    private List<DTOSubespacioEditar> subEspacios;
+    private boolean esAdmin;
+    private boolean esPropietario;
+    private boolean esPublico;
+    private DTOArchivo basesYCondiciones;
+    private List<DTOArchivo> documentacion;
+    private DTOEspacioEstado estado;
+    private String username;
+    private List<DTOEstadoEspacio>estadosEspacio;
+    private boolean requiereAprobacion;
 }
 

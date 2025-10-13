@@ -1,13 +1,26 @@
 package com.evtnet.evtnetback.dto.espacios;
 
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record DTOBusquedaEspacios(
-    String texto,
-    Ubicacion ubicacion,
-    List<Long> tipos,
-    List<Long> disciplinas
-) {
-    public record Ubicacion(Double latitud, Double longitud, Double rango) {}
+import java.util.List;
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class DTOBusquedaEspacios {
+    private String texto;
+    private Ubicacion ubicacion;
+    private List<Long> tipos;
+    private List<Long> disciplinas;
+
+    @Data
+    public static class Ubicacion {
+        private Double latitud;
+        private Double longitud;
+        private Double rango;
+    }
 }
 

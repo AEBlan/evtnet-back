@@ -34,9 +34,11 @@ public class Espacio extends Base {
     @Column(name = "longitud_ubicacion")
     private BigDecimal longitudUbicacion;
 
-    // Indica si el espacio requiere que sus eventos sean aprobados antes de realizarse
+    @Column(name = "bases_y_condiciones")
+    private String basesYCondiciones;
+
     @Column(name = "requiere_aprobar_eventos")
-    private Boolean requiereAprobarEventos = false;
+    private Boolean requiereAprobarEventos;
 
     @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AdministradorEspacio> administradoresEspacio;
@@ -55,15 +57,11 @@ public class Espacio extends Base {
     @JoinColumn(name = "solicitud_espacio_publico_id")
     private SolicitudEspacioPublico solicitudEspacioPublico;
 
-    @OneToMany(mappedBy = "espacio", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Chat> chats;
+    @OneToOne(mappedBy = "espacio")
+    private Chat chat;
 
-    //@ManyToOne
-    //@JoinColumn(name = "estado_espacio_id")
-    //private EstadoEspacio estadoEspacio;
-
-    @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<EspacioEstado> espacioEstados;
+    @OneToMany(mappedBy = "espacio")
+    private List<EspacioEstado> espacioEstado;
 
     @OneToMany(mappedBy = "espacio", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DocumentacionEspacio> documentacionEspacios;

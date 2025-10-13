@@ -1,8 +1,10 @@
 package com.evtnet.evtnetback.Services;
 
+import com.evtnet.evtnetback.Entities.Caracteristica;
 import com.evtnet.evtnetback.Entities.IconoCaracteristica;
 import com.evtnet.evtnetback.Repositories.IconoCaracteristicaRepository;
 import com.evtnet.evtnetback.Repositories.CaracteristicaRepository;
+import com.evtnet.evtnetback.dto.espacios.DTOCaracteristicaSubEspacio;
 import com.evtnet.evtnetback.dto.iconoCaracteristica.DTOIconoCaracteristica;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -16,7 +18,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 
 @Service
 public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracteristica, Long>
@@ -24,6 +28,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
 
     @Value("${app.storage.iconos:/app/storage/iconos}")
     private String iconosDirectorio;
+
     private final IconoCaracteristicaRepository iconoCaracteristicaRepository;
     private final CaracteristicaRepository caracteristicaRepository;
     private final UploadsService uploads;
@@ -129,6 +134,53 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
         iconoCaracteristicaRepository.delete(id, LocalDateTime.now());
     }
 
+    @Override
+    public IconoCaracteristica obtenerIconosEspacio(Long idIcono)throws Exception {
+        return iconoCaracteristicaRepository.findById(idIcono)
+                .orElseThrow(() -> new Exception("No se encontró el ícono con ID " + idIcono));
+
+    }
+
+    @Override
+    public List<DTOCaracteristicaSubEspacio> obtenerCaracteristicasSubEspacio(Long idEspacio) throws Exception{
+        List<Caracteristica>caracteristicas=this.caracteristicaRepository.findBySubEspacio(idEspacio);
+        List<DTOCaracteristicaSubEspacio> caracteristicaSubEspacios=new ArrayList<>();
+        for(Caracteristica caracteristica:caracteristicas){
+            String base64Image = encodeFileToBase64(caracteristica.getIconoCaracteristica().getImagen());
+            String[] parts = base64Image.split(",");
+            String base64Data = parts[1];
+            String mimeType = parts[0].split(";")[0].split(":")[1];
+            String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
+            caracteristicaSubEspacios.add(DTOCaracteristicaSubEspacio.builder()
+                            .idEspacio(idEspacio)
+                            .idIconoCaracteristica(caracteristica.getIconoCaracteristica().getId())
+                            .nombre(caracteristica.getNombre())
+                            .contentType(contentType)
+                            .urlIcono(base64Data)
+                    .build()
+            );
+        }
+        return caracteristicaSubEspacios;
+    }
+    @Override
+    public List<DTOIconoCaracteristica> obtenerListaIcono() throws Exception{
+        List<IconoCaracteristica> iconosCaracteristica = iconoCaracteristicaRepository.findAll();
+        List<DTOIconoCaracteristica> dtoIconoCaracteristicas = new ArrayList<>();
+        for (IconoCaracteristica icono:iconosCaracteristica){
+            String base64Image = encodeFileToBase64(icono.getImagen());
+            String[] parts = base64Image.split(",");
+            String base64Data = parts[1];
+            String mimeType = parts[0].split(";")[0].split(":")[1];
+            String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
+            dtoIconoCaracteristicas.add(DTOIconoCaracteristica.builder()
+                    .id(icono.getId())
+                    .url(base64Data)
+                    .contentType(contentType)
+                    .build());
+        }
+        return dtoIconoCaracteristicas;
+    }
+
     private String guardarImagenBase64(String dataUrl, Long id) throws IOException {
 
         String[] parts = dataUrl.split(",");
@@ -136,7 +188,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
         byte[] fileBytes = Base64.getDecoder().decode(base64Data);
         String mimeType = parts[0].split(";")[0].split(":")[1];
         String extension = mimeType.equals("image/svg+xml") ? ".svg" : ".png";
-        String fileName = "icono" + id + extension;
+        String fileName = "caracteristica" + id + extension;
         if (!Files.exists(Paths.get(iconosDirectorio))) {
             Files.createDirectories(Paths.get(iconosDirectorio));
         }
@@ -145,9 +197,10 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
         return filePath.toString();
     }
 
-    private String encodeFileToBase64(String filePath) {
+    private String encodeFileToBase64(String fileName) {
         try {
-            byte[] fileContent = Files.readAllBytes(Paths.get(filePath));
+            Path filePath = Paths.get(iconosDirectorio).resolve(fileName).toAbsolutePath().normalize();
+            byte[] fileContent = Files.readAllBytes(filePath);
 
             String contentType;
             if (filePath.endsWith(".svg")) {
@@ -159,7 +212,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
             String base64 = Base64.getEncoder().encodeToString(fileContent);
             return "data:" + contentType + ";base64," + base64;
         } catch (Exception e) {
-            throw new RuntimeException("Error leyendo archivo de imagen: " + filePath, e);
+            throw new RuntimeException("Error leyendo archivo de imagen: " + fileName, e);
         }
     }
 }
