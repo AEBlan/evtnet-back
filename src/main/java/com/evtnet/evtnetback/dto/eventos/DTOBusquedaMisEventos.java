@@ -6,6 +6,7 @@ public record DTOBusquedaMisEventos(
     Long fechaHasta,
     boolean organizador,
     boolean administrador,
-    boolean participante
+    boolean participante,
+    boolean encargado
 ) {}
 

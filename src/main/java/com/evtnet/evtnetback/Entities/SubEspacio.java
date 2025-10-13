@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import com.evtnet.evtnetback.Entities.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.List;
 
 @Data
@@ -45,5 +47,10 @@ public class SubEspacio extends Base {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "encargado_subespacio_id", nullable = false)
+    @ToString.Exclude
+    @JsonIgnore
     private EncargadoSubEspacio encargadoSubEspacio;
+
+    //@OneToMany(mappedBy = "subEspacio")
+    //private List<EncargadoSubEspacio> encargadosSubEspacio;
 }

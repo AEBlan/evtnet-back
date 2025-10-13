@@ -12,10 +12,10 @@ public record DTOBusquedaEventos(
     List<Long> tiposEspacio,
     boolean espaciosNoRegistrados,
     List<Long> disciplinas,
-    List<Long> modos,
+    //List<Long> modos,
     Double precioLimite,
     boolean buscarEventos,
-    boolean buscarSuperventos
+    boolean buscarSupereventos
 ) {
     public record Ubicacion(Double latitud, Double longitud, Double rango) {}
 }

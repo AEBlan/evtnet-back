@@ -17,4 +17,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DisciplinaSubEspacioRepository extends BaseRepository <DisciplinaSubEspacio, Long> {
     List<DisciplinaSubEspacio> findBySubEspacio(SubEspacio subEspacio);
+    boolean existsBySubEspacioIdAndDisciplinaId(Long subEspacioId, Long disciplinaId);
+
 }

@@ -145,6 +145,26 @@ SELECT "Administrador"
 WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_espacio WHERE nombre='Administrador');
 
 -- =========================
+-- EstadoEvento
+-- =========================
+INSERT INTO estado_evento (nombre, descripcion)
+SELECT 'En Revisión', 'Evento en estado de revisión'
+WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='En Revisión');
+
+INSERT INTO estado_evento (nombre, descripcion)
+SELECT 'Aceptado', 'Evento aprobado y visible para los usuarios'
+WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='Aceptado');
+
+INSERT INTO estado_evento (nombre, descripcion)
+SELECT 'Rechazado', 'Evento rechazado por el administrador del espacio'
+WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='Rechazado');
+
+INSERT INTO estado_evento (nombre, descripcion)
+SELECT 'Cancelado', 'Evento cancelado por el organizador o administrador'
+WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='Cancelado');
+
+
+-- =========================
 -- Permiso (tu entidad no tiene fecha)
 -- =========================
 INSERT INTO permiso (nombre) SELECT 'HabilitarCuenta' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='HabilitarCuenta');
@@ -278,7 +298,6 @@ WHERE p.nombre IN (
 
 -- Saneamos por si había filas antiguas sin fecha
 UPDATE rol_permiso SET fecha_hora_alta = NOW() WHERE fecha_hora_alta IS NULL;
-
 
 
 -- ===================================================================

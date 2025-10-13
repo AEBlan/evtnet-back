@@ -26,18 +26,39 @@ public final class EventoSpecs {
         );
     }
 
-    // 🔹 Buscar SOLO mis eventos (organizador / administrador / participante)
+    // 🔹 Buscar SOLO mis eventos (organizador / administrador / participante/encargado)
     public static Specification<Evento> byFiltroMisEventos(DTOBusquedaMisEventos f, String username) {
+        // filtro de texto parcial (nombre o descripción)
+        Specification<Evento> specTexto = textoLike(f.texto());
+    
+        // filtro por fechas (inicio y fin)
+        Specification<Evento> specFechas = rangoFechaInterseca(f.fechaDesde(), f.fechaHasta());
+    
+        // armar lista de roles seleccionados
+        Specification<Evento> roles = Specification.anyOf(
+                f.organizador() ? esOrganizador(username) : null,
+                f.administrador() ? esAdministrador(username) : null,
+                f.participante() ? esParticipante(username) : null,
+                f.encargado() ? esEncargado(username) : null
+        );
+    
+        // si no seleccionó ningún rol → traer todos
+        if (!f.organizador() && !f.administrador() && !f.participante() && !f.encargado()) {
+            roles = Specification.anyOf(
+                    esOrganizador(username),
+                    esAdministrador(username),
+                    esParticipante(username),
+                    esEncargado(username)
+            );
+        }
+    
         return Specification.allOf(
-                textoLike(f.texto()),
-                rangoFechaInterseca(f.fechaDesde(), f.fechaHasta()),
-                Specification.anyOf(
-                        f.organizador() ? esOrganizador(username) : null,
-                        f.administrador() ? esAdministrador(username) : null,
-                        f.participante() ? esParticipante(username) : null
-                )
+                specTexto,
+                specFechas,
+                roles
         );
     }
+    
 
     // ---- helpers comunes ----
     static Specification<Evento> textoLike(String t) {
@@ -89,47 +110,66 @@ public final class EventoSpecs {
             var joinAdmin = root.join("administradoresEvento");
             var joinTipo = joinAdmin.join("tipoAdministradorEvento");
             var joinUsuario = joinAdmin.join("usuario");
-            
+    
             cq.distinct(true);
-            
+    
             return cb.and(
-                cb.equal(joinUsuario.get("username"), username),
-                cb.equal(joinTipo.get("nombre"), "Organizador"),
-                cb.isNull(joinAdmin.get("fechaHoraBaja"))
+                    cb.equal(joinUsuario.get("username"), username),
+                    cb.equal(joinTipo.get("nombre"), "Organizador"),
+                    cb.isNull(joinAdmin.get("fechaHoraBaja"))
             );
         };
     }
-
+    
     static Specification<Evento> esAdministrador(String username) {
         if (username == null || username.isBlank()) return null;
         return (root, cq, cb) -> {
             var joinAdmin = root.join("administradoresEvento");
             var joinTipo = joinAdmin.join("tipoAdministradorEvento");
             var joinUsuario = joinAdmin.join("usuario");
-            
+    
             cq.distinct(true);
-            
+    
             return cb.and(
-                cb.equal(joinUsuario.get("username"), username),
-                cb.equal(joinTipo.get("nombre"), "Administrador"),
-                cb.isNull(joinAdmin.get("fechaHoraBaja"))
+                    cb.equal(joinUsuario.get("username"), username),
+                    cb.equal(joinTipo.get("nombre"), "Administrador"),
+                    cb.isNull(joinAdmin.get("fechaHoraBaja"))
             );
         };
     }
-
+    
     static Specification<Evento> esParticipante(String username) {
         if (username == null || username.isBlank()) return null;
         return (root, cq, cb) -> {
             var joinInscripcion = root.join("inscripciones");
             var joinUsuario = joinInscripcion.join("usuario");
-            
+    
             cq.distinct(true);
-            
+    
             return cb.and(
-                cb.equal(joinUsuario.get("username"), username),
-                cb.isNull(joinInscripcion.get("fechaHoraBaja"))
+                    cb.equal(joinUsuario.get("username"), username),
+                    cb.isNull(joinInscripcion.get("fechaHoraBaja"))
             );
         };
     }
+
+    static Specification<Evento> esEncargado(String username) {
+        if (username == null || username.isBlank()) return null;
+        return (root, cq, cb) -> {
+            // JOIN → evento → subEspacio → encargadosSubEspacio → usuario
+            var joinSubespacio = root.join("subEspacio");
+            var joinEncargado = joinSubespacio.join("encargadosSubEspacio");
+            var joinUsuario = joinEncargado.join("usuario");
+    
+            cq.distinct(true);
+    
+            return cb.and(
+                    cb.equal(joinUsuario.get("username"), username),
+                    cb.isNull(joinEncargado.get("fechaHoraBaja"))
+            );
+        };
+    }
+    
+    
 }
 

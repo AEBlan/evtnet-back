@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
+
 
 import java.time.LocalDateTime;
 
@@ -64,5 +66,18 @@ public class ParametroSistemaServiceImpl extends BaseServiceImpl <ParametroSiste
     public void bajaParametroSistema(Long id) throws Exception {
         parametroSistemaRepository.delete(id, LocalDateTime.now());
     }
+
+    public BigDecimal getDecimal(String key, BigDecimal def) {
+        return parametroSistemaRepository.findByIdentificador(key)
+                   .map(p -> new BigDecimal(p.getValor()))
+                   .orElse(def);
+    }
+    
+    public Integer getInt(String key, Integer def) {
+        return parametroSistemaRepository.findByIdentificador(key)
+                   .map(p -> Integer.parseInt(p.getValor()))
+                   .orElse(def);
+    }
+    
     
 }
