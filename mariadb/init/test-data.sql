@@ -1233,6 +1233,31 @@ WHERE se.nombre='Superevento Interclubes Mendoza'
     WHERE ae.super_evento_id=se.id AND ae.usuario_id=u.id AND ae.tipo_administrador_super_evento_id=2
   );
 
+-- ===========================================================
+-- 💬 CHATS AUTOMÁTICOS POR EVENTO
+-- ===========================================================
+
+START TRANSACTION;
+
+INSERT INTO chat (tipo, fecha_hora_alta, evento_id)
+SELECT 'EVENTO', NOW(), e.id
+FROM evento e
+WHERE NOT EXISTS (
+  SELECT 1 FROM chat c WHERE c.evento_id = e.id
+);
+
+-- ===========================================================
+-- 💬 CHATS AUTOMÁTICOS POR EVENTO
+-- ===========================================================
+
+START TRANSACTION;
+
+INSERT INTO chat (tipo, fecha_hora_alta, evento_id)
+SELECT 'EVENTO', NOW(), e.id
+FROM evento e
+WHERE NOT EXISTS (
+  SELECT 1 FROM chat c WHERE c.evento_id = e.id
+);
 
 
 COMMIT;
