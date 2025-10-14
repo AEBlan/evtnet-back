@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -575,13 +576,13 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
 
     @Override
     public List<DTOResultadoBusquedaEventosPorEspacio> buscarEventosPorEspacio(DTOBusquedaEventosPorEspacio dto) throws Exception {
-        Set<Evento> resultadoFinal = new HashSet<>();
-        List<Set<Evento>> setsPorFiltro = new ArrayList<>();
+        Set<DTOEvento> resultadoFinal = new HashSet<>();
+        List<Set<DTOEvento>> setsPorFiltro = new ArrayList<>();
 
         // --- Filtro por texto ---
         if (dto.getTexto() != null && !dto.getTexto().isBlank()) {
             String[] palabras = dto.getTexto().split(" ");
-            Set<Evento> porTexto = new HashSet<>();
+            Set<DTOEvento> porTexto = new HashSet<>();
             for (String palabra : palabras) {
                 if (palabra.length() > 2) {
                     porTexto.addAll(eventoRepository.findEventosByTexto(dto.getIdEspacio(), palabra));
@@ -591,15 +592,48 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         }
 
         // --- Filtro por fechas ---
-        if (dto.getFechaDesde() != null || dto.getFechaHasta() != null) {
-            LocalDateTime fechaDesde = dto.getFechaDesde() != null
-                    ? Instant.ofEpochMilli(dto.getFechaDesde()).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                    : LocalDateTime.MIN;
-            LocalDateTime fechaHasta = dto.getFechaHasta() != null
-                    ? Instant.ofEpochMilli(dto.getFechaHasta()).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                    : LocalDateTime.MAX;
+        if ((dto.getFechaDesde() != null || dto.getFechaHasta() != null) && (dto.getHoraDesde() == null && dto.getHoraHasta() == null)) {
+            LocalDate fechaDesde = dto.getFechaDesde() != null
+                    ? Instant.ofEpochMilli(dto.getFechaDesde()).atZone(ZoneId.systemDefault()).toLocalDate()
+                    : LocalDate.MIN;
+            LocalDate fechaHasta = dto.getFechaHasta() != null
+                    ? Instant.ofEpochMilli(dto.getFechaHasta()).atZone(ZoneId.systemDefault()).toLocalDate()
+                    : LocalDate.MAX;
 
             setsPorFiltro.add(new HashSet<>(eventoRepository.findEventosByFecha(dto.getIdEspacio(), fechaDesde, fechaHasta)));
+        }
+
+        if((dto.getFechaDesde() == null && dto.getFechaHasta() == null) && (dto.getHoraDesde() != null || dto.getHoraHasta() != null)){
+            LocalTime horaDesde = Instant.ofEpochMilli(dto.getHoraDesde()).atZone(ZoneId.systemDefault()).toLocalTime();
+            LocalTime horaHasta = Instant.ofEpochMilli(dto.getHoraHasta()).atZone(ZoneId.systemDefault()).toLocalTime();
+
+            setsPorFiltro.add(new HashSet<>(eventoRepository.findEventosByHora(dto.getIdEspacio(), horaDesde, horaHasta)));
+        }
+
+        // --- Filtro por fechas y horas ---
+        if (dto.getFechaDesde() != null && dto.getFechaHasta() != null && (dto.getHoraDesde() != null && dto.getHoraHasta() != null)) {
+
+            LocalDate fechaDesde = dto.getFechaDesde() != null
+                    ? Instant.ofEpochMilli(dto.getFechaDesde()).atZone(ZoneId.systemDefault()).toLocalDate()
+                    : LocalDate.MIN;
+            LocalDate fechaHasta = dto.getFechaHasta() != null
+                    ? Instant.ofEpochMilli(dto.getFechaHasta()).atZone(ZoneId.systemDefault()).toLocalDate()
+                    : LocalDate.MAX;
+
+            LocalTime horaDesde = dto.getHoraDesde() != null
+                    ? Instant.ofEpochMilli(dto.getHoraDesde())
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalTime()
+                    : LocalTime.MIN;
+
+            LocalTime horaHasta = dto.getHoraHasta() != null
+                    ? Instant.ofEpochMilli(dto.getHoraHasta())
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalTime()
+                    : LocalTime.MAX;
+
+            setsPorFiltro.add(new HashSet<>(eventoRepository.findEventosByFechaYHora(dto.getIdEspacio(), fechaDesde, fechaHasta, horaDesde, horaHasta)));
+
         }
 
         // --- Filtro por precio ---
@@ -612,9 +646,18 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             setsPorFiltro.add(new HashSet<>(eventoRepository.findEventosByDisciplinas(dto.getIdEspacio(), dto.getDisciplinas())));
         }
 
+
         // --- Sin filtros: traer todos los eventos del espacio ---
         if (setsPorFiltro.isEmpty()) {
-            resultadoFinal.addAll(eventoRepository.findAllByEspacio(dto.getIdEspacio()));
+            //List<DTOEvento>eventos=new ArrayList<>();
+            resultadoFinal.addAll(eventoRepository.findEventosByEspacio(dto.getIdEspacio()));
+//            Set<Long> idsVistos = new HashSet<>();
+//            for(DTOEvento evento : resultadoFinal){
+//                if (idsVistos.add(evento.getId())) { // add() devuelve true si no estaba antes
+//                    eventos.add(evento); // solo agrego si no se había visto antes
+//                }
+//            }
+//            resultadoFinal=new HashSet<>(eventos);
         } else {
             // Iniciar con el primer conjunto y hacer intersección con los demás
             resultadoFinal.addAll(setsPorFiltro.get(0));
@@ -625,11 +668,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
 
         // --- Mapear a DTO ---
         List<DTOResultadoBusquedaEventosPorEspacio> eventosDto = new ArrayList<>();
-        for (Evento evento : resultadoFinal) {
-            List<String> disciplinas = evento.getDisciplinasEvento().stream()
-                    .map(de -> de.getDisciplina().getNombre())
-                    .distinct()
-                    .toList();
+        for (DTOEvento evento : resultadoFinal) {
+            List<String> disciplinas = this.eventoRepository.findDisciplinasByEvento(evento.getId());
 
             eventosDto.add(DTOResultadoBusquedaEventosPorEspacio.builder()
                     .id(evento.getId())
