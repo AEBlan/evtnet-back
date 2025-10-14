@@ -28,15 +28,22 @@ public interface InscripcionRepository extends BaseRepository<Inscripcion, Long>
     int maxInvitadosPorInscripcionVigente(@Param("eventoId") Long eventoId);
 
     @Query("""
-        select i
+        select distinct i
         from Inscripcion i
         join i.usuario u
+        left join i.invitados inv
         where i.evento.id = :idEvento
-        and (
-            lower(u.username) like lower(concat('%', :texto, '%'))
-        or lower(u.nombre)   like lower(concat('%', :texto, '%'))
-        or lower(u.apellido) like lower(concat('%', :texto, '%'))
-        )
+            and (
+                lower(u.username) like lower(concat('%', :texto, '%'))
+                or lower(u.nombre)   like lower(concat('%', :texto, '%'))
+                or lower(u.apellido) like lower(concat('%', :texto, '%'))
+                or lower(u.dni) like lower(concat('%', :texto, '%'))
+                or lower(u.username) like lower(concat('%', :texto, '%'))
+                or lower(inv.nombre) like lower(concat('%', :texto, '%'))
+                or lower(inv.apellido) like lower(concat('%', :texto, '%'))
+                or lower(inv.dni) like lower(concat('%', :texto, '%'))
+            )
+        order by i.fechaHoraBaja DESC NULLS FIRST, i.fechaHoraAlta ASC
     """)
     
     List<Inscripcion> findByEventoIdAndFiltro(@Param("idEvento") Long idEvento,

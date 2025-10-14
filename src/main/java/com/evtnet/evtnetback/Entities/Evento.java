@@ -77,7 +77,7 @@ public class Evento extends Base {
     //@OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     //private List<Chat> chats;
 
-    @OneToOne(mappedBy = "evento", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToOne(mappedBy = "evento", fetch = FetchType.LAZY, orphanRemoval = true)
     private Chat chat;
 
     @OneToMany(mappedBy = "evento", fetch = FetchType.LAZY)
@@ -89,7 +89,7 @@ public class Evento extends Base {
 
     public Usuario getOrganizador() throws Exception {
         for (AdministradorEvento a : administradoresEvento) {
-            if (a.getTipoAdministradorEvento().getNombre() == "Organizador") {
+            if (a.getTipoAdministradorEvento().getNombre().equalsIgnoreCase("Organizador")) {
                 return a.getUsuario();
             };
         }

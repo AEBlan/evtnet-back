@@ -19,19 +19,19 @@ public interface EventoService extends BaseService<Evento, Long> {
     int obtenerCantidadEventosSuperpuestos(long idEspacio, long fechaDesdeMillis, long fechaHastaMillis);
 
     // 👇 NUEVOS (para que @Override sea válido)
-    DTOEventoParaInscripcion obtenerEventoParaInscripcion(long id);
+    DTOEventoParaInscripcion obtenerEventoParaInscripcion(long id) throws Exception;
     DTOVerificacionPrePago verificarDatosPrePago(DTOInscripcion dto) throws Exception;
     void inscribirse(DTOInscripcion dto) throws Exception;
     void desinscribirse(long idEvento) throws Exception;
-    Number obtenerMontoDevolucionCancelacion(long idEvento, String username);
+    Number obtenerMontoDevolucionCancelacion(long idEvento, String username) throws Exception;
     DTOModificarEvento obtenerDatosModificacionEvento(long id) throws Exception;
     void modificarEvento(DTOModificarEvento dto);
 
     DTOInscripcionesEvento obtenerInscripciones(long idEvento, String texto) throws Exception;
-    void cancelarInscripcion(long idInscripcion);
+    void cancelarInscripcion(long idInscripcion) throws Exception;
     DTODatosParaInscripcion obtenerDatosParaInscripcion(long idEvento, String username) throws Exception;
-    List<DTOBusquedaUsuario> buscarUsuariosNoInscriptos(Long idEvento, String texto);
-    void inscribirUsuario(DTOInscripcion dto);
+    List<DTOBusquedaUsuario> buscarUsuariosNoInscriptos(Long idEvento, String texto) throws Exception;
+    void inscribirUsuario(DTOInscripcion dto) throws Exception;
     DTOAdministradores obtenerAdministradores(long idEvento, String currentUser) throws Exception;
     List<DTOBusquedaUsuario> buscarUsuariosNoAdministradores(Long idEvento, String texto);
     void agregarAdministrador(long idEvento, String username);

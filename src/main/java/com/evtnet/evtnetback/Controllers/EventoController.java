@@ -73,7 +73,7 @@ public class EventoController {
     // --- NUEVOS para el front actual ---
 
     @GetMapping("/obtenerEventoParaInscripcion")
-    public ResponseEntity<DTOEventoParaInscripcion> obtenerEventoParaInscripcion(@RequestParam long id) {
+    public ResponseEntity<DTOEventoParaInscripcion> obtenerEventoParaInscripcion(@RequestParam long id) throws Exception {
         return ResponseEntity.ok(service.obtenerEventoParaInscripcion(id));
     }
 
@@ -96,7 +96,7 @@ public class EventoController {
 
     @GetMapping("/obtenerMontoDevolucionCancelacionInscripcion")
     public ResponseEntity<Map<String, Number>> obtenerMontoDevolucionCancelacionInscripcion(
-            @RequestParam long idEvento, @RequestParam String username) {
+            @RequestParam long idEvento, @RequestParam String username) throws Exception {
         return ResponseEntity.ok(Map.of("monto", service.obtenerMontoDevolucionCancelacion(idEvento, username)));
     }
 
@@ -115,7 +115,7 @@ public class EventoController {
     public ResponseEntity<List<DTOBusquedaUsuario>> buscarUsuariosNoInscriptos(
             @RequestParam long idEvento,
             @RequestParam(required = false, defaultValue = "") String texto
-    ) {
+    ) throws Exception {
         return ResponseEntity.ok(service.buscarUsuariosNoInscriptos(idEvento, texto));
     }
 
@@ -128,7 +128,7 @@ public class EventoController {
     }
 
     @DeleteMapping("/cancelarInscripcion")
-    public ResponseEntity<Void> cancelarInscripcion(@RequestParam long id) {
+    public ResponseEntity<Void> cancelarInscripcion(@RequestParam long id) throws Exception {
         service.cancelarInscripcion(id);
         return ResponseEntity.ok().build();
     }
@@ -140,7 +140,7 @@ public class EventoController {
     }
 
     @PostMapping("/inscribirUsuario")
-    public ResponseEntity<Void> inscribirUsuario(@RequestBody DTOInscripcion dto) {
+    public ResponseEntity<Void> inscribirUsuario(@RequestBody DTOInscripcion dto) throws Exception {
         service.inscribirUsuario(dto);
         return ResponseEntity.ok().build();
     }
