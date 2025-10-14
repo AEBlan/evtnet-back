@@ -742,7 +742,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         SubEspacio subEspacio = this.subEspacioRepository.findById(idSubEspacio).get();
         Usuario usuario = this.usuarioRepository.findByUsername(username).get();
         EncargadoSubEspacio encargadoSubEspacio = EncargadoSubEspacio.builder()
-                .SubEspacio(subEspacio)
+                .subEspacio(subEspacio)
                 .usuario(usuario)
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();

@@ -44,14 +44,14 @@ public final class EventoSearchMapper {
         }
 
         // 3️⃣ Si no tiene rol anterior, revisar si es ENCARGADO
-        if ("participante".equals(rol) && e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
+        /*if ("participante".equals(rol) && e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
                 var encargado = e.getSubEspacio().getEncargadoSubEspacio();
                 if (encargado.getUsuario() != null
                         && encargado.getUsuario().getUsername().equals(username)
                         && encargado.getFechaHoraBaja() == null) {
                 rol = "encargado";
                 }
-        }
+        }*/
     
 
         return new DTOResultadoBusquedaMisEventos(

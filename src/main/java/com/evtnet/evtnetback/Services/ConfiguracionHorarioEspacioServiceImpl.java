@@ -4,6 +4,8 @@ import com.evtnet.evtnetback.Entities.*;
 import com.evtnet.evtnetback.Repositories.*;
 import com.evtnet.evtnetback.dto.cronogramas.*;
 import com.evtnet.evtnetback.dto.espacios.DTOVerificacionVigencia;
+import com.evtnet.evtnetback.util.CurrentUser;
+import com.evtnet.evtnetback.utils.TimeUtil;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -435,6 +437,68 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
 
     @Override
     public List<DTOPeriodoDisponible> obtenerPeriodosLibres(Long idSubEspacio)throws Exception{
+        SubEspacio subespacio = subEspacioRepository.findById(idSubEspacio).orElseThrow(() -> new Exception("No se encontró el subespacio"));
+
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
+
+        boolean administrador = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername().equals(username)).count() == 1;
+
+        if (!administrador) {
+            throw new Exception("Solo los administradores del espacio pueden buscar periodos libres");
+        }
+
+        LocalDateTime fechaInicio = LocalDateTime.now();
+        LocalDateTime fechaFin = fechaInicio.plusDays(365);
+
+        // Agarrar cronogramas vigentes del próximo año
+        List<ConfiguracionHorarioEspacio> cronogramas = new ArrayList<>(subespacio.getConfiguracionesHorarioEspacio().stream()
+                .filter(c ->
+                        c.getFechaDesde().isAfter(fechaInicio) && c.getFechaDesde().isBefore(fechaFin)
+                        || c.getFechaHasta().isAfter(fechaInicio) && c.getFechaHasta().isBefore(fechaFin)
+                        || c.getFechaDesde().isBefore(fechaInicio) && c.getFechaHasta().isAfter(fechaFin)
+                ).toList());
+
+        // Ordenarlos
+        cronogramas.sort((lhs, rhs) -> lhs.getFechaDesde().isBefore(rhs.getFechaDesde()) ? 1 : -1);
+
+        ArrayList<DTOPeriodoDisponible> ret = new ArrayList<>();
+
+
+        LocalDateTime finPrevio = fechaInicio;
+        for (ConfiguracionHorarioEspacio c : cronogramas) {
+            if (c.getFechaDesde().isBefore(finPrevio)) {
+                finPrevio = c.getFechaHasta();
+                continue;
+            }
+
+            // Agregar periodos sin cronograma vigente
+            ret.add(DTOPeriodoDisponible.builder()
+                .fechaHoraDesde(TimeUtil.toMillis(finPrevio))
+                .fechaHoraHasta(TimeUtil.toMillis(c.getFechaDesde()))
+                .build());
+
+            finPrevio = c.getFechaHasta();
+
+            // Agregar excepciones (solo la parte de adentro de su cronograma, y solo si son externas)
+            ret.addAll(c.getExcepcionesHorarioEspacio().stream()
+                .filter(e -> e.getTipoExcepcionHorarioEspacio().getNombre().equalsIgnoreCase("Externa"))
+                .map(e -> DTOPeriodoDisponible.builder()
+                    .fechaHoraDesde(Math.max(TimeUtil.toMillis(c.getFechaDesde()), TimeUtil.toMillis(e.getFechaHoraDesde())))
+                    .fechaHoraHasta(Math.min(TimeUtil.toMillis(c.getFechaHasta()), TimeUtil.toMillis(e.getFechaHoraHasta())))
+                    .build()).toList());
+        }
+
+        // Por si no termina con un cronograma vigente, agregar el último periodo
+        if (finPrevio.isBefore(fechaFin)) {
+            ret.add(DTOPeriodoDisponible.builder()
+                .fechaHoraDesde(TimeUtil.toMillis(finPrevio))
+                .fechaHoraHasta(TimeUtil.toMillis(fechaFin))
+                .build());
+        }
+
+        return ret;
+
+        /*
         //buscar fechas a partir del día de hoy que no tengan cronograma con sus horarios
         //buscar excepciones del cronograma vigente o futuro
 
@@ -523,7 +587,7 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
 
         return disponibles;
 
-
+        */
     }
 
     private String diaSemana(LocalDate fecha) {

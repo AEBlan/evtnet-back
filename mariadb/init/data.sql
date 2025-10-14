@@ -65,27 +65,27 @@ WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Finalizado'
 -- ========================
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 1, 'En_revisión', "Se revisan los datos correspondientes al espacio"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='En_revisión')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='En_revisión');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 2, 'Habilitado', "Se habilita el espacio para que se puedan organizar eventos en él"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Habilitado')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Habilitado');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 3, 'Oculto', "Se oculta el espacio para que no se puedan organizar eventos"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Oculto')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Oculto');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 4, 'Observado', "Se observa para que el dueño revise los datos en caso de que alguno esté incorrecto o falte"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Observado')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Observado');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 5, 'Rechazado', "Se rechaza el espacio para que no se puedan organizar eventos"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Rechazado')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Rechazado');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 6, 'Clausurado', "Se clausura el espacio debido a irregularidades en el mismo"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Clausurado')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Clausurado');
 
 
 

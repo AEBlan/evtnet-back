@@ -27,7 +27,7 @@ public interface HorarioEspacioRepository extends BaseRepository <HorarioEspacio
     JOIN he.configuracionHorarioEspacio che
     WHERE che.subEspacio.id=:idSubEspacio
         AND he.diaSemana=:diaSemana
-        AND :fechaEvento BETWEEN che.fechaDesde AND che.fechaHasta
+        AND :fechaEvento BETWEEN CAST(che.fechaDesde AS DATE) AND CAST(che.fechaHasta AS DATE)
     """)
     List<HorarioEspacio> findBySubEspacioYFecha(@Param("idSubEspacio") Long idSubEspacio, @Param("fechaEvento")LocalDate fechaEvento, @Param("diaSemana")String diaSemana);
 
@@ -36,8 +36,8 @@ public interface HorarioEspacioRepository extends BaseRepository <HorarioEspacio
         FROM HorarioEspacio he
         JOIN he.configuracionHorarioEspacio che
         WHERE che.subEspacio.id = :idSubEspacio
-          AND che.fechaDesde <= :fechaFin
-          AND che.fechaHasta >= :fechaInicio
+          AND CAST(che.fechaDesde AS DATE) <= :fechaFin
+          AND CAST(che.fechaHasta AS DATE) >= :fechaInicio
         ORDER BY he.diaSemana, he.horaDesde
     """)
     List<HorarioEspacio> findHorariosOcupados(@Param("idSubEspacio") Long idSubEspacio, @Param("fechaInicio") LocalDate fechaInicio, @Param("fechaFin") LocalDate fechaFin);

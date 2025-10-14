@@ -13,6 +13,7 @@ import com.evtnet.evtnetback.util.CurrentUser;
 import com.evtnet.evtnetback.util.GeographyUtil;
 import com.evtnet.evtnetback.util.MercadoPagoSingleton;
 
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
@@ -69,6 +70,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	private final HorarioEspacioRepository horarioRepo;
 	private final ChatRepository chatRepo;
 
+	private final RegistroSingleton registroSingleton;
+
 	@PersistenceContext
     private EntityManager entityManager;
 
@@ -99,7 +102,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	    ParametroSistemaService parametroSistemaService,
 	    ComisionPorInscripcionService comisionPorInscripcionService,
 		HorarioEspacioRepository horarioRepo,
-		ChatRepository chatRepo
+		ChatRepository chatRepo,
+		RegistroSingleton registroSingleton
     ) {
 	super(eventoRepo);
 	this.eventoRepo = eventoRepo;
@@ -126,6 +130,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	this.comisionPorInscripcionService = comisionPorInscripcionService;
 	this.horarioRepo = horarioRepo;
 	this.chatRepo = chatRepo;
+	this.registroSingleton = registroSingleton;
 
     }
      
@@ -172,6 +177,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 			JOIN ee.estadoEvento est 
 			JOIN e.disciplinasEvento d 
 		WHERE s.fechaHoraBaja is null
+			AND ee.fechaHoraBaja is null
 			AND est.nombre LIKE 'Aceptado'
 		""";
 
@@ -200,7 +206,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 		jpqlSuperEventos += " AND (SELECT MAX(e.fechaHoraFin) FROM Evento e WHERE e.superEvento = s) >= :fechaHasta";
 	}
 
-	if (filtro.horaDesde() != null && filtro.horaDesde() != null) {
+	if (filtro.horaDesde() != null && filtro.horaHasta() != null) {
 		jpqlEventos += """
 			 AND CASE 
 				WHEN FUNCTION('TIME', :horaDesde) <= FUNCTION('TIME', :horaHasta) THEN
@@ -231,7 +237,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 	}
 
 	if (filtro.precioLimite() != null) {
-		jpqlEventos += " AND (e.precioInscripcion + e.adicionalPorInscripcion) * (1 + :comisionInscripcion) <= :precioLimite";
+		jpqlEventos += " AND (e.precioInscripcion + e.adicionalPorInscripcion) * (1.0 + :comisionInscripcion) <= :precioLimite";
 	}
 
 
@@ -245,21 +251,21 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 	}
 
 	if (filtro.fechaDesde() != null) {
-		queryEventos.setParameter("fechaDesde", filtro.fechaDesde());
-		querySuperEventos.setParameter("fechaDesde", filtro.fechaDesde());
+		queryEventos.setParameter("fechaDesde", TimeUtil.fromMillis(filtro.fechaDesde()));
+		querySuperEventos.setParameter("fechaDesde", TimeUtil.fromMillis(filtro.fechaDesde()));
 	}
 
 	if (filtro.fechaHasta() != null) {
-		queryEventos.setParameter("fechaHasta", filtro.fechaHasta());
-		querySuperEventos.setParameter("fechaHasta", filtro.fechaHasta());
+		queryEventos.setParameter("fechaHasta", TimeUtil.fromMillis(filtro.fechaHasta()));
+		querySuperEventos.setParameter("fechaHasta", TimeUtil.fromMillis(filtro.fechaHasta()));
 	}
 
-	if (filtro.horaDesde() != null && filtro.horaDesde() != null) {
-		queryEventos.setParameter("horaDesde", filtro.horaDesde());
-		queryEventos.setParameter("horaHasta", filtro.horaHasta());
+	if (filtro.horaDesde() != null && filtro.horaHasta() != null) {
+		queryEventos.setParameter("horaDesde", TimeUtil.fromMillis(filtro.horaDesde()));
+		queryEventos.setParameter("horaHasta", TimeUtil.fromMillis(filtro.horaHasta()));
 	}
 
-	if (filtro.tiposEspacio() != null && filtro.tiposEspacio().size() > 0) {
+	if (filtro.tiposEspacio() != null && !filtro.tiposEspacio().isEmpty()) {
 		queryEventos.setParameter("tiposEspacio", filtro.tiposEspacio());
 	}
 
@@ -321,38 +327,61 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 		longitud = filtro.ubicacion().longitud();
 	}
 
+	boolean ignoreLocation = false;
+
 	if (latitud == null || longitud == null) {
 
-		GeographyUtil.Location centro = GeographyUtil.calculateCenter(eventosRecientes.stream()
-			.map(e -> 
-				new GeographyUtil.Location(
-					e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(), 
-					e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()
-				)
-			).toList());
+		List<GeographyUtil.Location> locations = eventosRecientes.stream()
+			.map(e ->
+					new GeographyUtil.Location(
+							e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(),
+							e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()
+					)
+			).toList();
 
-		latitud = centro.getLatitude();
-		longitud = centro.getLongitude();
+		if (!locations.isEmpty()) {
+			GeographyUtil.Location centro = GeographyUtil.calculateCenter(locations);
+
+			latitud = centro.getLatitude();
+			longitud = centro.getLongitude();
+		} else {
+			ignoreLocation = true;
+		}
 	}
 
-	GeographyUtil.Location centro = new GeographyUtil.Location(latitud, longitud);
+	GeographyUtil.Location centro = new GeographyUtil.Location(0, 0);
 
-	double c_e = eventosRecientes.stream().filter(er -> er.getSuperEvento() != null).count() / ventana_de_eventos;
+	if (!ignoreLocation) {
+		centro = new GeographyUtil.Location(latitud, longitud);
+	}
+
+	double c_e = (double) eventosRecientes.stream().filter(er -> er.getSuperEvento() != null).count() / ventana_de_eventos;
+
+	//Para que no queden todos los supereventos con puntuación 0
+	if (c_e == 0.0) c_e = 0.05;
 
 	List<DTOResultadoBusquedaEventos> resultados = new ArrayList<>();
 
 	for (Evento e : eventos) {
 
-		double distancia = GeographyUtil.calculateDistance(
-			centro, 
-			new GeographyUtil.Location(
-				e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(), 
-				e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()
-			));
+		double u = 0;
 
-		double u = Math.max(Math.log(max_d.doubleValue()/Math.max(distancia, 1)) / Math.log(max_d.doubleValue()), 0);
+		if(!ignoreLocation) {
 
-		List<Long> disciplinasEvento = e.getDisciplinasEvento().stream().filter(d -> d.getFechaHoraBaja() == null).map(d -> d.getDisciplina().getId()).toList();
+			double distancia = GeographyUtil.calculateDistance(
+					centro,
+					new GeographyUtil.Location(
+							e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(),
+							e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()
+				)) * 1000;
+
+			if (distancia > max_d.doubleValue()) continue;
+			u = Math.max(Math.log(max_d.doubleValue()/Math.max(distancia, 1)) / Math.log(max_d.doubleValue()), 0);
+
+		}
+
+
+		List<Long> disciplinasEvento = new ArrayList<>(e.getDisciplinasEvento().stream().filter(d -> d.getFechaHoraBaja() == null).map(d -> d.getDisciplina().getId()).toList());
 
 		for (Long d : filtro.disciplinas()) {
 			if (!disciplinasEvento.contains(d)) {
@@ -360,7 +389,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 			}
 		}
 
-		double d = filtro.disciplinas().size() / (disciplinasEvento.size());
+		double d = (double) filtro.disciplinas().size() / (disciplinasEvento.size());
 
 		Double precioLimite = filtro.precioLimite();
 
@@ -421,7 +450,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 			}
 		}
 
-		double d = filtro.disciplinas().size() / (disciplinasSuperEvento.size());
+		double d = (double) filtro.disciplinas().size() / (disciplinasSuperEvento.size());
 
 		double puntuacion = c_e * d;
 
@@ -456,7 +485,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 	}
 
 
-	resultados.sort((lhs, rhs) -> lhs.puntuacion() < rhs.puntuacion() ? -1 : 1);
+	resultados.sort((lhs, rhs) -> lhs.puntuacion() < rhs.puntuacion() ? 1 : -1);
 
 	return resultados;
 }   
@@ -476,15 +505,15 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
     @Override
     @Transactional
     public DTOEventoDetalle obtenerEventoDetalle(long idEvento) throws Exception {
-	Evento e = eventoRepo.findByIdForDetalle(idEvento)
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
-		
-	String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
+		Evento e = eventoRepo.findByIdForDetalle(idEvento)
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
 
 		EventoEstado ee = e.getEventosEstado().stream().filter(eei -> eei.getFechaHoraBaja() == null).toList().get(0);
 
 		String estado = ee.getEstadoEvento().getNombre();
-		String motivoCancelacion = estado == "Cancelado" ? ee.getDescripcion() : null;
+		String motivoCancelacion = Objects.equals(estado, "Cancelado") ? ee.getDescripcion() : null;
 
 		List<AdministradorEvento> admins = e.getAdministradoresEvento().stream().filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername() == username).toList();
 
@@ -513,13 +542,13 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 	List<Inscripcion> inscripcionesActivas = inscripcionRepo.findActivasByEventoId(e.getId());
 	e.setInscripciones(inscripcionesActivas);
 
-		boolean inscripto = e.getInscripciones().stream().filter(i -> i.getUsuario().getNombre() == username).count() == 1;
+	boolean inscripto = e.getInscripciones().stream().filter(i -> i.getUsuario().getNombre() == username).count() == 1;
 
 	int participantes = inscripcionRepo.countParticipantesEfectivos(e.getId());
 	boolean cupoLleno = e.getCantidadMaximaParticipantes() != null &&
 		participantes >= e.getCantidadMaximaParticipantes();
 
-    	BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+	BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
 
 	double precioBase = e.getPrecioInscripcion().doubleValue() + e.getAdicionalPorInscripcion().doubleValue();
@@ -568,10 +597,14 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 		    ))
 		    .toList();
 
-		DTOEventoDetalle.SuperEvento superevento = new DTOEventoDetalle.SuperEvento(
-			e.getSuperEvento().getId(),
-			e.getSuperEvento().getNombre()
-		);
+		DTOEventoDetalle.SuperEvento superevento = null;
+
+		if (e.getSuperEvento() != null) {
+			superevento = new DTOEventoDetalle.SuperEvento(
+				e.getSuperEvento().getId(),
+				e.getSuperEvento().getNombre()
+			);
+		}
     
 	return new DTOEventoDetalle(
 		e.getId(),
@@ -619,9 +652,9 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 			espacio.getNombre(),
 			espacio.getSubEspacios().stream().map(s -> {
 
-				List<ConfiguracionHorarioEspacio> cronogramas = s.getConfiguracionesHorarioEspacio().stream().filter(c -> c.getFechaHasta().isAfter(java.time.LocalDateTime.now())).toList();
+				List<ConfiguracionHorarioEspacio> cronogramas = new ArrayList<>(s.getConfiguracionesHorarioEspacio().stream().filter(c -> c.getFechaHasta().isAfter(LocalDateTime.now())).toList());
 
-				cronogramas.sort((lhs, rhs) -> lhs.getFechaDesde().isBefore(rhs.getFechaHasta()) ? -1 : 1);
+				cronogramas.sort((lhs, rhs) -> lhs.getFechaDesde().isBefore(rhs.getFechaDesde()) ? -1 : 1);
 				
 				long diasHaciaAdelante = 0;
 
@@ -672,11 +705,13 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 
 		boolean administrador = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername().equals(username)).count() == 1;
 
-		if (!administrador && !req.isUsarCronograma()) {
+		boolean publico = subespacio.getEspacio().getTipoEspacio().getNombre().equalsIgnoreCase("Público");
+
+		if (!administrador && !req.isUsarCronograma() && !publico) {
 			throw new Exception("Solo los administradores del espacio pueden organizar eventos de forma libre");
 		}
 
-		if (!(req.getFechaHoraInicio().isBefore(req.getFechaHoraFin()) && req.getFechaHoraFin().isBefore(LocalDateTime.now()))) {
+		if (!(req.getFechaHoraInicio().isBefore(req.getFechaHoraFin()) && req.getFechaHoraInicio().isAfter(LocalDateTime.now()))) {
 			throw new Exception("Fechas de inicio y fin inconsistentes. Asegúrese de que no hayan pasado.");
 		}
 
@@ -692,8 +727,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 			if (config != null) {
 				boolean ok = false;
 				for (ExcepcionHorarioEspacio e : config.getExcepcionesHorarioEspacio()) {
-					//TODO: Cambiar por getFechaHoraDesde y Hasta
-					if (e.getFechaHoraAlta().isBefore(req.getFechaHoraInicio()) && e.getFechaHoraBaja().isAfter(req.getFechaHoraFin())) {
+					if (e.getFechaHoraDesde().isBefore(req.getFechaHoraInicio()) && e.getFechaHoraHasta().isAfter(req.getFechaHoraFin())) {
 						ok = true;
 						break;
 					}
@@ -728,10 +762,10 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 				throw new Exception("El día seleccionado no corresponde al horario indicado");
 			}
 
-			List<ConfiguracionHorarioEspacio> cronogramas = subespacio.getConfiguracionesHorarioEspacio().stream().filter(c -> c.getFechaHasta().isAfter(java.time.LocalDateTime.now())).toList();
+			List<ConfiguracionHorarioEspacio> cronogramas = new ArrayList<>(subespacio.getConfiguracionesHorarioEspacio().stream().filter(c -> c.getFechaHasta().isAfter(LocalDateTime.now())).toList());
 
-			cronogramas.sort((lhs, rhs) -> lhs.getFechaDesde().isBefore(rhs.getFechaHasta()) ? -1 : 1);
-			
+			cronogramas.sort((lhs, rhs) -> lhs.getFechaDesde().isBefore(rhs.getFechaDesde()) ? -1 : 1);
+
 			long diasHaciaAdelante = 0;
 
 			for (ConfiguracionHorarioEspacio c : cronogramas) {
@@ -818,9 +852,11 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
 		List<String> admins = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null).map(a -> a.getUsuario().getUsername()).toList();
 
+		boolean pagoRealizado = false;
 
 		if (r.isUsarCronograma() && !admins.contains(username)) {
 			mercadoPagoSingleton.verifyPayments(List.of(r.getPago()));
+			pagoRealizado = true;
 		}
 
 		HorarioEspacio h = null;
@@ -835,6 +871,8 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 
 		Usuario organizador = usuarioRepo.findByUsername(username).orElseThrow(() -> new Exception("Usuario inválido"));
 
+		boolean publico = subespacio.getEspacio().getTipoEspacio().getNombre().equalsIgnoreCase("Público");
+
 
 		// Crear el evento
 		Evento e = new Evento();
@@ -846,7 +884,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 		e.setCantidadMaximaInvitados(cant_max_invitados_default);
 		e.setCantidadMaximaParticipantes(r.getMaxParticipantes());
 		e.setPrecioOrganizacion(h != null ? h.getPrecioOrganizacion() : new BigDecimal(0.0d));
-		e.setAdicionalPorInscripcion(h != null ? new BigDecimal(h.getAdiciconalPorInscripcion()) : new BigDecimal(0.0));
+		e.setAdicionalPorInscripcion(h != null ? h.getAdiciconalPorInscripcion() : new BigDecimal(0.0));
 		e.setSubEspacio(subespacio);
 
 		e = eventoRepo.save(e);
@@ -861,17 +899,19 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 			disciplinaEventoRepo.save(de);
 		}
 
-		TipoAdministradorEvento tipoOrg = tipoAdminEventoRepo.findByNombreIgnoreCase("Organizador")
-				.orElseThrow(() -> new HttpErrorException(500, "TipoAdministradorEvento 'Organizador' no encontrado"));
+		if (!publico) {
+			TipoAdministradorEvento tipoOrg = tipoAdminEventoRepo.findByNombreIgnoreCase("Organizador")
+					.orElseThrow(() -> new HttpErrorException(500, "TipoAdministradorEvento 'Organizador' no encontrado"));
 
-		AdministradorEvento ae = AdministradorEvento.builder()
-				.evento(e)
-				.fechaHoraAlta(LocalDateTime.now())
-				.usuario(organizador)
-				.tipoAdministradorEvento(tipoOrg)
-				.build();
+			AdministradorEvento ae = AdministradorEvento.builder()
+					.evento(e)
+					.fechaHoraAlta(LocalDateTime.now())
+					.usuario(organizador)
+					.tipoAdministradorEvento(tipoOrg)
+					.build();
 
-		administradorEventoRepo.save(ae);
+			administradorEventoRepo.save(ae);
+		}
 
 		EstadoEvento estado = null;
 		if (subespacio.getEspacio().getRequiereAprobarEventos()) {
@@ -887,17 +927,27 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 				.build();
 
 		eventoEstadoRepo.save(ee);
-    
-		// Crear Chat asociado
-		Chat chat = Chat.builder()
-			.tipo(Chat.Tipo.EVENTO)
-			.fechaHoraAlta(LocalDateTime.now())
-			.evento(e)
-			.build();
 
-		chatRepo.save(chat);
+		if (!publico) {
+			// Crear Chat asociado
+			Chat chat = Chat.builder()
+					.tipo(Chat.Tipo.EVENTO)
+					.fechaHoraAlta(LocalDateTime.now())
+					.evento(e)
+					.build();
 
-    
+			chatRepo.save(chat);
+		}
+
+
+		registroSingleton.write("Eventos", "evento", "creacion", "Evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
+
+		if (pagoRealizado) {
+			registroSingleton.write("Pagos", "pago", "ejecucion", "Por organización de evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
+			registroSingleton.write("Pagos", "cobro_comision", "ejecucion", "Por organización de evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
+		}
+
+
 		return e.getId();
     }
     

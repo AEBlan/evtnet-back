@@ -18,12 +18,12 @@ public class EncargadoSubEspacio extends Base {
     private LocalDateTime fechaHoraAlta;
     private LocalDateTime fechaHoraBaja;
 
-    //@ManyToOne(fetch = FetchType.LAZY)
-    //@JoinColumn(name = "subespacio_id", nullable = false)
-    //private SubEspacio subEspacio;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subespacio_id", nullable = false)
+    private SubEspacio subEspacio;
 
-    @OneToMany(mappedBy = "encargadoSubEspacio", fetch = FetchType.LAZY)
-    private List<SubEspacio> subEspacios;
+    //@OneToMany(mappedBy = "encargadoSubEspacio", fetch = FetchType.LAZY)
+    //private List<SubEspacio subEspacios;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)

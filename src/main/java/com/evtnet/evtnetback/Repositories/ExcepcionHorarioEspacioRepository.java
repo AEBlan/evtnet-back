@@ -32,8 +32,8 @@ public interface ExcepcionHorarioEspacioRepository extends BaseRepository <Excep
     FROM ExcepcionHorarioEspacio e
     JOIN e.configuracionHorarioEspacio che
     WHERE che.subEspacio.id = :idSubEspacio
-      AND e.fechaHoraDesde <= :fechaFin
-      AND e.fechaHoraHasta >= :fechaInicio
+      AND CAST(e.fechaHoraDesde AS DATE) <= :fechaFin
+      AND CAST(e.fechaHoraHasta AS DATE) >= :fechaInicio
 """)
     List<ExcepcionHorarioEspacio> findExcepcionesPorSubEspacio(@Param("idSubEspacio") Long idSubEspacio, @Param("fechaInicio") LocalDate fechaInicio, @Param("fechaFin") LocalDate fechaFin);
 
