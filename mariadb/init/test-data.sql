@@ -5,7 +5,7 @@ START TRANSACTION;
 ALTER TABLE subespacio 
 MODIFY COLUMN encargado_subespacio_id BIGINT NULL;
 
-ALTER TABLE subespacio MODIFY COLUMN evento_id BIGINT NULL;
+--ALTER TABLE subespacio MODIFY COLUMN evento_id BIGINT NULL;
 
 ALTER TABLE inscripcion 
 MODIFY permitir_devolucion_completa BOOLEAN NOT NULL DEFAULT FALSE;
@@ -1127,5 +1127,112 @@ INSERT INTO evento_estado (descripcion, fecha_hora_alta, evento_id, estado_event
 SELECT 'Evento rechazado por incumplir requisitos', NOW(), e.id, (SELECT id FROM estado_evento WHERE nombre='Rechazado')
 FROM evento e WHERE e.nombre='Encuentro Básquet Recreativo'
 AND NOT EXISTS (SELECT 1 FROM evento_estado es WHERE es.evento_id=e.id);
+
+
+-- ===========================================================
+-- 🧩 SUPEREVENTOS Y RELACIONES
+-- ===========================================================
+
+START TRANSACTION;
+
+-- 1️⃣ Superevento Deportivo UTN
+INSERT INTO super_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Superevento Deportivo UTN', 'Conjunto de eventos organizados en el Polideportivo UTN y Complejo Norte.', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM super_evento WHERE nombre='Superevento Deportivo UTN');
+
+-- Relacionar eventos: Partido amistoso + Torneo de Verano
+UPDATE evento e
+JOIN super_evento se ON se.nombre='Superevento Deportivo UTN'
+SET e.super_evento_id = se.id
+WHERE e.nombre IN ('Partido amistoso', 'Torneo de Verano');
+
+-- Organizador (solo uno)
+INSERT INTO administrador_super_evento (fecha_hora_alta, usuario_id, super_evento_id, tipo_administrador_super_evento_id)
+SELECT NOW(), (SELECT id FROM usuario WHERE username='sergioalbino'), se.id, 1
+FROM super_evento se
+WHERE se.nombre='Superevento Deportivo UTN'
+  AND NOT EXISTS (
+    SELECT 1 FROM administrador_super_evento ae
+    WHERE ae.super_evento_id=se.id AND ae.tipo_administrador_super_evento_id=1
+  );
+
+-- Administradores adicionales
+INSERT INTO administrador_super_evento (fecha_hora_alta, usuario_id, super_evento_id, tipo_administrador_super_evento_id)
+SELECT NOW(), u.id, se.id, 2
+FROM usuario u, super_evento se
+WHERE se.nombre='Superevento Deportivo UTN'
+  AND u.username IN ('carol','luly','sam')
+  AND NOT EXISTS (
+    SELECT 1 FROM administrador_super_evento ae
+    WHERE ae.super_evento_id=se.id AND ae.usuario_id=u.id AND ae.tipo_administrador_super_evento_id=2
+  );
+
+
+-- 2️⃣ Superevento Salud Activa
+INSERT INTO super_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Superevento Salud Activa', 'Eventos orientados a la salud, el bienestar y la participación comunitaria.', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM super_evento WHERE nombre='Superevento Salud Activa');
+
+-- Relacionar eventos: Carrera Saludable + Jornada Deportiva Municipal
+UPDATE evento e
+JOIN super_evento se ON se.nombre='Superevento Salud Activa'
+SET e.super_evento_id = se.id
+WHERE e.nombre IN ('Carrera Saludable', 'Jornada Deportiva Municipal');
+
+-- Organizador
+INSERT INTO administrador_super_evento (fecha_hora_alta, usuario_id, super_evento_id, tipo_administrador_super_evento_id)
+SELECT NOW(), (SELECT id FROM usuario WHERE username='carol'), se.id, 1
+FROM super_evento se
+WHERE se.nombre='Superevento Salud Activa'
+  AND NOT EXISTS (
+    SELECT 1 FROM administrador_super_evento ae
+    WHERE ae.super_evento_id=se.id AND ae.tipo_administrador_super_evento_id=1
+  );
+
+-- Administradores adicionales
+INSERT INTO administrador_super_evento (fecha_hora_alta, usuario_id, super_evento_id, tipo_administrador_super_evento_id)
+SELECT NOW(), u.id, se.id, 2
+FROM usuario u, super_evento se
+WHERE se.nombre='Superevento Salud Activa'
+  AND u.username IN ('sergioalbino','luly','sam')
+  AND NOT EXISTS (
+    SELECT 1 FROM administrador_super_evento ae
+    WHERE ae.super_evento_id=se.id AND ae.usuario_id=u.id AND ae.tipo_administrador_super_evento_id=2
+  );
+
+
+-- 3️⃣ Superevento Interclubes Mendoza
+INSERT INTO super_evento (nombre, descripcion, fecha_hora_alta)
+SELECT 'Superevento Interclubes Mendoza', 'Competiciones interclubes y entrenamientos en complejos deportivos de la provincia.', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM super_evento WHERE nombre='Superevento Interclubes Mendoza');
+
+-- Relacionar eventos: Entrenamiento Femenino Avanzado + Partido Nocturno + Torneo Padel Interclubes + Encuentro Básquet Recreativo
+UPDATE evento e
+JOIN super_evento se ON se.nombre='Superevento Interclubes Mendoza'
+SET e.super_evento_id = se.id
+WHERE e.nombre IN ('Entrenamiento Femenino Avanzado', 'Partido Nocturno', 'Torneo Padel Interclubes', 'Encuentro Básquet Recreativo');
+
+-- Organizador
+INSERT INTO administrador_super_evento (fecha_hora_alta, usuario_id, super_evento_id, tipo_administrador_super_evento_id)
+SELECT NOW(), (SELECT id FROM usuario WHERE username='luly'), se.id, 1
+FROM super_evento se
+WHERE se.nombre='Superevento Interclubes Mendoza'
+  AND NOT EXISTS (
+    SELECT 1 FROM administrador_super_evento ae
+    WHERE ae.super_evento_id=se.id AND ae.tipo_administrador_super_evento_id=1
+  );
+
+-- Administradores adicionales
+INSERT INTO administrador_super_evento (fecha_hora_alta, usuario_id, super_evento_id, tipo_administrador_super_evento_id)
+SELECT NOW(), u.id, se.id, 2
+FROM usuario u, super_evento se
+WHERE se.nombre='Superevento Interclubes Mendoza'
+  AND u.username IN ('sergioalbino','carol','sam')
+  AND NOT EXISTS (
+    SELECT 1 FROM administrador_super_evento ae
+    WHERE ae.super_evento_id=se.id AND ae.usuario_id=u.id AND ae.tipo_administrador_super_evento_id=2
+  );
+
+
 
 COMMIT;
