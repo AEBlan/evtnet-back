@@ -128,7 +128,7 @@ public class EventoController {
     }
 
     @DeleteMapping("/cancelarInscripcion")
-    public ResponseEntity<Void> cancelarInscripcion(@RequestParam long id) {
+    public ResponseEntity<Void> cancelarInscripcion(@RequestParam long id) throws Exception {
         service.cancelarInscripcion(id);
         return ResponseEntity.ok().build();
     }

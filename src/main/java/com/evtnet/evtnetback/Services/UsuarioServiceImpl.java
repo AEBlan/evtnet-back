@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -695,14 +697,20 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
         if (u.getFotoPerfil() == null || u.getFotoPerfil().isBlank()) {
-            return null; // o devolver una imagen por defecto
+            return obtenerFotoDePerfilFallback();
         }
 
         Path path = Paths.get(perfilesDir).resolve(u.getFotoPerfil()).toAbsolutePath().normalize();
-        if (!Files.exists(path)) return null;
+        if (!Files.exists(path)) return obtenerFotoDePerfilFallback();
 
         String ct = Files.probeContentType(path);
         return new FotoResponse(Files.readAllBytes(path), ct);
+    }
+
+    private FotoResponse obtenerFotoDePerfilFallback() throws IOException {
+        File file = new File(getClass().getResource("/default.png").getFile());
+        Path path = file.toPath();
+        return new FotoResponse(Files.readAllBytes(path), Files.probeContentType(path));
     }
 
 

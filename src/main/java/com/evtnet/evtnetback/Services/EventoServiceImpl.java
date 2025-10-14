@@ -948,8 +948,6 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		return e.getId();
     }
 
-
-
 	//TODO: Revisar
     @Override
     @Transactional
@@ -958,6 +956,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	LocalDateTime hasta = LocalDateTime.ofEpochSecond(fechaHastaMillis / 1000, 0, java.time.ZoneOffset.UTC);
 	return eventoRepo.contarSuperpuestosPorEspacio(idEspacio, desde, hasta);
     }
+
+
 
     @Override @Transactional
     public DTOEventoParaInscripcion obtenerEventoParaInscripcion(long idEvento) throws Exception {
@@ -1202,7 +1202,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     }
 
 
-
+	//TODO: Revisar
 	@Override
 	@Transactional
 	public DTOModificarEvento obtenerDatosModificacionEvento(long idEvento) throws Exception {
@@ -1288,7 +1288,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 	}
 
-
+	//TODO: Revisar
 	@Override
 	@Transactional
 	public void modificarEvento(DTOModificarEvento dto) {
@@ -1356,7 +1356,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		Evento e = eventoRepo.findById(idEvento)
 			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-		String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+		String currentUser = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse primero"));
 
 		boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(idEvento, currentUser);
 		boolean esOrganizador = e.getOrganizador() != null &&
@@ -1369,6 +1369,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 					.username(i.getUsuario().getUsername())
 					.nombre(i.getUsuario().getNombre())
 					.apellido(i.getUsuario().getApellido())
+					.dni(i.getUsuario().getDni())
 					.build())
 				.fechaInscripcion(i.getFechaHoraAlta())
 				.fechaCancelacionInscripcion(i.getFechaHoraBaja())
@@ -1395,9 +1396,21 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 	@Override
 	@Transactional
-	public void cancelarInscripcion(long idInscripcion) {
+	public void cancelarInscripcion(long idInscripcion) throws Exception {
 		Inscripcion ins = inscripcionRepo.findById(idInscripcion)
 			.orElseThrow(() -> new HttpErrorException(404, "Inscripción no encontrada"));
+
+		Evento e = ins.getEvento();
+
+		String currentUser = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse primero"));
+
+		boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(e.getId(), currentUser);
+		boolean esOrganizador = e.getOrganizador() != null &&
+				e.getOrganizador().getUsername().equals(currentUser);
+
+		if (!esAdministrador && !esOrganizador) {
+			throw new Exception("Debe ser administrador del evento para poder cancelar inscripciones");
+		}
 
 		// Guardar hora de baja con zona Argentina
 		ZoneId zone = ZoneId.of("America/Argentina/Buenos_Aires");

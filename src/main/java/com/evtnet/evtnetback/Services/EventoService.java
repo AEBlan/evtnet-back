@@ -28,7 +28,7 @@ public interface EventoService extends BaseService<Evento, Long> {
     void modificarEvento(DTOModificarEvento dto);
 
     DTOInscripcionesEvento obtenerInscripciones(long idEvento, String texto) throws Exception;
-    void cancelarInscripcion(long idInscripcion);
+    void cancelarInscripcion(long idInscripcion) throws Exception;
     DTODatosParaInscripcion obtenerDatosParaInscripcion(long idEvento, String username) throws Exception;
     List<DTOBusquedaUsuario> buscarUsuariosNoInscriptos(Long idEvento, String texto) throws Exception;
     void inscribirUsuario(DTOInscripcion dto) throws Exception;
