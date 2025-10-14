@@ -31,6 +31,7 @@ public class DTOInscripcionesEvento {
         private String username;
         private String nombre;
         private String apellido;
+        private String dni;
     }
 
     @Builder
