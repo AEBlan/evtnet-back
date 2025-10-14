@@ -73,7 +73,7 @@ public class EventoController {
     // --- NUEVOS para el front actual ---
 
     @GetMapping("/obtenerEventoParaInscripcion")
-    public ResponseEntity<DTOEventoParaInscripcion> obtenerEventoParaInscripcion(@RequestParam long id) {
+    public ResponseEntity<DTOEventoParaInscripcion> obtenerEventoParaInscripcion(@RequestParam long id) throws Exception {
         return ResponseEntity.ok(service.obtenerEventoParaInscripcion(id));
     }
 
@@ -96,7 +96,7 @@ public class EventoController {
 
     @GetMapping("/obtenerMontoDevolucionCancelacionInscripcion")
     public ResponseEntity<Map<String, Number>> obtenerMontoDevolucionCancelacionInscripcion(
-            @RequestParam long idEvento, @RequestParam String username) {
+            @RequestParam long idEvento, @RequestParam String username) throws Exception {
         return ResponseEntity.ok(Map.of("monto", service.obtenerMontoDevolucionCancelacion(idEvento, username)));
     }
 

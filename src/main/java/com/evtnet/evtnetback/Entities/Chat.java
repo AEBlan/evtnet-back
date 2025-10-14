@@ -7,7 +7,7 @@ import java.util.List;
 import com.evtnet.evtnetback.Entities.*;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"evento", "superEvento", "espacio", "usuario1", "usuario2"})
 @Entity
 @Table(name = "chat",
        indexes = {

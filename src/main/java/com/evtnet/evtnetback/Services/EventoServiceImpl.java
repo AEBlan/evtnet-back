@@ -14,6 +14,7 @@ import com.evtnet.evtnetback.util.GeographyUtil;
 import com.evtnet.evtnetback.util.MercadoPagoSingleton;
 
 import com.evtnet.evtnetback.util.RegistroSingleton;
+import com.mercadopago.exceptions.MPApiException;
 import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 
@@ -515,7 +516,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 		String estado = ee.getEstadoEvento().getNombre();
 		String motivoCancelacion = Objects.equals(estado, "Cancelado") ? ee.getDescripcion() : null;
 
-		List<AdministradorEvento> admins = e.getAdministradoresEvento().stream().filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername() == username).toList();
+		List<AdministradorEvento> admins = e.getAdministradoresEvento().stream().filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername().equalsIgnoreCase(username)).toList();
 
 		boolean administrador = false;
 		boolean organizador = false;
@@ -539,94 +540,93 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 			}
 		}
     
-	List<Inscripcion> inscripcionesActivas = inscripcionRepo.findActivasByEventoId(e.getId());
-	e.setInscripciones(inscripcionesActivas);
+		List<Inscripcion> inscripcionesActivas = inscripcionRepo.findActivasByEventoId(e.getId());
+		e.setInscripciones(inscripcionesActivas);
 
-	boolean inscripto = e.getInscripciones().stream().filter(i -> i.getUsuario().getNombre() == username).count() == 1;
+		boolean inscripto = e.getInscripciones().stream().filter(i -> i.getFechaHoraBaja() == null &&  i.getUsuario().getUsername().equals(username)).count() == 1;
 
-	int participantes = inscripcionRepo.countParticipantesEfectivos(e.getId());
-	boolean cupoLleno = e.getCantidadMaximaParticipantes() != null &&
+		int participantes = inscripcionRepo.countParticipantesEfectivos(e.getId());
+		boolean cupoLleno = e.getCantidadMaximaParticipantes() != null &&
 		participantes >= e.getCantidadMaximaParticipantes();
 
-	BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", BigDecimal.valueOf(0.1));
 
+		double precioBase = e.getPrecioInscripcion().doubleValue() + e.getAdicionalPorInscripcion().doubleValue();
+		double precioTotal = precioBase * (1 + comision_inscripcion.doubleValue());
 
-	double precioBase = e.getPrecioInscripcion().doubleValue() + e.getAdicionalPorInscripcion().doubleValue();
-	double precioTotal = precioBase * (1 + comision_inscripcion.doubleValue());
+		DTOEventoDetalle.Espacio espacio = null;
+		DTOEventoDetalle.Subespacio subespacio = null;
 
-	DTOEventoDetalle.Espacio espacio = null;
-	DTOEventoDetalle.Subespacio subespacio = null;
-    
-	if (e.getSubEspacio() != null && e.getSubEspacio().getEspacio() != null) {
-	    var esp = e.getSubEspacio().getEspacio();
-    
-	    Double lat = (esp.getLatitudUbicacion() != null) ? esp.getLatitudUbicacion().doubleValue() : null;
-	    Double lon = (esp.getLongitudUbicacion() != null) ? esp.getLongitudUbicacion().doubleValue() : null;
-    
-	    espacio = new DTOEventoDetalle.Espacio(
-		    esp.getId(),
-		    esp.getNombre(),
-		    esp.getDireccionUbicacion(),
-		    lat,
-		    lon
-	    );
-    
-	    subespacio = new DTOEventoDetalle.Subespacio(
-		    e.getSubEspacio().getId(),
-		    e.getSubEspacio().getNombre(),
-		    e.getSubEspacio().getDescripcion()
-	    );
-	}
-    
-	List<String> disciplinas = (e.getDisciplinasEvento() == null)
-		? List.of()
-		: e.getDisciplinasEvento().stream()
-		    .filter(de -> de.getDisciplina() != null)
-		    .map(de -> de.getDisciplina().getNombre())
-		    .filter(Objects::nonNull)
-		    .toList();
-    
-	List<DTOEventoDetalle.Inscripto> inscriptos = (e.getInscripciones() == null)
-		? List.of()
-		: e.getInscripciones().stream()
-		    .filter(i -> i.getUsuario() != null)
-		    .map(i -> new DTOEventoDetalle.Inscripto(
-			    i.getUsuario().getUsername(),
-			    i.getUsuario().getNombre(),
-			    i.getUsuario().getApellido()
-		    ))
-		    .toList();
+		if (e.getSubEspacio() != null && e.getSubEspacio().getEspacio() != null) {
+			var esp = e.getSubEspacio().getEspacio();
 
-		DTOEventoDetalle.SuperEvento superevento = null;
+			Double lat = (esp.getLatitudUbicacion() != null) ? esp.getLatitudUbicacion().doubleValue() : null;
+			Double lon = (esp.getLongitudUbicacion() != null) ? esp.getLongitudUbicacion().doubleValue() : null;
 
-		if (e.getSuperEvento() != null) {
-			superevento = new DTOEventoDetalle.SuperEvento(
-				e.getSuperEvento().getId(),
-				e.getSuperEvento().getNombre()
+			espacio = new DTOEventoDetalle.Espacio(
+				esp.getId(),
+				esp.getNombre(),
+				esp.getDireccionUbicacion(),
+				lat,
+				lon
+			);
+
+			subespacio = new DTOEventoDetalle.Subespacio(
+				e.getSubEspacio().getId(),
+				e.getSubEspacio().getNombre(),
+				e.getSubEspacio().getDescripcion()
 			);
 		}
-    
-	return new DTOEventoDetalle(
-		e.getId(),
-		e.getNombre(),
-		e.getDescripcion(),
-		TimeUtil.toMillis(e.getFechaHoraInicio()),
-		TimeUtil.toMillis(e.getFechaHoraFin()),
-		precioBase,
-		precioTotal,
-		disciplinas,
-		espacio,
-		subespacio,
-				estado,
-		motivoCancelacion,
-		cupoLleno,
-				superevento,
-				inscripto,
-				inscriptos,
-		administrador,
-				organizador,
-				e.getChat().getId()
-	);
+
+		List<String> disciplinas = (e.getDisciplinasEvento() == null)
+			? List.of()
+			: e.getDisciplinasEvento().stream()
+				.filter(de -> de.getDisciplina() != null)
+				.map(de -> de.getDisciplina().getNombre())
+				.filter(Objects::nonNull)
+				.toList();
+
+		List<DTOEventoDetalle.Inscripto> inscriptos = (e.getInscripciones() == null)
+			? List.of()
+			: e.getInscripciones().stream()
+				.filter(i -> i.getUsuario() != null)
+				.map(i -> new DTOEventoDetalle.Inscripto(
+					i.getUsuario().getUsername(),
+					i.getUsuario().getNombre(),
+					i.getUsuario().getApellido()
+				))
+				.toList();
+
+			DTOEventoDetalle.SuperEvento superevento = null;
+
+			if (e.getSuperEvento() != null) {
+				superevento = new DTOEventoDetalle.SuperEvento(
+					e.getSuperEvento().getId(),
+					e.getSuperEvento().getNombre()
+				);
+			}
+
+		return new DTOEventoDetalle(
+			e.getId(),
+			e.getNombre(),
+			e.getDescripcion(),
+			TimeUtil.toMillis(e.getFechaHoraInicio()),
+			TimeUtil.toMillis(e.getFechaHoraFin()),
+			precioBase,
+			precioTotal,
+			disciplinas,
+			espacio,
+			subespacio,
+					estado,
+			motivoCancelacion,
+			cupoLleno,
+					superevento,
+					inscripto,
+					inscriptos,
+			administrador,
+					organizador,
+					e.getChat().getId()
+		);
     }
     
     
@@ -899,19 +899,19 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 			disciplinaEventoRepo.save(de);
 		}
 
-		if (!publico) {
-			TipoAdministradorEvento tipoOrg = tipoAdminEventoRepo.findByNombreIgnoreCase("Organizador")
-					.orElseThrow(() -> new HttpErrorException(500, "TipoAdministradorEvento 'Organizador' no encontrado"));
 
-			AdministradorEvento ae = AdministradorEvento.builder()
-					.evento(e)
-					.fechaHoraAlta(LocalDateTime.now())
-					.usuario(organizador)
-					.tipoAdministradorEvento(tipoOrg)
-					.build();
+		TipoAdministradorEvento tipoOrg = tipoAdminEventoRepo.findByNombreIgnoreCase("Organizador")
+				.orElseThrow(() -> new HttpErrorException(500, "TipoAdministradorEvento 'Organizador' no encontrado"));
 
-			administradorEventoRepo.save(ae);
-		}
+		AdministradorEvento ae = AdministradorEvento.builder()
+				.evento(e)
+				.fechaHoraAlta(LocalDateTime.now())
+				.usuario(organizador)
+				.tipoAdministradorEvento(tipoOrg)
+				.build();
+
+		administradorEventoRepo.save(ae);
+
 
 		EstadoEvento estado = null;
 		if (subespacio.getEspacio().getRequiereAprobarEventos()) {
@@ -928,16 +928,14 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 
 		eventoEstadoRepo.save(ee);
 
-		if (!publico) {
-			// Crear Chat asociado
-			Chat chat = Chat.builder()
-					.tipo(Chat.Tipo.EVENTO)
-					.fechaHoraAlta(LocalDateTime.now())
-					.evento(e)
-					.build();
+		// Crear Chat asociado
+		Chat chat = Chat.builder()
+				.tipo(Chat.Tipo.EVENTO)
+				.fechaHoraAlta(LocalDateTime.now())
+				.evento(e)
+				.build();
 
-			chatRepo.save(chat);
-		}
+		chatRepo.save(chat);
 
 
 		registroSingleton.write("Eventos", "evento", "creacion", "Evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
@@ -963,12 +961,26 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
     }
 
     @Override @Transactional
-    public DTOEventoParaInscripcion obtenerEventoParaInscripcion(long idEvento) {
-	// 🔁 cambia a findByIdForDetalle
-	Evento e = eventoRepo.findByIdForDetalle(idEvento)
-	    .orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+    public DTOEventoParaInscripcion obtenerEventoParaInscripcion(long idEvento) throws Exception {
+		// cambia a findByIdForDetalle
+		Evento e = eventoRepo.findByIdForDetalle(idEvento)
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-	DTOEventoParaInscripcion.Espacio espacio = null;
+		String estado = e.getEventosEstado().stream().filter(ee -> ee.getFechaHoraBaja() == null).toList().get(0).getEstadoEvento().getNombre();
+
+		if (!estado.equalsIgnoreCase("Aceptado")) {
+			throw new Exception("No puede inscribirse al evento porque el mismo no está aceptado");
+		}
+
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
+
+		List<Inscripcion> inscripcion = e.getInscripciones().stream().filter(i -> i.getFechaHoraBaja() == null && i.getUsuario().getUsername().equals(username)).toList();
+
+		if (!inscripcion.isEmpty()) {
+			throw new Exception("Ya está inscripto a este evento");
+		}
+
+		DTOEventoParaInscripcion.Espacio espacio = null;
 
 		espacio = DTOEventoParaInscripcion.Espacio.builder()
 			.id(e.getSubEspacio().getEspacio().getId())
@@ -976,58 +988,71 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 			.descripcion(e.getSubEspacio().getEspacio().getDescripcion())
 			.build();
 
-	return DTOEventoParaInscripcion.builder()
-		.nombre(e.getNombre())
-		.descripcion(e.getDescripcion())
-		.idSuperevento(e.getSuperEvento() != null ? e.getSuperEvento().getId() : null)
-		.fechaDesde(e.getFechaHoraInicio())
-		.fechaHasta(e.getFechaHoraFin())
-		.espacio(espacio)
-		.direccion(e.getSubEspacio().getEspacio().getDireccionUbicacion())
-		.ubicacion(new DTOEventoParaInscripcion.Ubicacion(
-			e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(),
-			e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()))
-		.precioPorAsistente(e.getPrecioInscripcion())
-		.cantidadMaximaInvitados(e.getCantidadMaximaInvitados())
-		.limiteParticipantes(e.getCantidadMaximaParticipantes())
-		.build();
+		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+
+		BigDecimal precio = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion())
+				.multiply(comision_inscripcion.add(BigDecimal.valueOf(1)));
+
+		return DTOEventoParaInscripcion.builder()
+			.nombre(e.getNombre())
+			.descripcion(e.getDescripcion())
+			.idSuperevento(e.getSuperEvento() != null ? e.getSuperEvento().getId() : null)
+			.fechaDesde(e.getFechaHoraInicio())
+			.fechaHasta(e.getFechaHoraFin())
+			.espacio(espacio)
+			.direccion(e.getSubEspacio().getEspacio().getDireccionUbicacion())
+			.ubicacion(new DTOEventoParaInscripcion.Ubicacion(
+				e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(),
+				e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()))
+			.precioPorAsistente(precio)
+			.cantidadMaximaInvitados(e.getCantidadMaximaInvitados())
+			.limiteParticipantes(e.getCantidadMaximaParticipantes())
+			.build();
     }
 
 	@Override
 	@Transactional
 	public DTOVerificacionPrePago verificarDatosPrePago(DTOInscripcion dto) throws Exception {
-		boolean valido = verificarDatosPrePagoBool(dto);
+		verificarDatosPrePagoBool(dto);
 
 		ArrayList<DTOPreferenciaPago> prefs = new ArrayList<>();
+		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
-		if (valido) {
-			//TO-DO
-			//Generar preferencias para pagar
-			//Está hardcodeado para no tener problemas mientras cambian las entidades
-			//Hay que revisar TODO ESTO
-			Evento e = eventoRepo.findById(dto.getIdEvento())
-				.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+		Evento e = eventoRepo.findById(dto.getIdEvento())
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-			BigDecimal comision = new BigDecimal(0.1);
+		String url = "/Evento/" + e.getId() + "/Inscribirme";
 
-			String url = "/Evento/" + e.getId() + "/Inscribirme";
+		Usuario organizador = e.getOrganizador();
 
-			Usuario organizador = e.getOrganizador();
+		Usuario propietario = null;
 
-			prefs.add(mercadoPagoSingleton.createPreference("Inscripción a evento " + e.getNombre(), e.getPrecioInscripcion(), comision, organizador, url));
+		boolean publico = e.getSubEspacio().getEspacio().getTipoEspacio().getNombre().equalsIgnoreCase("Público");
 
-	    Usuario propietario = e.getOrganizador();
+		if (!publico) {
 
-			prefs.add(mercadoPagoSingleton.createPreference("Adicional a espacio por inscripción a evento " + e.getNombre(), e.getPrecioInscripcion(), comision, propietario, url));
+			List<Usuario> props = e.getSubEspacio().getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEspacio().getNombre().equalsIgnoreCase("Propietario")).map(a -> a.getUsuario()).toList();
+
+			if (!props.isEmpty()) {
+				propietario = props.get(0);
+			}
 		}
 
+		if (e.getPrecioInscripcion().compareTo(BigDecimal.ZERO) != 0)
+			prefs.add(mercadoPagoSingleton.createPreference("Inscripción a evento " + e.getNombre(), e.getPrecioInscripcion(), comision_inscripcion, organizador, url));
+
+		if (!publico && e.getAdicionalPorInscripcion().compareTo(BigDecimal.ZERO) != 0) {
+			prefs.add(mercadoPagoSingleton.createPreference("Adicional a espacio por inscripción a evento " + e.getNombre(), e.getAdicionalPorInscripcion(), comision_inscripcion, propietario, url));
+		}
+
+
 		return DTOVerificacionPrePago.builder()
-			.valido(valido)
+			.valido(true)
 			.preferencias(prefs)
 			.build();
 	}
 
-	private boolean verificarDatosPrePagoBool(DTOInscripcion dto) {
+	private void verificarDatosPrePagoBool(DTOInscripcion dto) throws Exception {
 		Evento e = eventoRepo.findById(dto.getIdEvento())
 				.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 		
@@ -1035,7 +1060,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 
 		// ya inscripto (solo si tiene una inscripción activa)
 		if (inscripcionRepo.countActivasByEventoIdAndUsuarioUsername(e.getId(), username) > 0) 
-			return false;
+			throw new Exception("Ya está inscripto a este evento");
 
 		// Zona configurada en application.properties
 		ZoneId zone = ZoneId.of(appTimezone);
@@ -1047,24 +1072,34 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 		ZonedDateTime inicio = e.getFechaHoraInicio().atZone(zone);
 
 		if (ahora.isAfter(inicio)) {
-				return false; // bloquear solo si ya pasó
+			throw new Exception("Ya no puede inscribirse a este evento");
 		}
 
 		// capacidad de participantes
 		int actuales = inscripcionRepo.countParticipantesEfectivos(e.getId());
 		int nuevos = 1 + (dto.getInvitados() != null ? dto.getInvitados().size() : 0);
 		Integer limite = e.getCantidadMaximaParticipantes();
-		if (limite != null && actuales + nuevos > limite) return false;
+		if (limite != null && actuales + nuevos > limite) throw new Exception("No hay más lugar en el subespacio");
 
 		// límite de invitados por inscripción
 		if (e.getCantidadMaximaInvitados() != null && dto.getInvitados() != null &&
-				dto.getInvitados().size() > e.getCantidadMaximaInvitados()) return false;
+				dto.getInvitados().size() > e.getCantidadMaximaInvitados()) throw new Exception("Puede tener hasta " + e.getCantidadMaximaInvitados() + " invitados");
 
-		// precio mínimo
-		if (dto.getPrecioInscripcion() != null && e.getPrecioInscripcion() != null &&
-				dto.getPrecioInscripcion().compareTo(e.getPrecioInscripcion()) < 0) return false;
+		boolean publico = e.getSubEspacio().getEspacio().getTipoEspacio().getNombre().equalsIgnoreCase("Público");
 
-		return true;
+		if (!publico) {
+			Usuario propietario = null;
+
+			List<Usuario> props = e.getSubEspacio().getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEspacio().getNombre().equalsIgnoreCase("Propietario")).map(a -> a.getUsuario()).toList();
+
+			if (!props.isEmpty()) {
+				propietario = props.get(0);
+			}
+
+			if (propietario == null) {
+				throw new Exception("No se encontró al propietario del espacio");
+			}
+		}
 	}
 
 
@@ -1072,47 +1107,47 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 	@Override 
 	@Transactional
 	public void inscribirse(DTOInscripcion dto) throws Exception {
-	if (!verificarDatosPrePagoBool(dto))
-		throw new HttpErrorException(400, "Datos inválidos para inscribirse");
+		verificarDatosPrePagoBool(dto);
 
-	Evento e = eventoRepo.findById(dto.getIdEvento())
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
-		
+		Evento e = eventoRepo.findById(dto.getIdEvento())
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+
 		String username = CurrentUser.getUsername()
 			.orElseThrow(() -> new HttpErrorException(404, "Debe iniciar sesión antes de intentar inscribirse"));
-		//En este método, el que se inscribe el que lo llama. Username ESTABA en el DTO para cuando un admin lo inscribía
-	//String username = resolveUsername(dto.getUsername()); // ← token si falta
-	Usuario u = usuarioRepo.findByUsername(username)
-	    .orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-	mercadoPagoSingleton.verifyPayments(dto.getDatosPago());
+		Usuario u = usuarioRepo.findByUsername(username)
+			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-	Inscripcion ins = new Inscripcion();
-	ins.setEvento(e);
-	ins.setUsuario(u);
-	// 🔹 Corregido: guarda con hora de Argentina
-	ins.setFechaHoraAlta(LocalDateTime.now(ZONA_ARG));
+		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
-	// precio: usa el del DTO si viene, sino el del evento
-	ins.setPrecioInscripcion(dto.getPrecioInscripcion() != null
-		? dto.getPrecioInscripcion()
-		: e.getPrecioInscripcion());
+		mercadoPagoSingleton.verifyPayments(dto.getDatosPago());
 
-	// ¡crítico!
-	ins.setPermitirDevolucionCompleta(Boolean.FALSE);
+		Inscripcion ins = new Inscripcion();
+		ins.setEvento(e);
+		ins.setUsuario(u);
 
-	inscripcionRepo.save(ins);
+		ins.setFechaHoraAlta(LocalDateTime.now(ZONA_ARG));
 
-	if (dto.getInvitados() != null) {
-		for (DTOInscripcion.Invitado i : dto.getInvitados()) {
-		Invitado inv = new Invitado();
-		inv.setInscripcion(ins);
-		inv.setNombre(i.getNombre());
-		inv.setApellido(i.getApellido());
-		inv.setDni(i.getDni());
-		invitadoRepo.save(inv);
+		ins.setPrecioInscripcion(
+				e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion())
+						.multiply(BigDecimal.valueOf(1 + dto.getInvitados().size()))
+						.multiply(comision_inscripcion.add(BigDecimal.valueOf(1)))
+		);
+
+		ins.setPermitirDevolucionCompleta(false);
+
+		inscripcionRepo.save(ins);
+
+		if (dto.getInvitados() != null) {
+			for (DTOInscripcion.Invitado i : dto.getInvitados()) {
+				Invitado inv = new Invitado();
+				inv.setInscripcion(ins);
+				inv.setNombre(i.getNombre());
+				inv.setApellido(i.getApellido());
+				inv.setDni(i.getDni());
+				invitadoRepo.save(inv);
+			}
 		}
-	}
 	}
 
 
@@ -1120,19 +1155,15 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 	@Override
 	@Transactional
 	public void desinscribirse(long idEvento) throws Exception {
-	    String username = SecurityContextHolder.getContext().getAuthentication().getName();
+	    String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para poder cancelar una inscripción"));
 	
 	    Inscripcion ins = inscripcionRepo.findActivaByEventoIdAndUsuarioUsername(idEvento, username)
 	    .orElseThrow(() -> new HttpErrorException(404, "No existe inscripción activa"));
 	    
-			//TO-DO: colocar el payment id, extraído del comprobante
-			String paymentId = "abcd";
-			mercadoPagoSingleton.refundPayment(paymentId);
-
-	    // Eliminar invitados asociados
-	    invitadoRepo.deleteByInscripcionId(ins.getId());
+		//TODO: colocar el payment id, extraído del comprobante
+		String paymentId = "abcd";
+		mercadoPagoSingleton.refundPayment(paymentId);
 	
-	    // En vez de eliminar la inscripción, la marcamos con fecha de baja
 	    ZoneId zone = ZoneId.of("America/Argentina/Buenos_Aires");
 	    ins.setFechaHoraBaja(LocalDateTime.now(zone));
 	    
@@ -1142,35 +1173,38 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 
     @Override
     @Transactional
-    public Number obtenerMontoDevolucionCancelacion(long idEvento, String username) {
-	// 🔁 cambia a findByIdForDetalle
-	Evento e = eventoRepo.findByIdForDetalle(idEvento)
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+    public Number obtenerMontoDevolucionCancelacion(long idEvento, String username) throws Exception {
+		Evento e = eventoRepo.findByIdForDetalle(idEvento)
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-	BigDecimal totalPagado = comprobanteRepo
-		.totalPagadoPorEventoYUsuario(idEvento, username)
-		.orElse(BigDecimal.ZERO);
+		Inscripcion inscripcion = inscripcionRepo.findActivaByEventoIdAndUsuarioUsername(idEvento, username).orElseThrow(() -> new Exception("No se encontró su inscripción"));
 
-	if (totalPagado.signum() <= 0) return BigDecimal.ZERO;
+		BigDecimal totalPagado = inscripcion.getPrecioInscripcion();
 
-	long minutosHastaInicio = Math.max(
-		0L,
-		java.time.Duration.between(LocalDateTime.now(), e.getFechaHoraInicio()).toMinutes()
-	);
+		if (inscripcion.getPermitirDevolucionCompleta()) {
+			return totalPagado;
+		}
 
-	BigDecimal factor = BigDecimal.ZERO;
+		if (totalPagado.signum() <= 0) return BigDecimal.ZERO;
 
-	if (e.getPorcentajesReintegroCancelacion() != null && !e.getPorcentajesReintegroCancelacion().isEmpty()) {
-	    Optional<PorcentajeReintegroCancelacionInscripcion> mejor = e.getPorcentajesReintegroCancelacion().stream()
-		    .filter(p -> p.getMinutosLimite() != null && minutosHastaInicio >= p.getMinutosLimite())
-		    .max(Comparator.comparing(PorcentajeReintegroCancelacionInscripcion::getMinutosLimite));
+		long minutosHastaInicio = Math.max(
+			0L,
+			java.time.Duration.between(LocalDateTime.now(), e.getFechaHoraInicio()).toMinutes()
+		);
 
-	    if (mejor.isPresent() && mejor.get().getPorcentaje() != null) {
-		factor = mejor.get().getPorcentaje().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
-	    }
-	}
+		BigDecimal factor = BigDecimal.ZERO;
 
-	return totalPagado.multiply(factor).setScale(2, RoundingMode.HALF_UP);
+		if (e.getPorcentajesReintegroCancelacion() != null && !e.getPorcentajesReintegroCancelacion().isEmpty()) {
+			Optional<PorcentajeReintegroCancelacionInscripcion> mejor = e.getPorcentajesReintegroCancelacion().stream()
+				.filter(p -> p.getMinutosLimite() != null && minutosHastaInicio <= p.getMinutosLimite())
+				.max(Comparator.comparing(PorcentajeReintegroCancelacionInscripcion::getMinutosLimite));
+
+			if (mejor.isPresent() && mejor.get().getPorcentaje() != null) {
+				factor = mejor.get().getPorcentaje().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
+			}
+		}
+
+		return totalPagado.multiply(factor).setScale(2, RoundingMode.HALF_UP);
     }
 
 	@Override

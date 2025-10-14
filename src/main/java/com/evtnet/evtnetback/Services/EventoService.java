@@ -19,11 +19,11 @@ public interface EventoService extends BaseService<Evento, Long> {
     int obtenerCantidadEventosSuperpuestos(long idEspacio, long fechaDesdeMillis, long fechaHastaMillis);
 
     // 👇 NUEVOS (para que @Override sea válido)
-    DTOEventoParaInscripcion obtenerEventoParaInscripcion(long id);
+    DTOEventoParaInscripcion obtenerEventoParaInscripcion(long id) throws Exception;
     DTOVerificacionPrePago verificarDatosPrePago(DTOInscripcion dto) throws Exception;
     void inscribirse(DTOInscripcion dto) throws Exception;
     void desinscribirse(long idEvento) throws Exception;
-    Number obtenerMontoDevolucionCancelacion(long idEvento, String username);
+    Number obtenerMontoDevolucionCancelacion(long idEvento, String username) throws Exception;
     DTOModificarEvento obtenerDatosModificacionEvento(long id) throws Exception;
     void modificarEvento(DTOModificarEvento dto);
 
