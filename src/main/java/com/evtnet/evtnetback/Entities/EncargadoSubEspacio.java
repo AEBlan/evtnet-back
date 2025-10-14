@@ -7,7 +7,7 @@ import java.util.List;
 import com.evtnet.evtnetback.Entities.*;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude={"subEspacio"})
 @Entity
 @Table(name = "encargado_subespacio")
 @NoArgsConstructor
