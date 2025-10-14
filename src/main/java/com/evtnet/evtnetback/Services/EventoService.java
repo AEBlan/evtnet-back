@@ -3,18 +3,18 @@ package com.evtnet.evtnetback.Services;
 import com.evtnet.evtnetback.Entities.Evento;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
+import com.evtnet.evtnetback.dto.usuarios.DTOPreferenciaPago;
 
 import java.util.List;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
 
 
 public interface EventoService extends BaseService<Evento, Long> {  
-    List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro);
+    List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throws Exception;
     List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro, String username);
-    DTOEventoDetalle obtenerEventoDetalle(long idEvento);
-    DTODatosCreacionEvento obtenerDatosCreacionEvento(Long idEspacioOrNull);
+    DTOEventoDetalle obtenerEventoDetalle(long idEvento) throws Exception;
+    DTODatosCreacionEvento obtenerDatosCreacionEvento(Long idEspacio) throws Exception;
+    DTOPreferenciaPago pagarCreacionEvento(DTOEventoCreate req) throws Exception;
     long crearEvento(DTOEventoCreate req) throws Exception;
     int obtenerCantidadEventosSuperpuestos(long idEspacio, long fechaDesdeMillis, long fechaHastaMillis);
 

@@ -12,32 +12,6 @@ public final class EventoSearchMapper {
 
     private EventoSearchMapper() {}
 
-    // 🔹 Mapea resultados para la búsqueda general de eventos
-    public static DTOResultadoBusquedaEventos toResultadoBusqueda(Evento e) {
-        boolean esSuperevento = e.getSuperEvento() != null
-                && e.getFechaHoraInicio() == null && e.getFechaHoraFin() == null;
-
-        List<String> disciplinas = (e.getDisciplinasEvento() == null)
-                ? List.<String>of()
-                : e.getDisciplinasEvento().stream()
-                    .map(de -> de.getDisciplina() != null ? de.getDisciplina().getNombre() : null)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-
-        return new DTOResultadoBusquedaEventos(
-                esSuperevento,
-                e.getId(),
-                e.getNombre(),
-                TimeUtil.toMillis(e.getFechaHoraInicio()),
-                e.getPrecioInscripcion() == null ? null : e.getPrecioInscripcion().doubleValue(),
-                e.getSubEspacio() != null && e.getSubEspacio().getEspacio() != null
-                        ? e.getSubEspacio().getEspacio().getNombre()
-                        : null,
-                disciplinas,
-                null
-        );
-    }
-
     // 🔹 Mapea resultados para "Mis Eventos" (incluye todos los roles)
     public static DTOResultadoBusquedaMisEventos toResultadoBusquedaMis(Evento e, String username) {
         String rol = "participante"; // valor por defecto
@@ -70,14 +44,14 @@ public final class EventoSearchMapper {
         }
 
         // 3️⃣ Si no tiene rol anterior, revisar si es ENCARGADO
-        if ("participante".equals(rol) && e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
+        /*if ("participante".equals(rol) && e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
                 var encargado = e.getSubEspacio().getEncargadoSubEspacio();
                 if (encargado.getUsuario() != null
                         && encargado.getUsuario().getUsername().equals(username)
                         && encargado.getFechaHoraBaja() == null) {
                 rol = "encargado";
                 }
-        }
+        }*/
     
 
         return new DTOResultadoBusquedaMisEventos(

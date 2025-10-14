@@ -54,7 +54,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                 "/eventos/obtenerEventoParaInscripcion",
                 "/eventos/obtenerMontoDevolucionCancelacionInscripcion",
                 "/eventos/obtenerDatosModificacionEvento"
-            ).permitAll()
+            ).authenticated()
             .requestMatchers(HttpMethod.PUT,
                 //"/eventos/buscar",
                 "/eventos/buscarMisEventos",

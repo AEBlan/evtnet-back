@@ -70,13 +70,15 @@ public class MercadoPagoSingleton {
             .build();
 
         PreferenceClient client = new PreferenceClient();
+
         Preference preference = client.create(preferenceRequest);
+        String pref_id = preference.getId();
 
         return DTOPreferenciaPago.builder()
             .concepto(concepto)
             .montoBruto(montoBruto)
             .comision(comision)
-            .preference_id(preference.getId())
+            .preference_id(pref_id)
             .public_key("APP_USR-14995dd8-9cbc-4d03-b581-71dacead45ba")
             .completada(false)
             .build();
