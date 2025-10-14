@@ -99,6 +99,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     WHERE e.latitudUbicacion BETWEEN :latitudDesde AND :latitudHasta
       AND e.longitudUbicacion BETWEEN :longitudDesde AND :longitudHasta
       AND ee.estadoEspacio.nombre like "Habilitado"
+      AND ee.fechaHoraBaja is null
 """)
     List<Espacio> findEspaciosByUbicacion(@Param("latitudDesde")BigDecimal latitudDesde, @Param("latitudHasta") BigDecimal latitudHasta, @Param("longitudDesde")BigDecimal longitudDesde, @Param("longitudHasta") BigDecimal longitudHasta);
 
@@ -119,6 +120,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
         OR LOWER(d.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
       )
       AND ee.estadoEspacio.nombre like "Habilitado"
+      AND ee.fechaHoraBaja is null
 """)
     List<Espacio> findEspaciosByTexto(@Param("texto") String texto);
 
@@ -128,6 +130,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     JOIN e.tipoEspacio te
     WHERE te.id IN (:tiposEspacio)
       AND ee.estadoEspacio.nombre like "Habilitado"
+      AND ee.fechaHoraBaja is null
 """)
     List<Espacio> findEspaciosByTipo(@Param("tiposEspacio")List<Long>tiposEspacio);
 
@@ -140,6 +143,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     LEFT JOIN ds.disciplina d
     WHERE d.id IN (:disciplinas)
       AND ee.estadoEspacio.nombre like "Habilitado"
+      AND ee.fechaHoraBaja is null
 """)
     List<Espacio> findEspaciosByDisciplina(@Param("disciplinas")List<Long>disciplinas);
 
@@ -147,6 +151,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     SELECT DISTINCT e FROM Espacio e
     JOIN e.espacioEstado ee
     WHERE ee.estadoEspacio.nombre like "Habilitado"
+        AND ee.fechaHoraBaja is null
 """)
     List<Espacio> findAllHabilitados();
 
