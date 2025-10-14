@@ -884,7 +884,7 @@ public List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throw
 		e.setCantidadMaximaInvitados(cant_max_invitados_default);
 		e.setCantidadMaximaParticipantes(r.getMaxParticipantes());
 		e.setPrecioOrganizacion(h != null ? h.getPrecioOrganizacion() : new BigDecimal(0.0d));
-		e.setAdicionalPorInscripcion(h != null ? h.getAdiciconalPorInscripcion() : new BigDecimal(0.0));
+		e.setAdicionalPorInscripcion(h != null ? h.getAdicionalPorInscripcion() : new BigDecimal(0.0));
 		e.setSubEspacio(subespacio);
 
 		e = eventoRepo.save(e);

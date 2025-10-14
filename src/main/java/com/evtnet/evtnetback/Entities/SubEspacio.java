@@ -45,10 +45,10 @@ public class SubEspacio extends Base {
     @OneToMany(mappedBy = "subEspacio", fetch = FetchType.LAZY)
     private List<Evento> eventos;
 
-    //@ManyToOne(fetch = FetchType.LAZY)
-    //@JoinColumn(name = "encargado_subespacio_id")
-    //private EncargadoSubEspacio encargadoSubEspacio;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "encargado_subespacio_id")
+    private EncargadoSubEspacio encargadoSubEspacio;
 
-    @OneToMany(mappedBy = "subEspacio")
-    private List<EncargadoSubEspacio> encargadosSubEspacio;
+//    @OneToMany(mappedBy = "subEspacio")
+//    private List<EncargadoSubEspacio> encargadosSubEspacio;
 }
