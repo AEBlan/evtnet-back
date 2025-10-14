@@ -23,6 +23,7 @@ public interface InscripcionRepository extends BaseRepository<Inscripcion, Long>
         select coalesce(max(size(i.invitados)), 0)
         from Inscripcion i
         where i.evento.id = :eventoId
+            and i.fechaHoraBaja is null
     """)
     int maxInvitadosPorInscripcionVigente(@Param("eventoId") Long eventoId);
 

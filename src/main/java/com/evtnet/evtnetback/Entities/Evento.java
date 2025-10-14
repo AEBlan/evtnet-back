@@ -43,6 +43,9 @@ public class Evento extends Base {
     @Column(name = "precio_organizacion")
     private BigDecimal precioOrganizacion;
 
+    @Column(name = "adicional_por_inscripcion")
+    private BigDecimal adicionalPorInscripcion;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "super_evento_id")
     private SuperEvento superEvento;

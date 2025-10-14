@@ -5,6 +5,7 @@ import com.evtnet.evtnetback.dto.comunes.CantidadResponse;
 import com.evtnet.evtnetback.dto.comunes.IdResponse;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
+import com.evtnet.evtnetback.dto.usuarios.DTOPreferenciaPago;
 import com.evtnet.evtnetback.Services.EventoService;
 import lombok.RequiredArgsConstructor;
 
@@ -12,8 +13,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
 
 
 import java.util.List;
@@ -27,7 +26,7 @@ public class EventoController {
     private final EventoService service;  
 
     @PutMapping("/buscar")
-    public ResponseEntity<List<DTOResultadoBusquedaEventos>> buscar(@RequestBody DTOBusquedaEventos filtro) {
+    public ResponseEntity<List<DTOResultadoBusquedaEventos>> buscar(@RequestBody DTOBusquedaEventos filtro) throws Exception {
         return ResponseEntity.ok(service.buscar(filtro));
     }
 
@@ -41,15 +40,19 @@ public class EventoController {
     }
 
     @GetMapping("/obtenerEvento")
-    public ResponseEntity<DTOEventoDetalle> obtenerEvento(@RequestParam long id) {
+    public ResponseEntity<DTOEventoDetalle> obtenerEvento(@RequestParam long id) throws Exception {
     return ResponseEntity.ok(service.obtenerEventoDetalle(id));
     }
 
 
     @GetMapping("/obtenerDatosCreacionEvento")
-    public ResponseEntity<DTODatosCreacionEvento> obtenerDatosCreacionEvento(@RequestParam String idEspacio) {
-        Long espacioId = "null".equalsIgnoreCase(idEspacio) ? null : Long.parseLong(idEspacio);
-        return ResponseEntity.ok(service.obtenerDatosCreacionEvento(espacioId));
+    public ResponseEntity<DTODatosCreacionEvento> obtenerDatosCreacionEvento(@RequestParam Long idEspacio) throws Exception {
+        return ResponseEntity.ok(service.obtenerDatosCreacionEvento(idEspacio));
+    }
+
+    @PutMapping("/pagarCreacionEvento")
+    public ResponseEntity<DTOPreferenciaPago> pagarCreacionEvento(@RequestBody DTOEventoCreate req) throws Exception {
+        return ResponseEntity.ok(service.pagarCreacionEvento(req));
     }
 
     @PostMapping("/crearEvento")

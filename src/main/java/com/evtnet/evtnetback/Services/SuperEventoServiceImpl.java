@@ -194,7 +194,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
             .eventos(superEvento.getEventos().stream().map(e -> {
                 List<EventoEstado> historico = e.getEventosEstado().stream().filter(h -> h.getFechaHoraBaja() == null).toList();
                 boolean cancelado = false;
-                if (historico.size() > 0 || historico.get(0).getEstadoEvento().getNombre().equals("Cancelado")) {
+                if (!historico.isEmpty() && historico.get(0).getEstadoEvento().getNombre().equals("Cancelado")) {
                     cancelado = true;
                 }
 
@@ -270,7 +270,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
             .eventos(superEvento.getEventos().stream().map(e -> {
                 List<EventoEstado> historico = e.getEventosEstado().stream().filter(h -> h.getFechaHoraBaja() == null).toList();
                 boolean cancelado = false;
-                if (historico.size() != 0) {
+                if (!historico.isEmpty() && historico.get(0).getEstadoEvento().getNombre().equals("Cancelado")) {
                     cancelado = true;
                 }
 
@@ -334,7 +334,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
             if (e.getCrear()) {
                 Optional<Evento> optEvento = eventoRepo.findById(e.getId());
 
-                if (!optEvento.isPresent()) {
+                if (optEvento.isEmpty()) {
                     errorVinculacion += "No se encontró al evento a vincular '" + e.getNombre() + "'\n";
                     continue;
                 }
@@ -348,6 +348,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
 
                 evento.setSuperEvento(superEvento);
 
+                eventoRepo.save(evento);
                 registroSingleton.write("Eventos", "evento", "modificacion", "Evento de ID " + evento.getId() + " nombre '" + evento.getNombre() + "' vinculado a superevento de ID " + superEvento.getId() + " nombre '" + superEvento.getNombre() + "'");
             } 
             
@@ -367,6 +368,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
                 }
 
                 evento.setSuperEvento(null);
+                eventoRepo.save(evento);
 
                 registroSingleton.write("Eventos", "evento", "modificacion", "Evento de ID " + evento.getId() + " nombre '" + evento.getNombre() + "' desvinculado de superevento de ID " + superEvento.getId() + " nombre '" + superEvento.getNombre() + "'");
             }
@@ -438,7 +440,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
     public List<DTOBusquedaEvento> buscarEventosNoVinculados(Long idSuperevento, String texto) throws Exception {
         SuperEvento superEvento = repo.findById(idSuperevento).orElseThrow(() -> new Exception("No se encontró el superevento"));
 
-        if (superEvento.getFechaHoraBaja() == null) {
+        if (superEvento.getFechaHoraBaja() != null) {
             throw new Exception("No se encontró el superevento");
         }
 
@@ -456,7 +458,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
 
         // Generación de la query
 
-        String jpql = "SELECT DISTINCT e FROM SuperEvento s JOIN s.eventos e JOIN e.administradoresEvento a WHERE 1=1";
+        String jpql = "SELECT DISTINCT e FROM Evento e JOIN e.administradoresEvento a WHERE 1=1";
 
         for (int i = 0; i < keywords.size(); i++) {
             jpql += " AND (" + 
@@ -466,7 +468,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
         }
 
         jpql += " AND a.usuario.username = :username AND a.fechaHoraBaja IS NULL";
-        jpql += " AND s.id = :superevento";
+        jpql += " AND (e.superEvento IS NULL OR e.superEvento <> :superevento)";
 
         TypedQuery<Evento> query = entityManager.createQuery(jpql, Evento.class);
 
@@ -475,7 +477,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
         }
 
         query.setParameter("username", username);
-        query.setParameter("superevento", superEvento.getId());
+        query.setParameter("superevento", superEvento);
 
         List<Evento> eventos = query.getResultList();
 

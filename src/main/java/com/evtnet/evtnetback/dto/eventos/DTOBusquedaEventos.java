@@ -10,9 +10,7 @@ public record DTOBusquedaEventos(
     Long horaDesde,
     Long horaHasta,
     List<Long> tiposEspacio,
-    boolean espaciosNoRegistrados,
     List<Long> disciplinas,
-    //List<Long> modos,
     Double precioLimite,
     boolean buscarEventos,
     boolean buscarSupereventos

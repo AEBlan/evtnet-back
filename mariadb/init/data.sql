@@ -14,9 +14,15 @@ INSERT INTO parametro_sistema (identificador, nombre, valor)
 INSERT INTO parametro_sistema (identificador, nombre, valor)
   SELECT 'c_p', 'c_p', '0.25' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_p');
 INSERT INTO parametro_sistema (identificador, nombre, valor)
-  SELECT 'c_e','c_e', '0.3' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_e');
-INSERT INTO parametro_sistema (identificador, nombre, valor)
   SELECT 'dias_previos_resenas_orden', 'dias_previos_resenas_orden', '365' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='dias_previos_resenas_orden');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'comision_inscripcion', 'Comisión por inscripción a eventos', '0.1' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='comision_inscripcion');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'comision_organizacion', 'Comisión por organización de eventos', '0.15' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='comision_organizacion');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'ventana_de_eventos', 'Eventos pasados a considerar en una búsqueda', '20' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='ventana_de_eventos');
+INSERT INTO parametro_sistema (identificador, nombre, valor)
+  SELECT 'cant_max_invitados_default', 'Cantidad máxima por defecto de invitados', '5' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='cant_max_invitados_default');
 
 
 -- =========================
@@ -59,27 +65,27 @@ WHERE NOT EXISTS (SELECT 1 FROM estado_denuncia_evento WHERE nombre='Finalizado'
 -- ========================
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 1, 'En_revisión', "Se revisan los datos correspondientes al espacio"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='En_revisión')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='En_revisión');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 2, 'Habilitado', "Se habilita el espacio para que se puedan organizar eventos en él"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Habilitado')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Habilitado');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 3, 'Oculto', "Se oculta el espacio para que no se puedan organizar eventos"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Oculto')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Oculto');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 4, 'Observado', "Se observa para que el dueño revise los datos en caso de que alguno esté incorrecto o falte"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Observado')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Observado');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 5, 'Rechazado', "Se rechaza el espacio para que no se puedan organizar eventos"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Rechazado')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Rechazado');
 
 INSERT INTO estado_espacio (id, nombre, descripcion)
 SELECT 6, 'Clausurado', "Se clausura el espacio debido a irregularidades en el mismo"
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Clausurado')
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Clausurado');
 
 
 
