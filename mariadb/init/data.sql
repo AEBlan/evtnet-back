@@ -157,6 +157,41 @@ INSERT INTO tipo_excepcion_horario_espacio (nombre, fecha_hora_alta)
 SELECT 'Externa', NOW()
 WHERE NOT EXISTS (SELECT 1 FROM tipo_excepcion_horario_espacio WHERE nombre='Externa');
 
+-- TipoCalificacion (emoji/imagen): Buena / Media / Mala
+INSERT INTO tipo_calificacion (id, nombre, imagen)
+SELECT 1, 'Buena', 'buena.png' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE id = 1 OR nombre = 'Buena');
+
+INSERT INTO tipo_calificacion (id, nombre, imagen)
+SELECT 2, 'Media', 'media.png' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE id = 2 OR nombre = 'Media');
+
+INSERT INTO tipo_calificacion (id, nombre, imagen)
+SELECT 3, 'Mala', 'mala.png' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM tipo_calificacion WHERE id = 3 OR nombre = 'Mala');
+
+-- MotivoCalificacion (asociados a tipos)
+-- (IDs elegidos: 1=Puntual, 2=Asistencia completa, 3=Llegó tarde, 4=No asistió, 5=Se retiró antes)
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 1, 'Puntual', 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 1 OR (nombre='Puntual' AND tipo_calificacion_id=1));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 2, 'Asistencia completa', 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 2 OR (nombre='Asistencia completa' AND tipo_calificacion_id=1));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 3, 'Llegó tarde', 3 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 3 OR (nombre='Llegó tarde' AND tipo_calificacion_id=3));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 4, 'No asistió', 3 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 4 OR (nombre='No asistió' AND tipo_calificacion_id=3));
+
+INSERT INTO motivo_calificacion (id, nombre, tipo_calificacion_id)
+SELECT 5, 'Se retiró antes', 2 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM motivo_calificacion WHERE id = 5 OR (nombre='Se retiró antes' AND tipo_calificacion_id=2));
+
 -- =========================
 -- TipoAdministradorEvento
 -- =========================
@@ -345,150 +380,283 @@ WHERE p.nombre IN (
 -- Saneamos por si había filas antiguas sin fecha
 UPDATE rol_permiso SET fecha_hora_alta = NOW() WHERE fecha_hora_alta IS NULL;
 
-
 -- ===================================================================
 -- Registros, tipos y subtipos
 -- ===================================================================
 
+-- =========================
+-- Registro: Usuarios y Grupos
+-- =========================
 INSERT INTO registro (nombre, nombre_formateado)
-  SELECT "UsuariosGrupos", "Usuarios y Grupos";
+SELECT 'UsuariosGrupos', 'Usuarios y Grupos'
+WHERE NOT EXISTS (SELECT 1 FROM registro WHERE nombre='UsuariosGrupos');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "usuario";
+SELECT 'usuario'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='usuario');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "grupo";
+SELECT 'grupo'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='grupo');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "inicio_sesion";
+SELECT 'inicio_sesion'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='inicio_sesion');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "calificacion";
+SELECT 'calificacion'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='calificacion');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "usuario_grupo";
-  
+SELECT 'usuario_grupo'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='usuario_grupo');
 
 
-
+-- =========================
+-- Registro: Eventos
+-- =========================
 INSERT INTO registro (nombre, nombre_formateado)
-  SELECT "Eventos", "Eventos";
+SELECT 'Eventos', 'Eventos'
+WHERE NOT EXISTS (SELECT 1 FROM registro WHERE nombre='Eventos');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "evento";
+SELECT 'evento'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='evento');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "superevento";
+SELECT 'superevento'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='superevento');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "inscripcion";
+SELECT 'inscripcion'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='inscripcion');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "denuncia";
+SELECT 'denuncia'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='denuncia');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "administrador_evento";
+SELECT 'administrador_evento'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='administrador_evento');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "administrador_superevento";
+SELECT 'administrador_superevento'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='administrador_superevento');
 
 
-
+-- =========================
+-- Registro: Espacios
+-- =========================
 INSERT INTO registro (nombre, nombre_formateado)
-  SELECT "Espacios", "Espacios";
+SELECT 'Espacios', 'Espacios'
+WHERE NOT EXISTS (SELECT 1 FROM registro WHERE nombre='Espacios');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "espacio_privado";
-  
+SELECT 'espacio_privado'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='espacio_privado');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "espacio_publico";
-  
+SELECT 'espacio_publico'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='espacio_publico');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "subespacio";
-  
+SELECT 'subespacio'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='subespacio');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "solicitud_espacio_publico";
-  
+SELECT 'solicitud_espacio_publico'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='solicitud_espacio_publico');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "cronograma";
-  
+SELECT 'cronograma'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='cronograma');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "reseña";
-  
+SELECT 'reseña'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='reseña');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "administrador_espacio_privado";
-  
+SELECT 'administrador_espacio_privado'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='administrador_espacio_privado');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "encargado_subespacio";
-  
+SELECT 'encargado_subespacio'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='encargado_subespacio');
 
 
-
+-- =========================
+-- Registro: Pagos
+-- =========================
 INSERT INTO registro (nombre, nombre_formateado)
-  SELECT "Pagos", "Pagos";
+SELECT 'Pagos', 'Pagos'
+WHERE NOT EXISTS (SELECT 1 FROM registro WHERE nombre='Pagos');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "pago";
+SELECT 'pago'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='pago');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "devolucion";
-  
+SELECT 'devolucion'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='devolucion');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "cobro_comision";
-  
+SELECT 'cobro_comision'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='cobro_comision');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "pago_comision";
-  
+SELECT 'pago_comision'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='pago_comision');
 
 
-
+-- =========================
+-- Registro: Parámetros
+-- =========================
 INSERT INTO registro (nombre, nombre_formateado)
-  SELECT "Parametros", "Parámetros";
+SELECT 'Parametros', 'Parámetros'
+WHERE NOT EXISTS (SELECT 1 FROM registro WHERE nombre='Parametros');
 
 INSERT INTO entidad_registro (nombre)
-  SELECT "tipo_calificacion";
-  
+SELECT 'tipo_calificacion'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='tipo_calificacion');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "motivo_calificacion";
-  
+SELECT 'motivo_calificacion'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='motivo_calificacion');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "disciplina";
-  
+SELECT 'disciplina'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='disciplina');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "rol";
-  
+SELECT 'rol'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='rol');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "icono_caracteristica";
-  
+SELECT 'icono_caracteristica'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='icono_caracteristica');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "comision_inscripcion";
-  
+SELECT 'comision_inscripcion'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='comision_inscripcion');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "comision_organizacion";
-  
+SELECT 'comision_organizacion'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='comision_organizacion');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "parametro_sistema";
-  
+SELECT 'parametro_sistema'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='parametro_sistema');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "imagen_mascota";
-  
+SELECT 'imagen_mascota'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='imagen_mascota');
+
 INSERT INTO entidad_registro (nombre)
-  SELECT "instancia_mascota";
+SELECT 'instancia_mascota'
+WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='instancia_mascota');
 
 
-
+-- =========================
+-- Acciones de registro
+-- =========================
+INSERT INTO accion_registro (nombre)
+SELECT 'creacion'
+WHERE NOT EXISTS (SELECT 1 FROM accion_registro WHERE nombre='creacion');
 
 INSERT INTO accion_registro (nombre)
-  SELECT "creacion";
+SELECT 'eliminacion'
+WHERE NOT EXISTS (SELECT 1 FROM accion_registro WHERE nombre='eliminacion');
 
 INSERT INTO accion_registro (nombre)
-  SELECT "eliminacion";
+SELECT 'modificacion'
+WHERE NOT EXISTS (SELECT 1 FROM accion_registro WHERE nombre='modificacion');
 
 INSERT INTO accion_registro (nombre)
-  SELECT "modificacion";
+SELECT 'restauracion'
+WHERE NOT EXISTS (SELECT 1 FROM accion_registro WHERE nombre='restauracion');
 
 INSERT INTO accion_registro (nombre)
-  SELECT "restauracion";
+SELECT 'ejecucion'
+WHERE NOT EXISTS (SELECT 1 FROM accion_registro WHERE nombre='ejecucion');
 
-INSERT INTO accion_registro (nombre)
-  SELECT "ejecucion";
+-- =========================
+-- EstadoEvento
+-- =========================
+INSERT INTO estado_evento (nombre, descripcion)
+SELECT 'En Revision', 'Evento en estado de revisión'
+WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='En Revision');
+
+INSERT INTO estado_evento (nombre, descripcion)
+SELECT 'Aceptado', 'Evento aprobado y visible para los usuarios'
+WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='Aceptado');
+
+INSERT INTO estado_evento (nombre, descripcion)
+SELECT 'Rechazado', 'Evento rechazado por el administrador del espacio'
+WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='Rechazado');
+
+INSERT INTO estado_evento (nombre, descripcion)
+SELECT 'Cancelado', 'Evento cancelado por el organizador o administrador'
+WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='Cancelado');
+
+-- =========================
+-- EstadoEspacio
+-- =========================
+INSERT INTO estado_espacio (nombre, descripcion)
+SELECT 'En Revision', 'Se revisan los datos correspondientes al espacio'
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='En Revision');
+
+INSERT INTO estado_espacio (nombre, descripcion)
+SELECT 'Rechazado', 'Se rechaza el espacio para que no se puedan organizar eventos'
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Rechazado');
+
+INSERT INTO estado_espacio (nombre, descripcion)
+SELECT 'Observado', 'Se observa para que el dueño revise los datos en caso de que alguno esté incorrecto o falte'
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Observado');
+
+INSERT INTO estado_espacio (nombre, descripcion)
+SELECT 'Habilitado', 'Se habilita el espacio para que se puedan organizar eventos en él'
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Habilitado');
+
+INSERT INTO estado_espacio (nombre, descripcion)
+SELECT 'Oculto', 'Se oculta el espacio para que no se puedan organizar eventos'
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Oculto');
+
+INSERT INTO estado_espacio (nombre, descripcion)
+SELECT 'Clausurado', 'Se clausura el espacio debido a irregularidades en el mismo'
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Clausurado');
+
+
+-- =========================
+-- TipoAdministradorEvento
+-- =========================
+INSERT INTO tipo_administrador_evento (nombre)
+SELECT 'Organizador'
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_evento WHERE nombre='Organizador');
+
+INSERT INTO tipo_administrador_evento (nombre)
+SELECT 'AdministradorEvento'
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_evento WHERE nombre='AdministradorEvento');
+
+
+-- =========================
+-- TipoAdministradorSuperEvento
+-- =========================
+INSERT INTO tipo_administrador_superevento (nombre)
+SELECT 'Organizador'
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_superevento WHERE nombre='Organizador');
+
+INSERT INTO tipo_administrador_superevento (nombre)
+SELECT 'AdministradorSuperEvento'
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_superevento WHERE nombre='AdministradorSuperEvento');
+
+
+-- =========================
+-- TipoAdministradorEspacio
+-- =========================
+INSERT INTO tipo_administrador_espacio (nombre)
+SELECT 'Propietario'
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_espacio WHERE nombre='Propietario');
+
+INSERT INTO tipo_administrador_espacio (nombre)
+SELECT 'AdministradorEspacio'
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_espacio WHERE nombre='AdministradorEspacio');
