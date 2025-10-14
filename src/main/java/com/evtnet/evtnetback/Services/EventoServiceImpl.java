@@ -185,10 +185,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		for (int i = 0; i < keywords.size(); i++) {
 			jpqlEventos += " AND (" +
 			"LOWER (TRIM(e.nombre)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR " +
-			"LOWER (TRIM(e.descripcion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%'))" +
-			"LOWER (TRIM(esp.nombre)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%'))" +
-			"LOWER (TRIM(esp.descripcion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%'))" +
-			"LOWER (TRIM(esp.direccion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%'))" +
+			"LOWER (TRIM(e.descripcion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR" +
+			"LOWER (TRIM(esp.nombre)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR" +
+			"LOWER (TRIM(esp.descripcion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR" +
+			"LOWER (TRIM(esp.direccionUbicacion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%'))" +
 			")";
 
 			jpqlSuperEventos += " AND (" +

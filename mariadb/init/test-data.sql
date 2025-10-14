@@ -366,7 +366,20 @@ WHERE e.nombre='Partido amistoso'
   );
 
 
-
+INSERT INTO chat (tipo, fecha_hora_alta, evento_id, usuario1_id, espacio_id)
+SELECT 
+  'EVENTO',
+  NOW(),
+  e.id,
+  ae.usuario_id,
+  sub.espacio_id
+FROM evento e
+JOIN subespacio sub ON sub.id = e.subespacio_id
+JOIN administrador_evento ae ON ae.evento_id = e.id
+JOIN tipo_administrador_evento tae ON tae.id = ae.tipo_administrador_evento_id
+WHERE tae.nombre = 'Organizador'
+  AND NOT EXISTS (SELECT 1 FROM chat c WHERE c.evento_id = e.id);
+  
 -- ===========================================================
 -- INSCRIPCIONES DE PRUEBA
 -- ===========================================================
@@ -598,6 +611,20 @@ SELECT 'Evento aprobado automáticamente para pruebas', NOW(), e.id,
 FROM evento e WHERE e.nombre='Torneo de Verano'
   AND NOT EXISTS (SELECT 1 FROM evento_estado WHERE evento_id=e.id);
 
+INSERT INTO chat (tipo, fecha_hora_alta, evento_id, usuario1_id, espacio_id)
+SELECT 
+  'EVENTO',
+  NOW(),
+  e.id,
+  ae.usuario_id,
+  sub.espacio_id
+FROM evento e
+JOIN subespacio sub ON sub.id = e.subespacio_id
+JOIN administrador_evento ae ON ae.evento_id = e.id
+JOIN tipo_administrador_evento tae ON tae.id = ae.tipo_administrador_evento_id
+WHERE tae.nombre = 'Organizador'
+  AND NOT EXISTS (SELECT 1 FROM chat c WHERE c.evento_id = e.id);
+
 INSERT INTO inscripcion (evento_id, usuario_id, fecha_hora_alta)
 SELECT e.id, u.id, NOW()
 FROM evento e JOIN usuario u ON u.username IN ('carol','sam')
@@ -630,6 +657,20 @@ SELECT 'Evento aprobado automáticamente para pruebas', NOW(), e.id,
        (SELECT id FROM estado_evento WHERE nombre='Aceptado')
 FROM evento e WHERE e.nombre='Carrera Saludable'
   AND NOT EXISTS (SELECT 1 FROM evento_estado WHERE evento_id=e.id);
+
+INSERT INTO chat (tipo, fecha_hora_alta, evento_id, usuario1_id, espacio_id)
+SELECT 
+  'EVENTO',
+  NOW(),
+  e.id,
+  ae.usuario_id,
+  sub.espacio_id
+FROM evento e
+JOIN subespacio sub ON sub.id = e.subespacio_id
+JOIN administrador_evento ae ON ae.evento_id = e.id
+JOIN tipo_administrador_evento tae ON tae.id = ae.tipo_administrador_evento_id
+WHERE tae.nombre = 'Organizador'
+  AND NOT EXISTS (SELECT 1 FROM chat c WHERE c.evento_id = e.id);
 
 INSERT INTO inscripcion (evento_id, usuario_id, fecha_hora_alta)
 SELECT e.id, u.id, NOW()
@@ -796,6 +837,20 @@ WHERE e.nombre='Jornada Deportiva Municipal'
     WHERE es.evento_id = e.id
   );
 
+INSERT INTO chat (tipo, fecha_hora_alta, evento_id, usuario1_id, espacio_id)
+SELECT 
+  'EVENTO',
+  NOW(),
+  e.id,
+  ae.usuario_id,
+  sub.espacio_id
+FROM evento e
+JOIN subespacio sub ON sub.id = e.subespacio_id
+JOIN administrador_evento ae ON ae.evento_id = e.id
+JOIN tipo_administrador_evento tae ON tae.id = ae.tipo_administrador_evento_id
+WHERE tae.nombre = 'Organizador'
+  AND NOT EXISTS (SELECT 1 FROM chat c WHERE c.evento_id = e.id);
+  
 -- ===========================================================
 -- 🧾 INSCRIPCIONES DE PRUEBA
 -- ===========================================================

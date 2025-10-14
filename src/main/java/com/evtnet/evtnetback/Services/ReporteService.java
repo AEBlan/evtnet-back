@@ -32,11 +32,12 @@ public class ReporteService {
 
         String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("No autenticado"));
 
+        // Verificar existencia de los espacios
         List<Espacio> espacios = espacioRepository.findAllById(espaciosIds);
         if (espacios.size() != new HashSet<>(espaciosIds).size())
             throw new IllegalArgumentException("Alguno de los espacios no existe");
 
-        // 🔹 Verificar que todos pertenezcan al usuario actual
+        // Verificar propiedad de los espacios
         boolean todosPropios = espacios.stream().allMatch(e ->
                 e.getAdministradoresEspacio().stream()
                         .anyMatch(ae -> ae.getTipoAdministradorEspacio() != null &&
@@ -54,6 +55,7 @@ public class ReporteService {
         LocalDateTime desde = LocalDateTime.ofInstant(iDesde, tz);
         LocalDateTime hasta = LocalDateTime.ofInstant(iHasta, tz);
 
+        // 🔹 Adaptado: ahora cuenta eventos a nivel de subespacios vinculados al espacio
         var filas = reporteRepository.contarEventosPorEspacio(espaciosIds, desde, hasta);
 
         Map<Long, Long> conteos = filas.stream()
@@ -80,6 +82,10 @@ public class ReporteService {
                 .build();
     }
 
+
+    // ===============================================================
+    //  Reporte: Participantes por rango temporal
+    // ===============================================================
     public DTOReporteParticipantesPorRangoTemporal generarParticipantesPorRangoTemporal(
             boolean todosLosEspacios,
             List<Long> espaciosIds,
@@ -99,6 +105,7 @@ public class ReporteService {
         LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
         LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
 
+        // Crear los intervalos de tiempo
         Period periodo = Period.of(anios, meses, dias);
         Duration duracion = Duration.ofHours(horas);
         List<LocalDateTime[]> intervalos = new ArrayList<>();
@@ -110,6 +117,7 @@ public class ReporteService {
             cursor = next;
         }
 
+        // Espacios a incluir (todos los del usuario o los seleccionados)
         List<Espacio> espacios = todosLosEspacios
                 ? espacioRepository.findByPropietarioUsername(username)
                 : espacioRepository.findAllById(espaciosIds);
@@ -118,8 +126,8 @@ public class ReporteService {
 
         for (Espacio e : espacios) {
             for (LocalDateTime[] par : intervalos) {
-                long count = reporteRepository.contarParticipantesPorRango(
-                        e.getId(), par[0], par[1]);
+                // 🔹 Cuenta inscripciones activas en eventos de todos los subespacios del espacio
+                long count = reporteRepository.contarParticipantesPorRango(e.getId(), par[0], par[1]);
                 datos.add(DTOReporteParticipantesPorRangoTemporal.Dato.builder()
                         .espacio(e.getNombre())
                         .fechaDesde(par[0].atZone(tz).toInstant())
@@ -134,13 +142,18 @@ public class ReporteService {
                 .datos(datos)
                 .build();
     }
+
+
+    // ===============================================================
+    // 3 Reporte: Personas en eventos de un espacio
+    // ===============================================================
     public DTOReportePersonsasEnEventosEnEspacio generarPersonasEnEventosEnEspacio(
-        Long espacioId, long fechaDesdeMs, long fechaHastaMs) throws Exception {
+            Long espacioId, long fechaDesdeMs, long fechaHastaMs) throws Exception {
 
         if (espacioId == null)
-                throw new IllegalArgumentException("espacioId es requerido");
+            throw new IllegalArgumentException("espacioId es requerido");
         if (fechaDesdeMs >= fechaHastaMs)
-                throw new IllegalArgumentException("El rango de fechas es inválido");
+            throw new IllegalArgumentException("El rango de fechas es inválido");
 
         var espacio = espacioRepository.findById(espacioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
@@ -149,6 +162,7 @@ public class ReporteService {
         LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
         LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
 
+        // 🔹 Adaptado: cuenta inscripciones de eventos en subespacios de este espacio
         var filas = reporteRepository.reportePersonasPorEventoEnEspacio(espacioId, desde, hasta);
 
         var datos = filas.stream()
@@ -164,6 +178,6 @@ public class ReporteService {
                 .fechaHoraGeneracion(Instant.now())
                 .datos(datos)
                 .build();
-        }
+    }
 
 }
