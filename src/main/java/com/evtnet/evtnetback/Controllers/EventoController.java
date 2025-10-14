@@ -115,7 +115,7 @@ public class EventoController {
     public ResponseEntity<List<DTOBusquedaUsuario>> buscarUsuariosNoInscriptos(
             @RequestParam long idEvento,
             @RequestParam(required = false, defaultValue = "") String texto
-    ) {
+    ) throws Exception {
         return ResponseEntity.ok(service.buscarUsuariosNoInscriptos(idEvento, texto));
     }
 
@@ -140,7 +140,7 @@ public class EventoController {
     }
 
     @PostMapping("/inscribirUsuario")
-    public ResponseEntity<Void> inscribirUsuario(@RequestBody DTOInscripcion dto) {
+    public ResponseEntity<Void> inscribirUsuario(@RequestBody DTOInscripcion dto) throws Exception {
         service.inscribirUsuario(dto);
         return ResponseEntity.ok().build();
     }
