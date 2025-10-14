@@ -86,13 +86,8 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     LEFT JOIN e.disciplinasEvento de
     LEFT JOIN de.disciplina d
     WHERE esp.id = :idEspacio
-      AND (LOWER(e.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
-           OR LOWER(e.descripcion) LIKE CONCAT('%', LOWER(:texto), '%'))
-      AND e.fechaHoraInicio BETWEEN :fechaHoraInicio AND :fechaHoraFin
-      AND e.precioInscripcion <= :precioLimite
-      AND (:disciplinas IS NULL OR d.id IN :disciplinas)
     """)
-    List<Evento> findAllByEspacio(@Param("idEspacio") Long idEspacio, @Param("texto") String texto, @Param("fechaHoraInicio") LocalDateTime fechaHoraInicio, @Param("fechaHoraFin") LocalDateTime fechaHoraFin, @Param("precioLimite") BigDecimal precioLimite, @Param("disciplinas") List<Long> disciplinas);
+    List<Evento> findAllByEspacio(@Param("idEspacio") Long idEspacio);
 
     @Query("""
     SELECT CASE WHEN COUNT(e) > 0 THEN TRUE ELSE FALSE END
@@ -168,5 +163,52 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
             @Param("desde2") LocalDateTime desde2,
             @Param("hasta2") LocalDateTime hasta2
     );
+
+    @Query("""
+    SELECT DISTINCT e
+    FROM Evento e
+    JOIN e.subEspacio sub
+    JOIN sub.espacio esp
+    WHERE esp.id = :idEspacio
+      AND (LOWER(e.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
+           OR LOWER(e.descripcion) LIKE CONCAT('%', LOWER(:texto), '%'))
+""")
+    List<Evento> findEventosByTexto(@Param("idEspacio") Long idEspacio, @Param("texto") String texto);
+
+    @Query("""
+    SELECT DISTINCT e
+    FROM Evento e
+    JOIN e.subEspacio sub
+    JOIN sub.espacio esp
+    WHERE esp.id = :idEspacio
+      AND e.fechaHoraInicio BETWEEN :fechaHoraInicio AND :fechaHoraFin
+""")
+    List<Evento> findEventosByFecha(@Param("idEspacio") Long idEspacio,
+                                    @Param("fechaHoraInicio") LocalDateTime fechaHoraInicio,
+                                    @Param("fechaHoraFin") LocalDateTime fechaHoraFin);
+
+    @Query("""
+    SELECT DISTINCT e
+    FROM Evento e
+    JOIN e.subEspacio sub
+    JOIN sub.espacio esp
+    WHERE esp.id = :idEspacio
+      AND e.precioInscripcion <= :precioLimite
+""")
+    List<Evento> findEventosByPrecio(@Param("idEspacio") Long idEspacio,
+                                     @Param("precioLimite") BigDecimal precioLimite);
+
+    @Query("""
+    SELECT DISTINCT e
+    FROM Evento e
+    JOIN e.subEspacio sub
+    JOIN sub.espacio esp
+    LEFT JOIN e.disciplinasEvento de
+    LEFT JOIN de.disciplina d
+    WHERE esp.id = :idEspacio
+      AND d.id IN :disciplinas
+""")
+    List<Evento> findEventosByDisciplinas(@Param("idEspacio") Long idEspacio,
+                                          @Param("disciplinas") List<Long> disciplinas);
 
 }

@@ -117,7 +117,6 @@ public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
       join u.administradoresEspacio ae
       where ae.espacio.id = :idEspacio
         and u.fechaHoraBaja is null
-        and ae.fechaHoraBaja is null
     """)
     List<Usuario> buscarUsuariosAdministradoresEspacio(@Param("idEspacio") Long idEspacio);
 

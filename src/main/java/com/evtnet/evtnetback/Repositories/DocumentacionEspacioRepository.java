@@ -14,7 +14,7 @@ public interface DocumentacionEspacioRepository extends BaseRepository<Documenta
         SELECT de
         FROM DocumentacionEspacio de
         WHERE de.espacio.id = :idEspacio
-            AND de.fechaHoraBaja is not null
+            AND de.fechaHoraBaja is null
     """)
     List<DocumentacionEspacio> findByEspacioId(@Param("idEspacio") Long idEspacio);
 }

@@ -28,5 +28,6 @@ public interface EspacioService extends BaseService<Espacio, Long> {
     void agregarAdministradorEspacio (Long idEspacio, String username)throws Exception;
     void entregarPropietario (Long idEspacio, String username, String usernamePropietario)throws Exception;
     void agregarEncargadoSubespacio (Long idSubEspacio, String username)throws Exception;
+    List<DTOEncargadoSubespacio>obtenerEncargadosSubespacios(Long idEspacio)throws Exception;
     //List<DTOEstadoEspacio>obtenerEstadosEspacio() throws Exception;
 }

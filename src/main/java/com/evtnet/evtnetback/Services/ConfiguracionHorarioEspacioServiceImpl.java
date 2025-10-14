@@ -130,7 +130,7 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                                     .toInstant()
                                     .toEpochMilli())
                             .precioOrganizacion(horarioEspacio.getPrecioOrganizacion().doubleValue())
-                            .adicionalPorInscripcion(horarioEspacio.getAdiciconalPorInscripcion().doubleValue())
+                            .adicionalPorInscripcion(horarioEspacio.getAdicionalPorInscripcion().doubleValue())
                     .build());
         }
         dtoDetalleCronograma.setHorarios(horarios);
@@ -329,7 +329,7 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                     .horaDesde(horaDesde)
                     .horaHasta(horaHasta)
                     .precioOrganizacion(new BigDecimal(dtoCrearHorario.getPrecioOrganizacion()))
-                    .adiciconalPorInscripcion(new BigDecimal(dtoCrearHorario.getAdicionalPorInscripcion()))
+                    .adicionalPorInscripcion(new BigDecimal(dtoCrearHorario.getAdicionalPorInscripcion()))
                     .configuracionHorarioEspacio(cronograma)
                     .build();
             this.horarioEspacioRepository.save(horarioEspacio);
@@ -426,7 +426,7 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                         .fechaHoraHasta(finHorario == null ? null : finHorario.atDate(fechaEvento)
                                 .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                         .precioOrganizacion(horario.getPrecioOrganizacion().doubleValue())
-                        .adicionalPorInscripcion(horario.getAdiciconalPorInscripcion().doubleValue())
+                        .adicionalPorInscripcion(horario.getAdicionalPorInscripcion().doubleValue())
                         .build());
             }
         }

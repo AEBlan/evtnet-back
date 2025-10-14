@@ -1,5 +1,6 @@
 package com.evtnet.evtnetback.dto.eventos;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -30,7 +31,7 @@ public record DTODatosCreacionEvento(
         LocalTime horaDesde,
         LocalTime horaHasta,
         String precioOrganizacion,
-        Integer adicionalPorInscripcion
+        BigDecimal adicionalPorInscripcion
     ) {}
 }
 

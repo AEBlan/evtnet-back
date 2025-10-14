@@ -755,7 +755,7 @@ private <T> T getOrNull(java.util.function.Supplier<T> s) {
                                                 h.getPrecioOrganizacion() != null
                                                         ? h.getPrecioOrganizacion().toPlainString()
                                                         : "0.00",
-                                                h.getAdiciconalPorInscripcion()
+                                                h.getAdicionalPorInscripcion()
                                         ))
                                         .toList()
                                     : List.of()
