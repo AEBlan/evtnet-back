@@ -660,5 +660,472 @@ JOIN motivo_calificacion m ON m.nombre='Asistencia completa'
 WHERE c.descripcion='Excelente administración del evento, todo muy organizado.'
   AND NOT EXISTS (SELECT 1 FROM calificacion_motivo_calificacion cm WHERE cm.calificacion_id=c.id AND cm.motivo_calificacion_id=m.id);
 
+-- ===========================================================
+-- 🏛️ ESPACIO: Gimnasio Municipal N°2 (Propietario: adminEvt)
+-- ===========================================================
+INSERT INTO espacio (nombre, descripcion, direccion_ubicacion, latitud_ubicacion, longitud_ubicacion,
+                     requiere_aprobar_eventos, fecha_hora_alta, tipo_espacio_id)
+SELECT 'Gimnasio Municipal N°2', 'Centro deportivo municipal con canchas techadas y pista de entrenamiento', 
+       'Av. Mitre 550', -32.9050, -68.8550, TRUE, NOW(),
+       (SELECT id FROM tipo_espacio WHERE nombre='Privado')
+WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE nombre='Gimnasio Municipal N°2');
+
+-- propietario
+INSERT INTO administrador_espacio (fecha_hora_alta, usuario_id, espacio_id, tipo_administrador_espacio_id)
+SELECT NOW(), u.id, e.id, (SELECT id FROM tipo_administrador_espacio WHERE nombre='Propietario')
+FROM usuario u
+JOIN espacio e ON e.nombre='Gimnasio Municipal N°2'
+WHERE u.username='adminevt'
+  AND NOT EXISTS (SELECT 1 FROM administrador_espacio WHERE usuario_id=u.id AND espacio_id=e.id);
+
+-- estado Habilitado
+INSERT INTO espacio_estado (fecha_hora_alta, estado_espacio_id, espacio_id)
+SELECT NOW(), (SELECT id FROM estado_espacio WHERE nombre='Habilitado'), e.id
+FROM espacio e
+WHERE e.nombre='Gimnasio Municipal N°2'
+  AND NOT EXISTS (SELECT 1 FROM espacio_estado WHERE espacio_id=e.id);
+
+-- ===========================================================
+-- 🏋️ SUBESPACIO PRINCIPAL: Cancha Principal
+-- ===========================================================
+INSERT INTO subespacio (nombre, descripcion, capacidad_maxima, fecha_hora_alta, espacio_id)
+SELECT 'Cancha Principal', 'Espacio techado multipropósito para actividades deportivas', 25, NOW(), e.id
+FROM espacio e
+WHERE e.nombre='Gimnasio Municipal N°2'
+  AND NOT EXISTS (SELECT 1 FROM subespacio WHERE nombre='Cancha Principal' AND espacio_id=e.id);
+
+-- encargado del subespacio (adminEvt)
+INSERT INTO encargado_subespacio (fecha_hora_alta, usuario_id, subespacio_id)
+SELECT NOW(), u.id, s.id
+FROM usuario u
+JOIN subespacio s ON s.nombre='Cancha Principal'
+WHERE u.username='adminevt'
+  AND NOT EXISTS (
+    SELECT 1 FROM encargado_subespacio es
+    WHERE es.usuario_id=u.id AND es.subespacio_id=s.id
+  );
+
+-- asignar encargado al subespacio
+UPDATE subespacio s
+JOIN encargado_subespacio es ON es.subespacio_id=s.id
+SET s.encargado_subespacio_id = es.id
+WHERE s.nombre='Cancha Principal';
+
+-- ===========================================================
+-- ⚙️ CONFIGURACIÓN DE HORARIO Y DISCIPLINAS
+-- ===========================================================
+INSERT INTO configuracion_horario_espacio (dias_anteelacion, fecha_desde, fecha_hasta, subespacio_id)
+SELECT 
+  1,
+  NOW(),
+  DATE_ADD(NOW(), INTERVAL 2 YEAR),
+  s.id
+FROM subespacio s
+WHERE s.nombre='Cancha Principal'
+  AND NOT EXISTS (
+    SELECT 1 FROM configuracion_horario_espacio WHERE subespacio_id=s.id
+  );
+
+INSERT INTO horario_espacio (dia_semana, hora_desde, hora_hasta, precio_organizacion, adicional_por_inscripcion, configuracion_horario_espacio_id)
+SELECT 
+  'Todos los días', '07:00:00', '22:00:00', 1000.00, 0.10, c.id
+FROM configuracion_horario_espacio c
+JOIN subespacio s ON s.id=c.subespacio_id
+WHERE s.nombre='Cancha Principal'
+  AND NOT EXISTS (SELECT 1 FROM horario_espacio WHERE configuracion_horario_espacio_id=c.id);
+
+-- disciplinas (Fútbol y Básquet)
+INSERT INTO disciplina_subespacio (disciplina_id, subespacio_id)
+SELECT d.id, s.id
+FROM disciplina d, subespacio s
+WHERE d.nombre IN ('Futbol','Basquet') AND s.nombre='Cancha Principal'
+  AND NOT EXISTS (SELECT 1 FROM disciplina_subespacio WHERE disciplina_id=d.id AND subespacio_id=s.id);
+
+-- ===========================================================
+-- 🕐 EVENTO DE PRUEBA: “Jornada Deportiva Municipal”
+-- ===========================================================
+INSERT INTO evento (
+    nombre, descripcion, fecha_hora_inicio, fecha_hora_fin,
+    precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes,
+    precio_organizacion, adicional_por_inscripcion, subespacio_id
+)
+SELECT
+    'Jornada Deportiva Municipal',
+    'Evento recreativo abierto que dura todo el día.',
+    NOW(),
+    DATE_ADD(NOW(), INTERVAL 1 DAY),
+    0.00,                           -- gratuito
+    50,                             -- invitados máximos
+    100,                            -- participantes máximos
+    1000.00,                        -- base organización
+    0.00,                           -- sin adicional
+    s.id
+FROM subespacio s
+WHERE s.nombre = 'Cancha Principal'
+  AND NOT EXISTS (SELECT 1 FROM evento WHERE nombre = 'Jornada Deportiva Municipal');
+
+-- ===========================================================
+-- 👤 ADMINISTRADOR DEL EVENTO
+-- ===========================================================
+INSERT INTO administrador_evento (fecha_hora_alta, usuario_id, evento_id, tipo_administrador_evento_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='adminevt'),
+       e.id,
+       (SELECT id FROM tipo_administrador_evento WHERE nombre='Organizador')
+FROM evento e
+WHERE e.nombre='Jornada Deportiva Municipal'
+  AND NOT EXISTS (
+    SELECT 1 FROM administrador_evento ae
+    WHERE ae.evento_id = e.id
+      AND ae.usuario_id = (SELECT id FROM usuario WHERE username='adminevt')
+  );
+
+-- ===========================================================
+-- 🟢 ESTADO DEL EVENTO
+-- ===========================================================
+INSERT INTO evento_estado (descripcion, fecha_hora_alta, evento_id, estado_evento_id)
+SELECT 
+    'Evento aprobado automáticamente para pruebas',
+    NOW(),
+    e.id,
+    (SELECT id FROM estado_evento WHERE nombre='Aceptado')
+FROM evento e
+WHERE e.nombre='Jornada Deportiva Municipal'
+  AND NOT EXISTS (
+    SELECT 1 FROM evento_estado es
+    WHERE es.evento_id = e.id
+  );
+
+-- ===========================================================
+-- 🧾 INSCRIPCIONES DE PRUEBA
+-- ===========================================================
+INSERT INTO inscripcion (evento_id, usuario_id, fecha_hora_alta)
+SELECT e.id, u.id, NOW()
+FROM evento e
+JOIN usuario u ON u.username IN ('sergioalbino', 'carol', 'sam')
+WHERE e.nombre='Jornada Deportiva Municipal'
+  AND NOT EXISTS (
+    SELECT 1 FROM inscripcion i
+    WHERE i.evento_id=e.id AND i.usuario_id=u.id
+  );
+
+-- ===========================================================
+-- 🌟 CALIFICACIÓN NORMAL: Sergio → Carol
+-- ===========================================================
+INSERT INTO calificacion (
+    descripcion, fecha_hora, calificado_id, autor_id, calificacion_tipo_id
+)
+SELECT 
+    'Excelente compañera durante la jornada deportiva.',
+    NOW(),
+    (SELECT id FROM usuario WHERE username='carol'),
+    (SELECT id FROM usuario WHERE username='sergioalbino'),
+    (SELECT id FROM calificacion_tipo WHERE nombre='Calificacion Normal')
+WHERE NOT EXISTS (
+  SELECT 1 FROM calificacion c
+  WHERE c.calificado_id = (SELECT id FROM usuario WHERE username='carol')
+    AND c.autor_id = (SELECT id FROM usuario WHERE username='sergioalbino')
+);
+
+INSERT INTO calificacion_motivo_calificacion (calificacion_id, motivo_calificacion_id)
+SELECT c.id, m.id
+FROM calificacion c
+JOIN motivo_calificacion m ON m.nombre='Puntual'
+WHERE c.descripcion='Excelente compañera durante la jornada deportiva.'
+  AND NOT EXISTS (
+    SELECT 1 FROM calificacion_motivo_calificacion cm
+    WHERE cm.calificacion_id=c.id AND cm.motivo_calificacion_id=m.id
+  );
+
+-- ===========================================================
+-- NUEVO EVENTO: Entrenamiento Femenino Avanzado
+-- ===========================================================
+
+INSERT INTO evento (
+    nombre, descripcion, fecha_hora_inicio, fecha_hora_fin,
+    precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes,
+    precio_organizacion, adicional_por_inscripcion, subespacio_id
+)
+SELECT
+    'Entrenamiento Femenino Avanzado',
+    'Sesión intensiva de entrenamiento físico y táctico para jugadoras avanzadas.',
+    DATE_ADD(NOW(), INTERVAL 2 DAY),                    -- inicio: dentro de 2 días
+    DATE_ADD(DATE_ADD(NOW(), INTERVAL 2 DAY), INTERVAL 6 HOUR), -- duración 6 horas
+    800.00,
+    5,
+    20,
+    1000.00,
+    0.10,
+    s.id
+FROM subespacio s
+WHERE s.nombre = 'Cancha Principal'
+  AND NOT EXISTS (SELECT 1 FROM evento WHERE nombre = 'Entrenamiento Femenino Avanzado');
+
+-- ===========================================================
+-- ADMINISTRADOR DEL EVENTO (Organizador)
+-- ===========================================================
+INSERT INTO administrador_evento (fecha_hora_alta, usuario_id, evento_id, tipo_administrador_evento_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='adminevt'),
+       e.id,
+       (SELECT id FROM tipo_administrador_evento WHERE nombre='Organizador')
+FROM evento e
+WHERE e.nombre='Entrenamiento Femenino Avanzado'
+  AND NOT EXISTS (
+    SELECT 1 FROM administrador_evento ae
+    WHERE ae.evento_id = e.id
+      AND ae.usuario_id = (SELECT id FROM usuario WHERE username='adminevt')
+  );
+
+-- ===========================================================
+-- ESTADO DEL EVENTO
+-- ===========================================================
+INSERT INTO evento_estado (descripcion, fecha_hora_alta, evento_id, estado_evento_id)
+SELECT 
+    'Entrenamiento aprobado y publicado',
+    NOW(),
+    e.id,
+    (SELECT id FROM estado_evento WHERE nombre='Aceptado')
+FROM evento e
+WHERE e.nombre='Entrenamiento Femenino Avanzado'
+  AND NOT EXISTS (
+    SELECT 1 FROM evento_estado es
+    WHERE es.evento_id = e.id
+  );
+
+-- ===========================================================
+-- INSCRIPCIONES DE PRUEBA (sin Sergio)
+-- ===========================================================
+INSERT INTO inscripcion (evento_id, usuario_id, fecha_hora_alta)
+SELECT e.id, u.id, NOW()
+FROM evento e
+JOIN usuario u ON u.username IN ('carol', 'sam')  -- ⚠️ Sergio NO se inscribe
+WHERE e.nombre='Entrenamiento Femenino Avanzado'
+  AND NOT EXISTS (
+    SELECT 1 FROM inscripcion i
+    WHERE i.evento_id=e.id AND i.usuario_id=u.id
+  );
+
+-- ===========================================================
+-- CALIFICACIÓN (Carol → Sam, tipo Normal)
+-- ===========================================================
+INSERT INTO calificacion (
+    descripcion, fecha_hora, calificado_id, autor_id, calificacion_tipo_id
+)
+SELECT 
+    'Excelente compañera durante el entrenamiento, siempre colaboradora.',
+    NOW(),
+    (SELECT id FROM usuario WHERE username='sam'),
+    (SELECT id FROM usuario WHERE username='carol'),
+    (SELECT id FROM calificacion_tipo WHERE nombre='Calificacion Normal')
+WHERE NOT EXISTS (
+  SELECT 1 FROM calificacion c
+  WHERE c.calificado_id = (SELECT id FROM usuario WHERE username='sam')
+    AND c.autor_id = (SELECT id FROM usuario WHERE username='carol')
+);
+
+INSERT INTO calificacion_motivo_calificacion (calificacion_id, motivo_calificacion_id)
+SELECT c.id, m.id
+FROM calificacion c
+JOIN motivo_calificacion m ON m.nombre='Puntual'
+WHERE c.descripcion='Excelente compañera durante el entrenamiento, siempre colaboradora.'
+  AND NOT EXISTS (
+    SELECT 1 FROM calificacion_motivo_calificacion cm
+    WHERE cm.calificacion_id=c.id AND cm.motivo_calificacion_id=m.id
+  );
+
+-- ===========================================================
+-- 🏟️ ESPACIO: Las 4 Canchas (Propietario: luly)
+-- ===========================================================
+
+INSERT INTO espacio (nombre, descripcion, direccion_ubicacion, latitud_ubicacion, longitud_ubicacion,
+                     requiere_aprobar_eventos, fecha_hora_alta, tipo_espacio_id)
+SELECT 
+    'Las 4 Canchas',
+    'Complejo deportivo con cuatro canchas al aire libre, ideal para fútbol y pádel.',
+    '5523, Guaymallén, Mendoza',
+    -32.8980, -68.7920,
+    TRUE, NOW(),
+    (SELECT id FROM tipo_espacio WHERE nombre='Privado')
+WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE nombre='Las 4 Canchas');
+
+-- propietario
+INSERT INTO administrador_espacio (fecha_hora_alta, usuario_id, espacio_id, tipo_administrador_espacio_id)
+SELECT NOW(), u.id, e.id, (SELECT id FROM tipo_administrador_espacio WHERE nombre='Propietario')
+FROM usuario u
+JOIN espacio e ON e.nombre='Las 4 Canchas'
+WHERE u.username='luly'
+  AND NOT EXISTS (SELECT 1 FROM administrador_espacio WHERE usuario_id=u.id AND espacio_id=e.id);
+
+-- estado inicial (Habilitado)
+INSERT INTO espacio_estado (fecha_hora_alta, estado_espacio_id, espacio_id)
+SELECT NOW(), (SELECT id FROM estado_espacio WHERE nombre='Habilitado'), e.id
+FROM espacio e
+WHERE e.nombre='Las 4 Canchas'
+  AND NOT EXISTS (SELECT 1 FROM espacio_estado WHERE espacio_id=e.id);
+
+-- ===========================================================
+-- ⚙️ SUBESPACIOS (4 Canchas diferentes)
+-- ===========================================================
+
+-- 1️⃣ Cancha 1 - Fútbol 5
+INSERT INTO subespacio (nombre, descripcion, capacidad_maxima, fecha_hora_alta, espacio_id)
+SELECT 'Cancha 1 - Fútbol 5', 'Césped sintético con iluminación LED', 10, NOW(), e.id
+FROM espacio e
+WHERE e.nombre='Las 4 Canchas'
+  AND NOT EXISTS (SELECT 1 FROM subespacio WHERE nombre='Cancha 1 - Fútbol 5' AND espacio_id=e.id);
+
+-- 2️⃣ Cancha 2 - Fútbol 8
+INSERT INTO subespacio (nombre, descripcion, capacidad_maxima, fecha_hora_alta, espacio_id)
+SELECT 'Cancha 2 - Fútbol 8', 'Campo más amplio, ideal para partidos intermedios', 16, NOW(), e.id
+FROM espacio e
+WHERE e.nombre='Las 4 Canchas'
+  AND NOT EXISTS (SELECT 1 FROM subespacio WHERE nombre='Cancha 2 - Fútbol 8' AND espacio_id=e.id);
+
+-- 3️⃣ Cancha 3 - Pádel
+INSERT INTO subespacio (nombre, descripcion, capacidad_maxima, fecha_hora_alta, espacio_id)
+SELECT 'Cancha 3 - Pádel', 'Cancha cerrada de vidrio, con superficie profesional', 4, NOW(), e.id
+FROM espacio e
+WHERE e.nombre='Las 4 Canchas'
+  AND NOT EXISTS (SELECT 1 FROM subespacio WHERE nombre='Cancha 3 - Pádel' AND espacio_id=e.id);
+
+-- 4️⃣ Cancha 4 - Básquet Recreativo
+INSERT INTO subespacio (nombre, descripcion, capacidad_maxima, fecha_hora_alta, espacio_id)
+SELECT 'Cancha 4 - Básquet Recreativo', 'Cancha de básquet con aros reglamentarios', 10, NOW(), e.id
+FROM espacio e
+WHERE e.nombre='Las 4 Canchas'
+  AND NOT EXISTS (SELECT 1 FROM subespacio WHERE nombre='Cancha 4 - Básquet Recreativo' AND espacio_id=e.id);
+
+
+-- ===========================================================
+-- 🧍 ENCARGADOS DE SUBESPACIO (asignamos a “luly”)
+-- ===========================================================
+INSERT INTO encargado_subespacio (fecha_hora_alta, usuario_id, subespacio_id)
+SELECT NOW(), u.id, s.id
+FROM usuario u
+JOIN subespacio s ON s.nombre IN (
+  'Cancha 1 - Fútbol 5', 'Cancha 2 - Fútbol 8', 'Cancha 3 - Pádel', 'Cancha 4 - Básquet Recreativo')
+WHERE u.username='luly'
+  AND NOT EXISTS (
+    SELECT 1 FROM encargado_subespacio es WHERE es.usuario_id=u.id AND es.subespacio_id=s.id
+  );
+
+-- asignamos encargados a subespacios
+UPDATE subespacio s
+JOIN encargado_subespacio es ON es.subespacio_id=s.id
+SET s.encargado_subespacio_id = es.id
+WHERE s.nombre IN (
+  'Cancha 1 - Fútbol 5', 'Cancha 2 - Fútbol 8', 'Cancha 3 - Pádel', 'Cancha 4 - Básquet Recreativo'
+);
+
+-- ===========================================================
+-- ⏰ CONFIGURACIÓN DE HORARIOS Y DISCIPLINAS
+-- ===========================================================
+INSERT INTO configuracion_horario_espacio (dias_anteelacion, fecha_desde, fecha_hasta, subespacio_id)
+SELECT 
+  2, NOW(), DATE_ADD(NOW(), INTERVAL 3 YEAR), s.id
+FROM subespacio s
+WHERE s.nombre IN (
+  'Cancha 1 - Fútbol 5', 'Cancha 2 - Fútbol 8', 'Cancha 3 - Pádel', 'Cancha 4 - Básquet Recreativo')
+  AND NOT EXISTS (SELECT 1 FROM configuracion_horario_espacio WHERE subespacio_id=s.id);
+
+INSERT INTO horario_espacio (dia_semana, hora_desde, hora_hasta, precio_organizacion, adicional_por_inscripcion, configuracion_horario_espacio_id)
+SELECT 
+  'Todos los días', '08:00:00', '23:00:00', 2000.00, 0.10, c.id
+FROM configuracion_horario_espacio c
+JOIN subespacio s ON s.id=c.subespacio_id
+WHERE s.nombre IN (
+  'Cancha 1 - Fútbol 5', 'Cancha 2 - Fútbol 8', 'Cancha 3 - Pádel', 'Cancha 4 - Básquet Recreativo')
+  AND NOT EXISTS (SELECT 1 FROM horario_espacio WHERE configuracion_horario_espacio_id=c.id);
+
+-- disciplinas
+INSERT INTO disciplina_subespacio (disciplina_id, subespacio_id)
+SELECT d.id, s.id
+FROM disciplina d, subespacio s
+WHERE d.nombre IN ('Futbol','Padel','Basquet')
+  AND s.nombre IN (
+    'Cancha 1 - Fútbol 5', 'Cancha 2 - Fútbol 8', 'Cancha 3 - Pádel', 'Cancha 4 - Básquet Recreativo')
+  AND NOT EXISTS (SELECT 1 FROM disciplina_subespacio WHERE disciplina_id=d.id AND subespacio_id=s.id);
+
+-- ===========================================================
+-- 🎯 EVENTOS DE PRUEBA
+-- ===========================================================
+
+-- 🟢 1) Partido Nocturno (Aceptado)
+INSERT INTO evento (nombre, descripcion, fecha_hora_inicio, fecha_hora_fin,
+                    precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes,
+                    precio_organizacion, adicional_por_inscripcion, subespacio_id)
+SELECT 
+  'Partido Nocturno',
+  'Encuentro amistoso bajo las luces en la Cancha 1.',
+  DATE_ADD(NOW(), INTERVAL 1 DAY),
+  DATE_ADD(DATE_ADD(NOW(), INTERVAL 1 DAY), INTERVAL 2 HOUR),
+  1200.00, 5, 10, 2000.00, 0.10, s.id
+FROM subespacio s
+WHERE s.nombre='Cancha 1 - Fútbol 5'
+  AND NOT EXISTS (SELECT 1 FROM evento WHERE nombre='Partido Nocturno');
+
+-- 🟡 2) Torneo Padel Interclubes (En Revisión)
+INSERT INTO evento (nombre, descripcion, fecha_hora_inicio, fecha_hora_fin,
+                    precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes,
+                    precio_organizacion, adicional_por_inscripcion, subespacio_id)
+SELECT 
+  'Torneo Padel Interclubes',
+  'Competencia regional de pádel entre clubes de Mendoza.',
+  DATE_ADD(NOW(), INTERVAL 3 DAY),
+  DATE_ADD(DATE_ADD(NOW(), INTERVAL 3 DAY), INTERVAL 8 HOUR),
+  2500.00, 10, 20, 3000.00, 0.15, s.id
+FROM subespacio s
+WHERE s.nombre='Cancha 3 - Pádel'
+  AND NOT EXISTS (SELECT 1 FROM evento WHERE nombre='Torneo Padel Interclubes');
+
+-- 🔴 3) Encuentro Básquet Recreativo (Rechazado)
+INSERT INTO evento (nombre, descripcion, fecha_hora_inicio, fecha_hora_fin,
+                    precio_inscripcion, cantidad_maxima_invitados, cantidad_maxima_participantes,
+                    precio_organizacion, adicional_por_inscripcion, subespacio_id)
+SELECT 
+  'Encuentro Básquet Recreativo',
+  'Evento amistoso de básquet para jóvenes del barrio.',
+  DATE_ADD(NOW(), INTERVAL 5 DAY),
+  DATE_ADD(DATE_ADD(NOW(), INTERVAL 5 DAY), INTERVAL 3 HOUR),
+  500.00, 8, 12, 1500.00, 0.05, s.id
+FROM subespacio s
+WHERE s.nombre='Cancha 4 - Básquet Recreativo'
+  AND NOT EXISTS (SELECT 1 FROM evento WHERE nombre='Encuentro Básquet Recreativo');
+
+-- ===========================================================
+-- 👥 ADMINISTRADORES DE EVENTO
+-- ===========================================================
+INSERT INTO administrador_evento (fecha_hora_alta, usuario_id, evento_id, tipo_administrador_evento_id)
+SELECT NOW(),
+       (SELECT id FROM usuario WHERE username='luly'),
+       e.id,
+       (SELECT id FROM tipo_administrador_evento WHERE nombre='Organizador')
+FROM evento e
+WHERE e.nombre IN ('Partido Nocturno','Torneo Padel Interclubes','Encuentro Básquet Recreativo')
+  AND NOT EXISTS (
+    SELECT 1 FROM administrador_evento ae WHERE ae.evento_id=e.id AND ae.usuario_id=(SELECT id FROM usuario WHERE username='luly')
+  );
+
+-- ===========================================================
+-- 🧾 ESTADOS DE EVENTO
+-- ===========================================================
+-- Partido Nocturno - Aceptado
+INSERT INTO evento_estado (descripcion, fecha_hora_alta, evento_id, estado_evento_id)
+SELECT 'Evento confirmado y publicado', NOW(), e.id, (SELECT id FROM estado_evento WHERE nombre='Aceptado')
+FROM evento e WHERE e.nombre='Partido Nocturno'
+AND NOT EXISTS (SELECT 1 FROM evento_estado es WHERE es.evento_id=e.id);
+
+-- Torneo Padel Interclubes - En Revisión
+INSERT INTO evento_estado (descripcion, fecha_hora_alta, evento_id, estado_evento_id)
+SELECT 'Pendiente de revisión por la administración', NOW(), e.id, (SELECT id FROM estado_evento WHERE nombre='En Revision')
+FROM evento e WHERE e.nombre='Torneo Padel Interclubes'
+AND NOT EXISTS (SELECT 1 FROM evento_estado es WHERE es.evento_id=e.id);
+
+-- Encuentro Básquet Recreativo - Rechazado
+INSERT INTO evento_estado (descripcion, fecha_hora_alta, evento_id, estado_evento_id)
+SELECT 'Evento rechazado por incumplir requisitos', NOW(), e.id, (SELECT id FROM estado_evento WHERE nombre='Rechazado')
+FROM evento e WHERE e.nombre='Encuentro Básquet Recreativo'
+AND NOT EXISTS (SELECT 1 FROM evento_estado es WHERE es.evento_id=e.id);
 
 COMMIT;
