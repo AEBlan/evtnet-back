@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class DTOArchivo {
+    private Long id;
     private String nombreArchivo;
     private String base64;
 }

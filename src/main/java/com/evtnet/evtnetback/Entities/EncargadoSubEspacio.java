@@ -23,7 +23,7 @@ public class EncargadoSubEspacio extends Base {
     private SubEspacio subEspacio;
 
     //@OneToMany(mappedBy = "encargadoSubEspacio", fetch = FetchType.LAZY)
-    //private List<SubEspacio subEspacios;
+    //private List<SubEspacio> subEspacios;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)

@@ -29,7 +29,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
     @PostMapping(value="/crearEspacio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity crearEspacio(
             @RequestPart("espacio")DTOCrearEspacio espacio,
-            @RequestPart("basesYCondiciones")MultipartFile basesYCondiciones,
+            @RequestPart(value="basesYCondiciones", required = false)MultipartFile basesYCondiciones,
             @RequestPart(value="documentacion", required=false)List<MultipartFile>documentacion) {
         try{
             Long espacioID = espacioService.crearEspacio(espacio, basesYCondiciones, documentacion);
@@ -73,7 +73,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
     @PutMapping(value="/editarEspacio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity editarEspacio(
             @RequestPart("espacio") DTOEspacioEditar espacio,
-            @RequestPart("basesYCondiciones")MultipartFile basesYCondiciones,
+            @RequestPart(value="basesYCondiciones", required = false)MultipartFile basesYCondiciones,
             @RequestPart(value="documentacion", required=false)List<MultipartFile>documentacion) {
         try{
             espacioService.editarEspacio(espacio, basesYCondiciones, documentacion);
@@ -245,6 +245,19 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
                     "No se pudo agregar el encargado del subespacio - "+e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/obtenerEncargadosSubespacios")
+    public ResponseEntity obtenerEncargadosSubespacios(@RequestParam(name="idEspacio", required=true) Long id){
+        try{
+            return ResponseEntity.status(HttpStatus.OK).body(espacioService.obtenerEncargadosSubespacios(id));
+        } catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudieron obtener los subespacios y sus encargados - "+e.getMessage()
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

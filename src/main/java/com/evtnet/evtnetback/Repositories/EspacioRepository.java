@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import com.evtnet.evtnetback.Entities.AdministradorEspacio;
+import com.evtnet.evtnetback.Entities.EncargadoSubEspacio;
+import com.evtnet.evtnetback.Entities.SubEspacio;
 import com.evtnet.evtnetback.dto.espacios.DTOResultadoBusquedaEventosPorEspacio;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -124,10 +126,6 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     SELECT DISTINCT e FROM Espacio e
     JOIN e.espacioEstado ee
     JOIN e.tipoEspacio te
-    LEFT JOIN e.subEspacios sub
-    LEFT JOIN sub.caracteristicas c
-    LEFT JOIN sub.disciplinasSubespacio ds
-    LEFT JOIN ds.disciplina d
     WHERE te.id IN (:tiposEspacio)
       AND ee.estadoEspacio.nombre like "Habilitado"
 """)
@@ -138,7 +136,6 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     JOIN e.espacioEstado ee
     JOIN e.tipoEspacio te
     LEFT JOIN e.subEspacios sub
-    LEFT JOIN sub.caracteristicas c
     LEFT JOIN sub.disciplinasSubespacio ds
     LEFT JOIN ds.disciplina d
     WHERE d.id IN (:disciplinas)
@@ -149,17 +146,13 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     @Query("""
     SELECT DISTINCT e FROM Espacio e
     JOIN e.espacioEstado ee
-    JOIN e.tipoEspacio te
-    LEFT JOIN e.subEspacios sub
-    LEFT JOIN sub.caracteristicas c
-    LEFT JOIN sub.disciplinasSubespacio ds
-    LEFT JOIN ds.disciplina d
     WHERE ee.estadoEspacio.nombre like "Habilitado"
 """)
     List<Espacio> findAllHabilitados();
 
     @Query("""
     SELECT DISTINCT e FROM Espacio e
+    JOIN e.espacioEstado espacioEstado
     JOIN e.administradoresEspacio ae
     JOIN ae.tipoAdministradorEspacio tae
     JOIN ae.usuario u
@@ -181,6 +174,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
         OR (:esPropietario = TRUE AND tae.nombre = 'Propietario' AND u.username=:username)
       )
       AND ae.fechaHoraBaja IS NULL
+      AND espacioEstado.estadoEspacio.nombre like "Habilitado"
     """)
     List<Espacio> findMisEspacios(@Param("texto") String texto, @Param("esAdmin")boolean esAdmin, @Param("esPropietario")boolean esPropietario, @Param("username") String username);
 
@@ -196,7 +190,14 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     """)
     String rolByEspacioUsername(@Param("id") Long id, @Param("username") String username);
 
-
+    @Query("""
+    SELECT s
+    FROM SubEspacio s
+    LEFT JOIN s.encargadoSubEspacio es
+    LEFT JOIN es.usuario
+    WHERE s.espacio.id = :idEspacio
+    """)
+    List<SubEspacio>findEncargadoByEspacio(@Param("idEspacio")Long idEspacio);
 
 }
 
