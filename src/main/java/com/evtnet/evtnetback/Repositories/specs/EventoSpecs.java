@@ -4,10 +4,13 @@ import com.evtnet.evtnetback.Entities.Evento;
 import com.evtnet.evtnetback.dto.eventos.DTOBusquedaEventos;
 import com.evtnet.evtnetback.dto.eventos.DTOBusquedaMisEventos;
 import com.evtnet.evtnetback.utils.TimeUtil;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public final class EventoSpecs {
 
@@ -34,8 +37,9 @@ public final class EventoSpecs {
         // filtro por fechas (inicio y fin)
         Specification<Evento> specFechas = rangoFechaInterseca(f.fechaDesde(), f.fechaHasta());
     
-        // armar lista de roles seleccionados
-        Specification<Evento> roles = Specification.anyOf(
+
+
+        /*Specification<Evento> roles = Specification.anyOf(
                 f.organizador() ? esOrganizador(username) : null,
                 f.administrador() ? esAdministrador(username) : null,
                 f.participante() ? esParticipante(username) : null,
@@ -50,12 +54,12 @@ public final class EventoSpecs {
                     esParticipante(username),
                     esEncargado(username)
             );
-        }
+        }*/
     
         return Specification.allOf(
                 specTexto,
-                specFechas,
-                roles
+                specFechas
+//                roles
         );
     }
     
@@ -94,20 +98,10 @@ public final class EventoSpecs {
         };
     }
 
-    /*static Specification<Evento> conModos(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) return null;
-        return (root, cq, cb) -> root.get("modoEvento").get("id").in(ids);
-    }
-
-    static Specification<Evento> espaciosNoRegistrados(boolean flag) {
-        if (!flag) return null;
-        return (root, cq, cb) -> cb.isNull(root.get("espacio"));
-    }*/
-
     static Specification<Evento> esOrganizador(String username) {
         if (username == null || username.isBlank()) return null;
         return (root, cq, cb) -> {
-            var joinAdmin = root.join("administradoresEvento");
+            var joinAdmin = root.join("administradoresEvento", JoinType.LEFT);
             var joinTipo = joinAdmin.join("tipoAdministradorEvento");
             var joinUsuario = joinAdmin.join("usuario");
     
@@ -124,7 +118,7 @@ public final class EventoSpecs {
     static Specification<Evento> esAdministrador(String username) {
         if (username == null || username.isBlank()) return null;
         return (root, cq, cb) -> {
-            var joinAdmin = root.join("administradoresEvento");
+            var joinAdmin = root.join("administradoresEvento", JoinType.LEFT);
             var joinTipo = joinAdmin.join("tipoAdministradorEvento");
             var joinUsuario = joinAdmin.join("usuario");
     
@@ -141,7 +135,7 @@ public final class EventoSpecs {
     static Specification<Evento> esParticipante(String username) {
         if (username == null || username.isBlank()) return null;
         return (root, cq, cb) -> {
-            var joinInscripcion = root.join("inscripciones");
+            var joinInscripcion = root.join("inscripciones", JoinType.LEFT);
             var joinUsuario = joinInscripcion.join("usuario");
     
             cq.distinct(true);
@@ -158,7 +152,7 @@ public final class EventoSpecs {
         return (root, cq, cb) -> {
             // JOIN → evento → subEspacio → encargadosSubEspacio → usuario
             var joinSubespacio = root.join("subEspacio");
-            var joinEncargado = joinSubespacio.join("encargadosSubEspacio");
+            var joinEncargado = joinSubespacio.join("encargadosSubEspacio", JoinType.LEFT);
             var joinUsuario = joinEncargado.join("usuario");
     
             cq.distinct(true);

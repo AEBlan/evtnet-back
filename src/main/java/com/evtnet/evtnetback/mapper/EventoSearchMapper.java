@@ -14,9 +14,9 @@ public final class EventoSearchMapper {
 
     // 🔹 Mapea resultados para "Mis Eventos" (incluye todos los roles)
     public static DTOResultadoBusquedaMisEventos toResultadoBusquedaMis(Evento e, String username) {
-        String rol = "participante"; // valor por defecto
+        String rol = ""; // valor por defecto
 
-        // 1️⃣ Verificar si es ORGANIZADOR o ADMINISTRADOR
+        // Verificar si es ORGANIZADOR o ADMINISTRADOR
         if (e.getAdministradoresEvento() != null) {
             var admin = e.getAdministradoresEvento().stream()
                     .filter(a -> a.getUsuario() != null && a.getUsuario().getUsername().equals(username))
@@ -27,32 +27,31 @@ public final class EventoSearchMapper {
             if (admin != null && admin.getTipoAdministradorEvento() != null) {
                 String tipo = admin.getTipoAdministradorEvento().getNombre();
                 if ("Organizador".equalsIgnoreCase(tipo)) {
-                    rol = "organizador";
+                    rol = "Organizador";
                 } else if ("Administrador".equalsIgnoreCase(tipo)) {
-                    rol = "administrador";
+                    rol = "Administrador";
                 }
             }
         }
 
-        // 2️⃣ Si no es admin ni organizador, revisar si es PARTICIPANTE
-        if ("participante".equals(rol) && e.getInscripciones() != null) {
+        // Si no tiene rol anterior, revisar si es ENCARGADO
+        if (rol.isEmpty() && e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
+            var encargado = e.getSubEspacio().getEncargadoSubEspacio();
+            if (encargado.getUsuario() != null
+                    && encargado.getUsuario().getUsername().equals(username)
+                    && encargado.getFechaHoraBaja() == null) {
+                rol = "Encargado";
+            }
+        }
+
+        // Si no es admin ni organizador, revisar si es PARTICIPANTE
+        if (rol.isEmpty() && e.getInscripciones() != null) {
             boolean inscripto = e.getInscripciones().stream()
                     .anyMatch(i -> i.getUsuario() != null
                             && i.getUsuario().getUsername().equals(username)
                             && i.getFechaHoraBaja() == null);
-            if (inscripto) rol = "participante";
+            if (inscripto) rol = "Participante";
         }
-
-        // 3️⃣ Si no tiene rol anterior, revisar si es ENCARGADO
-        /*if ("participante".equals(rol) && e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
-                var encargado = e.getSubEspacio().getEncargadoSubEspacio();
-                if (encargado.getUsuario() != null
-                        && encargado.getUsuario().getUsername().equals(username)
-                        && encargado.getFechaHoraBaja() == null) {
-                rol = "encargado";
-                }
-        }*/
-    
 
         return new DTOResultadoBusquedaMisEventos(
                 e.getId(),

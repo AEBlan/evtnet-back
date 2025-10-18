@@ -11,7 +11,7 @@ import org.springframework.data.domain.Page;
 
 public interface EventoService extends BaseService<Evento, Long> {  
     List<DTOResultadoBusquedaEventos> buscar(DTOBusquedaEventos filtro) throws Exception;
-    List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro, String username);
+    List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro) throws Exception;
     DTOEventoDetalle obtenerEventoDetalle(long idEvento) throws Exception;
     DTODatosCreacionEvento obtenerDatosCreacionEvento(Long idEspacio) throws Exception;
     DTOPreferenciaPago pagarCreacionEvento(DTOEventoCreate req) throws Exception;

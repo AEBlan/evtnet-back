@@ -32,11 +32,9 @@ public class EventoController {
 
     @PutMapping("/buscarMisEventos")
     public ResponseEntity<List<DTOResultadoBusquedaMisEventos>> buscarMisEventos(
-            @RequestBody DTOBusquedaMisEventos filtro,
-            Authentication authentication   // ✅ se inyecta el usuario logueado
-    ) {
-        String username = authentication.getName(); // ✅ nombre del usuario del token JWT
-        return ResponseEntity.ok(service.buscarMisEventos(filtro, username));
+            @RequestBody DTOBusquedaMisEventos filtro
+    ) throws Exception {
+        return ResponseEntity.ok(service.buscarMisEventos(filtro));
     }
 
     @GetMapping("/obtenerEvento")

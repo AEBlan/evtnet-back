@@ -494,12 +494,21 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	//TODO: Revisar
     @Override
     @Transactional
-    public List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro, String username) {
-	return eventoRepo.findAll(EventoSpecs.byFiltroMisEventos(filtro, username),
-			Sort.by("fechaHoraInicio").descending())
-		.stream()
-		.map(e -> EventoSearchMapper.toResultadoBusquedaMis(e, username))
-		.toList();
+    public List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro) throws Exception {
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión para ver sus eventos"));
+
+		return eventoRepo.findAll(
+				EventoSpecs.byFiltroMisEventos(filtro, username),
+				Sort.by("fechaHoraInicio").ascending()
+			)
+			.stream()
+			.map(e -> EventoSearchMapper.toResultadoBusquedaMis(e, username))
+				.filter(e -> !e.rol().isEmpty())
+				.filter(e -> !filtro.organizador() && e.rol().equals("Organizador") ? false : true)
+				.filter(e -> !filtro.administrador() && e.rol().equals("Administrador") ? false : true)
+				.filter(e -> !filtro.encargado() && e.rol().equals("Encargado") ? false : true)
+				.filter(e -> !filtro.participante() && e.rol().equals("Participante") ? false : true)
+			.toList();
     }
     
 
@@ -587,7 +596,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				.filter(Objects::nonNull)
 				.toList();
 
-		List<DTOEventoDetalle.Inscripto> inscriptos = (e.getInscripciones() == null)
+		List<DTOEventoDetalle.Inscripto> inscriptos = (e.getInscripciones() == null || (!inscripto && !administrador && !organizador))
 			? List.of()
 			: e.getInscripciones().stream()
 				.filter(i -> i.getUsuario() != null)
@@ -837,7 +846,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		Usuario propietario = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEspacio().getNombre().equals("Propietario")).toList().get(0).getUsuario();
 
 
-		DTOPreferenciaPago pref = mercadoPagoSingleton.createPreference("Organización de evento '" + req.getNombre() + "'", h.getPrecioOrganizacion(), comision_organizacion, propietario, "/CrearEvento/" + subespacio.getEspacio().getId());
+		DTOPreferenciaPago pref = mercadoPagoSingleton.createPreference("Organización de evento '" + req.getNombre() + "'", h.getPrecioOrganizacion().add(h.getAdicionalPorInscripcion()), comision_organizacion, propietario, "/CrearEvento/" + subespacio.getEspacio().getId());
 
 		return pref;
 	}
@@ -1252,8 +1261,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			.id(e.getId())
 			.nombre(e.getNombre() != null ? e.getNombre() : "")
 			.descripcion(e.getDescripcion() != null ? e.getDescripcion() : "")
-			.idEspacio(e.getSubEspacio().getEspacio().getId())          // ⚡ nunca null
-			.nombreEspacio(e.getSubEspacio().getEspacio().getNombre()) // ⚡ nunca null
+			.idEspacio(e.getSubEspacio().getEspacio().getId())
+			.nombreEspacio(e.getSubEspacio().getEspacio().getNombre())
+			.idSubespacio(e.getSubEspacio().getId())
+			.nombreSubespacio(e.getSubEspacio().getNombre())
 			.usarCronograma(false)
 			.fechaDesde(e.getFechaHoraInicio())
 			.fechaHasta(e.getFechaHoraFin())

@@ -459,7 +459,7 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                 ).toList());
 
         // Ordenarlos
-        cronogramas.sort((lhs, rhs) -> lhs.getFechaDesde().isBefore(rhs.getFechaDesde()) ? 1 : -1);
+        cronogramas.sort((lhs, rhs) -> lhs.getFechaDesde().isBefore(rhs.getFechaDesde()) ? -1 : 1);
 
         ArrayList<DTOPeriodoDisponible> ret = new ArrayList<>();
 
