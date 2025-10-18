@@ -494,12 +494,21 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	//TODO: Revisar
     @Override
     @Transactional
-    public List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro, String username) {
-	return eventoRepo.findAll(EventoSpecs.byFiltroMisEventos(filtro, username),
-			Sort.by("fechaHoraInicio").descending())
-		.stream()
-		.map(e -> EventoSearchMapper.toResultadoBusquedaMis(e, username))
-		.toList();
+    public List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro) throws Exception {
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión para ver sus eventos"));
+
+		return eventoRepo.findAll(
+				EventoSpecs.byFiltroMisEventos(filtro, username),
+				Sort.by("fechaHoraInicio").ascending()
+			)
+			.stream()
+			.map(e -> EventoSearchMapper.toResultadoBusquedaMis(e, username))
+				.filter(e -> !e.rol().isEmpty())
+				.filter(e -> !filtro.organizador() && e.rol().equals("Organizador") ? false : true)
+				.filter(e -> !filtro.administrador() && e.rol().equals("Administrador") ? false : true)
+				.filter(e -> !filtro.encargado() && e.rol().equals("Encargado") ? false : true)
+				.filter(e -> !filtro.participante() && e.rol().equals("Participante") ? false : true)
+			.toList();
     }
     
 
