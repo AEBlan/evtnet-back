@@ -14,8 +14,12 @@ public class DTOModificarEvento {
     private String nombre;               // ⚡ vacío si no hay
     private String descripcion;          // ⚡ vacío si no hay
 
-    private Long idEspacio;              // ⚡ 0 si no hay
-    private String nombreEspacio;        // ⚡ vacío si no hay
+    private Long idEspacio;
+    private String nombreEspacio;
+
+    private Long idSubespacio;
+    private String nombreSubespacio;
+
     private boolean usarCronograma;      // ⚡ siempre boolean
 
     @JsonDeserialize(using = IsoOrEpochLocalDateTimeDeserializer.class)
