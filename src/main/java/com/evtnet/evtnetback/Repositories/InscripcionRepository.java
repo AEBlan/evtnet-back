@@ -16,6 +16,7 @@ public interface InscripcionRepository extends BaseRepository<Inscripcion, Long>
         select coalesce(sum(1 + size(i.invitados)), 0)
         from Inscripcion i
         where i.evento.id = :eventoId
+            and i.fechaHoraBaja is null
     """)
     int countParticipantesEfectivos(@Param("eventoId") Long eventoId);
 

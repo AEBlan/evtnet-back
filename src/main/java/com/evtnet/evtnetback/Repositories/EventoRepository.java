@@ -51,6 +51,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
         join ae.usuario u
         where e.id = :eventoId
           and u.username = :username
+          and ae.fechaHoraBaja is null
     """)
     boolean existsByEventoIdAndAdministradorUsername(@Param("eventoId") Long eventoId,
                                                      @Param("username") String username);
@@ -61,6 +62,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
         join ae.tipoAdministradorEvento t
         where t.nombre = 'Organizador'
           and ae.usuario.username = :username
+          and ae.fechaHoraBaja is null
     """)
     List<Evento> findAllByOrganizador_Username(@Param("username") String username);
 

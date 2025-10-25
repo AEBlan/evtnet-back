@@ -141,14 +141,14 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
             List<Evento> eventos = s.getEventos().stream().filter(e -> {
                 List<EventoEstado> historico = e.getEventosEstado().stream().filter(h -> h.getFechaHoraBaja() == null).toList();
 
-                if (historico.size() > 0) {
+                if (historico.isEmpty()) {
                     return false;
                 }
 
-                if (!historico.get(0).getEstadoEvento().getNombre().equals("Aceptado")) {
-                    return false;
+                if (historico.get(0).getEstadoEvento().getNombre().equals("Aceptado")) {
+                    return true;
                 }
-                return true;
+                return false;
             }).toList();
 
             int eventosTotales = eventos.size();
