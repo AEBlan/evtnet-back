@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.evtnet.evtnetback.Entities.ComprobantePago;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -94,7 +95,7 @@ public class MercadoPagoSingleton {
         }
     }
 
-    public void refundPayment(String paymentId) throws Exception {
+    public void refundPayment(ComprobantePago comprobante) throws Exception {
         if (debug) return;
         
         //TO-DO: Reembolsar pagos

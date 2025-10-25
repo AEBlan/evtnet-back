@@ -110,7 +110,9 @@ public class Usuario extends Base {
     private List<EncargadoSubEspacio> encargadoSubEspacios;
 
 
-
+    public List<String> getPermisos() {
+        return this.getRolesUsuario().stream().map(r -> r.getRol().getRolPermisos().stream().map(p -> p.getPermiso().getNombre()).toList()).flatMap(List::stream).toList();
+    }
 
     
 

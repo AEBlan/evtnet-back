@@ -99,12 +99,12 @@ public class EventoController {
     }
 
     @GetMapping("/obtenerDatosModificacionEvento")
-    public ResponseEntity<DTOModificarEvento> obtenerDatosModificacionEvento(@RequestParam long id) throws Exception {
+    public ResponseEntity<DTODatosModificarEvento> obtenerDatosModificacionEvento(@RequestParam long id) throws Exception {
         return ResponseEntity.ok(service.obtenerDatosModificacionEvento(id));
     }
 
     @PostMapping("/modificarEvento")
-    public ResponseEntity<Void> modificarEvento(@RequestBody DTOModificarEvento dto) {
+    public ResponseEntity<Void> modificarEvento(@RequestBody DTOModificarEvento dto) throws Exception {
         service.modificarEvento(dto);
         return ResponseEntity.ok().build();
     }

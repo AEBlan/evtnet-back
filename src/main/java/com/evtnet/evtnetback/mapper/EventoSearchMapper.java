@@ -27,31 +27,34 @@ public final class EventoSearchMapper {
             if (admin != null && admin.getTipoAdministradorEvento() != null) {
                 String tipo = admin.getTipoAdministradorEvento().getNombre();
                 if ("Organizador".equalsIgnoreCase(tipo)) {
-                    rol = "Organizador";
+                    rol = ", Organizador";
                 } else if ("Administrador".equalsIgnoreCase(tipo)) {
-                    rol = "Administrador";
+                    rol = ", Administrador";
                 }
             }
         }
 
-        // Si no tiene rol anterior, revisar si es ENCARGADO
-        if (rol.isEmpty() && e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
+        // Revisar si es ENCARGADO
+        if (e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
             var encargado = e.getSubEspacio().getEncargadoSubEspacio();
             if (encargado.getUsuario() != null
                     && encargado.getUsuario().getUsername().equals(username)
                     && encargado.getFechaHoraBaja() == null) {
-                rol = "Encargado";
+                rol += ", Encargado";
             }
         }
 
-        // Si no es admin ni organizador, revisar si es PARTICIPANTE
-        if (rol.isEmpty() && e.getInscripciones() != null) {
+        // Revisar si es PARTICIPANTE
+        if (e.getInscripciones() != null) {
             boolean inscripto = e.getInscripciones().stream()
                     .anyMatch(i -> i.getUsuario() != null
                             && i.getUsuario().getUsername().equals(username)
                             && i.getFechaHoraBaja() == null);
-            if (inscripto) rol = "Participante";
+            if (inscripto) rol += ", Participante";
         }
+
+        if (rol.length() > 2)
+            rol = rol.substring(2);
 
         return new DTOResultadoBusquedaMisEventos(
                 e.getId(),

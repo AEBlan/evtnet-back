@@ -6,6 +6,7 @@ import com.evtnet.evtnetback.Repositories.specs.EventoSpecs;
 import com.evtnet.evtnetback.dto.disciplinaevento.DTODisciplinaEventoCreate;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
+import com.evtnet.evtnetback.dto.usuarios.DTOPago;
 import com.evtnet.evtnetback.dto.usuarios.DTOPreferenciaPago;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import com.evtnet.evtnetback.mapper.EventoSearchMapper;
@@ -51,6 +52,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final EspacioRepository espacioRepo;
     private final InscripcionRepository inscripcionRepo;
     private final AdministradorEventoRepository administradorEventoRepo;
+    private final AdministradorSuperEventoRepository administradorSuperEventoRepo;
     private final UsuarioRepository usuarioRepo;
     private final ComprobantePagoRepository comprobanteRepo;
     private final InvitadoRepository invitadoRepo;
@@ -61,6 +63,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final MercadoPagoSingleton mercadoPagoSingleton;
     private final ParametroSistemaRepository parametroRepo;
     private final TipoAdministradorEventoRepository tipoAdminEventoRepo;
+    private final TipoAdministradorSuperEventoRepository tipoAdminSuperEventoRepo;
     private static final ZoneId ZONA_ARG = ZoneId.of("America/Argentina/Buenos_Aires");
     private final SubEspacioRepository subEspacioRepo;
     private final DisciplinaSubEspacioRepository disciplinaSubEspacioRepo;
@@ -70,8 +73,11 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final ComisionPorInscripcionService comisionPorInscripcionService;
 	private final HorarioEspacioRepository horarioRepo;
 	private final ChatRepository chatRepo;
+	private final PorcentajeReintegroCancelacionInscripcionRepository porcentajeReintegroCancelacionInscripcionRepo;
 
 	private final RegistroSingleton registroSingleton;
+
+	private final MailService mailService;
 
 	@PersistenceContext
     private EntityManager entityManager;
@@ -86,6 +92,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	    EspacioRepository espacioRepo,
 	    InscripcionRepository inscripcionRepo,
 	    AdministradorEventoRepository administradorEventoRepo,
+		AdministradorSuperEventoRepository administradorSuperEventoRepo,
 	    UsuarioRepository usuarioRepo,
 	    ComprobantePagoRepository comprobanteRepo,
 	    InvitadoRepository invitadoRepo,
@@ -96,6 +103,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	    MercadoPagoSingleton mercadoPagoSingleton,
 	    ParametroSistemaRepository parametroRepo,
 	    TipoAdministradorEventoRepository tipoAdminEventoRepo,
+		TipoAdministradorSuperEventoRepository tipoAdminSuperEventoRepo,
 	    SubEspacioRepository subEspacioRepo,
 	    DisciplinaSubEspacioRepository disciplinaSubEspacioRepo,
 	    EstadoEventoRepository estadoEventoRepo,
@@ -104,7 +112,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	    ComisionPorInscripcionService comisionPorInscripcionService,
 		HorarioEspacioRepository horarioRepo,
 		ChatRepository chatRepo,
-		RegistroSingleton registroSingleton
+		PorcentajeReintegroCancelacionInscripcionRepository porcentajeReintegroCancelacionInscripcionRepo,
+		RegistroSingleton registroSingleton,
+		MailService mailService
     ) {
 	super(eventoRepo);
 	this.eventoRepo = eventoRepo;
@@ -113,6 +123,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	this.espacioRepo = espacioRepo;
 	this.inscripcionRepo = inscripcionRepo;
 	this.administradorEventoRepo = administradorEventoRepo;
+	this.administradorSuperEventoRepo = administradorSuperEventoRepo;
 	this.usuarioRepo = usuarioRepo;
 	this.comprobanteRepo = comprobanteRepo;
 	this.invitadoRepo = invitadoRepo;
@@ -123,6 +134,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	this.mercadoPagoSingleton = mercadoPagoSingleton;
 	this.parametroRepo = parametroRepo;
 	this.tipoAdminEventoRepo = tipoAdminEventoRepo;
+	this.tipoAdminSuperEventoRepo = tipoAdminSuperEventoRepo;
 	this.subEspacioRepo = subEspacioRepo;
 	this.disciplinaSubEspacioRepo = disciplinaSubEspacioRepo;
 	this.estadoEventoRepo = estadoEventoRepo;
@@ -132,7 +144,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	this.horarioRepo = horarioRepo;
 	this.chatRepo = chatRepo;
 	this.registroSingleton = registroSingleton;
-
+	this.mailService = mailService;
+	this.porcentajeReintegroCancelacionInscripcionRepo = porcentajeReintegroCancelacionInscripcionRepo;
     }
      
 	@Override
@@ -166,9 +179,11 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				JOIN e.subEspacio s 
 				JOIN s.espacio esp 
 				JOIN esp.tipoEspacio tesp 
-				JOIN e.disciplinasEvento d
+				LEFT JOIN e.disciplinasEvento de
+				JOIN de.disciplina d
 			WHERE ee.fechaHoraBaja is null 
 				AND est.nombre LIKE 'Aceptado'
+				AND de.fechaHoraBaja is null
 			""";
 		String jpqlSuperEventos = """
 			SELECT DISTINCT s 
@@ -176,10 +191,12 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				JOIN s.eventos e 
 				JOIN e.eventosEstado ee 
 				JOIN ee.estadoEvento est 
-				JOIN e.disciplinasEvento d 
+				LEFT JOIN e.disciplinasEvento de
+				JOIN de.disciplina d
 			WHERE s.fechaHoraBaja is null
 				AND ee.fechaHoraBaja is null
 				AND est.nombre LIKE 'Aceptado'
+				AND de.fechaHoraBaja is null
 			""";
 
 		for (int i = 0; i < keywords.size(); i++) {
@@ -411,7 +428,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				.fechaHoraInicio(TimeUtil.toMillis(e.getFechaHoraInicio()))
 				.precio(precio)
 				.nombreEspacio(e.getSubEspacio().getEspacio().getNombre())
-				.disciplinas(e.getDisciplinasEvento().stream().map(di -> di.getDisciplina().getNombre()).toList())
+				.disciplinas(e.getDisciplinasEvento().stream().filter(de -> de.getFechaHoraBaja() == null).map(di -> di.getDisciplina().getNombre()).toList())
 				.fechaHoraProximoEvento(null)
 				.puntuacion(puntuacion)
 				.build());
@@ -504,10 +521,15 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			.stream()
 			.map(e -> EventoSearchMapper.toResultadoBusquedaMis(e, username))
 				.filter(e -> !e.rol().isEmpty())
-				.filter(e -> !filtro.organizador() && e.rol().equals("Organizador") ? false : true)
-				.filter(e -> !filtro.administrador() && e.rol().equals("Administrador") ? false : true)
-				.filter(e -> !filtro.encargado() && e.rol().equals("Encargado") ? false : true)
-				.filter(e -> !filtro.participante() && e.rol().equals("Participante") ? false : true)
+				.filter(e -> {
+					if (!filtro.organizador() && !filtro.administrador() && !filtro.encargado() && !filtro.participante()) {
+						return true; // Si no hay filtros por roles, incluir todos
+					}
+					return (filtro.organizador() && e.rol().contains("Organizador"))
+							|| (filtro.administrador() && e.rol().contains("Administrador"))
+							|| (filtro.encargado() && e.rol().contains("Encargado"))
+							|| (filtro.participante() && e.rol().contains("Participante"));
+				})
 			.toList();
     }
     
@@ -591,7 +613,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		List<String> disciplinas = (e.getDisciplinasEvento() == null)
 			? List.of()
 			: e.getDisciplinasEvento().stream()
-				.filter(de -> de.getDisciplina() != null)
+				.filter(de -> de.getDisciplina() != null && de.getFechaHoraBaja() == null)
 				.map(de -> de.getDisciplina().getNombre())
 				.filter(Objects::nonNull)
 				.toList();
@@ -961,9 +983,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     @Override
     @Transactional
     public int obtenerCantidadEventosSuperpuestos(long idEspacio, long fechaDesdeMillis, long fechaHastaMillis) {
-	LocalDateTime desde = LocalDateTime.ofEpochSecond(fechaDesdeMillis / 1000, 0, java.time.ZoneOffset.UTC);
-	LocalDateTime hasta = LocalDateTime.ofEpochSecond(fechaHastaMillis / 1000, 0, java.time.ZoneOffset.UTC);
-	return eventoRepo.contarSuperpuestosPorEspacio(idEspacio, desde, hasta);
+		LocalDateTime desde = LocalDateTime.ofEpochSecond(fechaDesdeMillis / 1000, 0, java.time.ZoneOffset.UTC);
+		LocalDateTime hasta = LocalDateTime.ofEpochSecond(fechaHastaMillis / 1000, 0, java.time.ZoneOffset.UTC);
+		return eventoRepo.contarSuperpuestosPorEspacio(idEspacio, desde, hasta);
     }
 
 
@@ -1001,6 +1023,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		BigDecimal precio = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion())
 				.multiply(comision_inscripcion.add(BigDecimal.valueOf(1)));
 
+		int cuposDisponibles = e.getCantidadMaximaParticipantes() - e.getInscripciones().stream().filter(i -> i.getFechaHoraBaja() == null).mapToInt(i -> 1 + i.getInvitados().size()).sum();
+
+
 		return DTOEventoParaInscripcion.builder()
 			.nombre(e.getNombre())
 			.descripcion(e.getDescripcion())
@@ -1014,7 +1039,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()))
 			.precioPorAsistente(precio)
 			.cantidadMaximaInvitados(e.getCantidadMaximaInvitados())
-			.limiteParticipantes(e.getCantidadMaximaParticipantes())
+			.limiteParticipantes(cuposDisponibles)
 			.build();
     }
 
@@ -1127,6 +1152,11 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
 		mercadoPagoSingleton.verifyPayments(dto.getDatosPago());
+		for (DTOPago datosPago : dto.getDatosPago()) {
+			registroSingleton.write("Pagos", "pago", "ejecucion", "Por inscripción a evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'. ID de pago: " + datosPago.getPaymentId());
+		}
+
+		registroSingleton.write("Pagos", "cobro_comision", "ejecucion", "Por inscripción evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
 
 		Inscripcion ins = new Inscripcion();
 		ins.setEvento(e);
@@ -1154,6 +1184,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				invitadoRepo.save(inv);
 			}
 		}
+
+		registroSingleton.write("Eventos", "inscripcion", "creacion", "A evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
 	}
 
 	@Override
@@ -1163,15 +1195,21 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	
 	    Inscripcion ins = inscripcionRepo.findActivaByEventoIdAndUsuarioUsername(idEvento, username)
 	    .orElseThrow(() -> new HttpErrorException(404, "No existe inscripción activa"));
-	    
-		//TODO: colocar el payment id, extraído del comprobante
-		String paymentId = "abcd";
-		mercadoPagoSingleton.refundPayment(paymentId);
+
+		// TODO: Aplicar rangos de reintegro por cancelación
+		List<ComprobantePago> pagos = ins.getComprobantePagos();
+		for (ComprobantePago c : pagos) {
+			mercadoPagoSingleton.refundPayment(c);
+			registroSingleton.write("Pagos", "devolucion", "ejecucion", "Por cancelación de inscripción a evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "'");
+		}
+		registroSingleton.write("Pagos", "pago_comision", "ejecucion", "Por cancelación de inscripción a evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "'");
 	
 	    ZoneId zone = ZoneId.of("America/Argentina/Buenos_Aires");
 	    ins.setFechaHoraBaja(LocalDateTime.now(zone));
 	    
 	    inscripcionRepo.save(ins);
+
+		registroSingleton.write("Eventos", "inscripcion", "eliminacion", "A evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "'");
 	}
 
     @Override
@@ -1211,32 +1249,56 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     }
 
 
-	//TODO: Revisar
 	@Override
 	@Transactional
-	public DTOModificarEvento obtenerDatosModificacionEvento(long idEvento) throws Exception {
-		// 🔁 cambia a findByIdForDetalle
+	public DTODatosModificarEvento obtenerDatosModificacionEvento(long idEvento) throws Exception {
 		Evento e = eventoRepo.findByIdForDetalle(idEvento)
 			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+		Usuario usuario = usuarioRepo.findByUsername(username).orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+		// Validar si el usuario actual es administrador del evento
+		boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(idEvento, username);
+
+		// Validar si el usuario actual es organizador del evento
+		boolean esOrganizador = e.getOrganizador() != null && e.getOrganizador().getUsername().equals(username);
+
+		// Si fuera en un espacio público y el usuario es admin del sistema
+		if (e.getSubEspacio().getEspacio().getTipoEspacio().getNombre().equalsIgnoreCase("público")) {
+			if (usuario.getPermisos().contains("AdministracionEspaciosPublicos")) {
+				esAdministrador = true;
+			}
+		} else { // Si no tuviera permiso para administrar un espacio privado
+			if (!usuario.getPermisos().contains("AdministracionEspaciosPrivados")) {
+				throw new Exception("No tiene permiso para modificar eventos");
+			}
+		}
+
+		if (!esAdministrador && !esOrganizador) {
+			throw new Exception("No tiene permiso para modificar este evento");
+		}
 
 		int participantes = inscripcionRepo.countParticipantesEfectivos(e.getId());
 		int maxInvPorInscripcion = inscripcionRepo.maxInvitadosPorInscripcionVigente(e.getId());
 
-		List<DTOModificarEvento.ItemIdNombre> disciplinas = new ArrayList<>();
+		List<DTODatosModificarEvento.ItemIdNombre> disciplinas = new ArrayList<>();
 		if (e.getDisciplinasEvento() != null) {
-			for (DisciplinaEvento de : e.getDisciplinasEvento()) {
-			disciplinas.add(new DTOModificarEvento.ItemIdNombre(
+			for (DisciplinaEvento de : e.getDisciplinasEvento().stream().filter(de -> de.getFechaHoraBaja() == null).toList()) {
+			disciplinas.add(new DTODatosModificarEvento.ItemIdNombre(
 				de.getDisciplina().getId(), de.getDisciplina().getNombre()));
 			}
 		}
 
-		List<DTOModificarEvento.RangoReintegro> rangos = new ArrayList<>();
+		List<DTODatosModificarEvento.RangoReintegro> rangos = new ArrayList<>();
 		if (e.getPorcentajesReintegroCancelacion() != null) {
 			e.getPorcentajesReintegroCancelacion().stream()
-				.sorted(Comparator.comparing(PorcentajeReintegroCancelacionInscripcion::getMinutosLimite))
+				.filter(p -> p.getFechaHoraBaja() == null)
+				.sorted(Comparator.comparing(PorcentajeReintegroCancelacionInscripcion::getMinutosLimite).reversed())
 				.forEach(p -> {
 				int[] dhm = splitMinutes(p.getMinutosLimite());
-				rangos.add(DTOModificarEvento.RangoReintegro.builder()
+				rangos.add(DTODatosModificarEvento.RangoReintegro.builder()
 					.dias(dhm[0])
 					.horas(dhm[1])
 					.minutos(dhm[2])
@@ -1249,115 +1311,291 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				});
 		}
 
-		// 🔹 Validar si el usuario actual es administrador del evento
-		String username = SecurityContextHolder.getContext().getAuthentication().getName();
-
-		boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(idEvento, username);
-
-		// 🔹 Validar si el usuario actual es organizador del evento
-		boolean esOrganizador = e.getOrganizador() != null && e.getOrganizador().getUsername().equals(username);
-
-		return DTOModificarEvento.builder()
-			.id(e.getId())
+		return DTODatosModificarEvento.builder()
 			.nombre(e.getNombre() != null ? e.getNombre() : "")
 			.descripcion(e.getDescripcion() != null ? e.getDescripcion() : "")
-			.idEspacio(e.getSubEspacio().getEspacio().getId())
 			.nombreEspacio(e.getSubEspacio().getEspacio().getNombre())
-			.idSubespacio(e.getSubEspacio().getId())
 			.nombreSubespacio(e.getSubEspacio().getNombre())
-			.usarCronograma(false)
-			.fechaDesde(e.getFechaHoraInicio())
-			.fechaHasta(e.getFechaHoraFin())
-			.horarioId(null)         // ⚡ nunca null
-			.precioOrganizacion(e.getPrecioOrganizacion() != null ? e.getPrecioOrganizacion() : BigDecimal.ZERO)
-			.direccion(e.getSubEspacio().getEspacio().getDireccionUbicacion())
-			.ubicacion(new DTOModificarEvento.Ubicacion(
-				e.getSubEspacio().getEspacio().getLatitudUbicacion().doubleValue(),
-				e.getSubEspacio().getEspacio().getLongitudUbicacion().doubleValue()))
-			.disciplinas(disciplinas != null ? disciplinas : List.of()) // ⚡ lista vacía si no hay
+			.fechaHoraDesde(TimeUtil.toMillis(e.getFechaHoraInicio()))
+			.fechaHoraHasta(TimeUtil.toMillis(e.getFechaHoraFin()))
+			.adicionalPorInscripcion(e.getAdicionalPorInscripcion())
+			.disciplinas(disciplinas)
 			.precioInscripcion(e.getPrecioInscripcion() != null ? e.getPrecioInscripcion() : BigDecimal.ZERO)
 			.comisionInscripcion(BigDecimal.valueOf(0.12))
 			.cantidadMaximaParticipantes(e.getCantidadMaximaParticipantes() != null ? e.getCantidadMaximaParticipantes() : 0)
 			.cantidadMaximaInvitados(e.getCantidadMaximaInvitados() != null ? e.getCantidadMaximaInvitados() : 0)
 			.cantidadParticipantesActual(participantes)
 			.cantidadMaximaInvitadosPorInvitacionEfectiva(maxInvPorInscripcion)
-			.crearSuperevento(false) // ⚡ siempre boolean
 			.superevento(e.getSuperEvento() != null
-				? new DTOModificarEvento.Superevento(
+				? new DTODatosModificarEvento.Superevento(
 					e.getSuperEvento().getId(),
 					e.getSuperEvento().getNombre() != null ? e.getSuperEvento().getNombre() : "",
 					e.getSuperEvento().getDescripcion() != null ? e.getSuperEvento().getDescripcion() : "")
-				: new DTOModificarEvento.Superevento(0L, "", "")) // ⚡ objeto vacío, nunca null
-			.rangosReintegro(rangos != null ? rangos : List.of()) // ⚡ lista vacía
+				: null)
+			.rangosReintegro(rangos)
 			.espacioPublico(null)
-			.administradorEspacio(false) // ⚡ default
-			.administradorEvento(esAdministrador)   // ⚡ true/false
-			.organizadorEvento(esOrganizador)       // ⚡ true/false
-			.diasHaciaAdelante(30)
+			.administradorEspacio(false)
+			.administradorEvento(esAdministrador)
+			.organizadorEvento(esOrganizador)
 			.build();
 
 
 	}
 
-	//TODO: Revisar
 	@Override
 	@Transactional
-	public void modificarEvento(DTOModificarEvento dto) {
+	public void modificarEvento(DTOModificarEvento dto) throws Exception {
 		Evento e = eventoRepo.findById(dto.getId())
 			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-		// Fechas (ya llegan como LocalDateTime gracias al deserializador)
-		if (dto.getFechaDesde() == null || dto.getFechaHasta() == null) {
-			throw new HttpErrorException(400, "Fechas requeridas");
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+		Usuario usuario = usuarioRepo.findByUsername(username).orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+		// Validar si el usuario actual es administrador del evento
+		boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(dto.getId(), username);
+
+		// Validar si el usuario actual es organizador del evento
+		boolean esOrganizador = e.getOrganizador() != null && e.getOrganizador().getUsername().equals(username);
+
+		// Si fuera en un espacio público y el usuario es admin del sistema
+		if (e.getSubEspacio().getEspacio().getTipoEspacio().getNombre().equalsIgnoreCase("público")) {
+			if (usuario.getPermisos().contains("AdministracionEspaciosPublicos")) {
+				esAdministrador = true;
+			}
+		} else { // Si no tuviera permiso para administrar un espacio privado
+			if (!usuario.getPermisos().contains("AdministracionEspaciosPrivados")) {
+				throw new Exception("No tiene permiso para modificar eventos");
+			}
 		}
 
+		if (!esAdministrador && !esOrganizador) {
+			throw new Exception("No tiene permiso para modificar este evento");
+		}
+
+
+		// Nombre y descripción
+		if (dto.getNombre().length() > 50 || dto.getNombre().isEmpty()) {
+			throw new Exception("El nombre debe tener entre 1 y 50 caracteres");
+		}
 		e.setNombre(dto.getNombre());
+
+		if (dto.getDescripcion().length() > 500) {
+			throw new Exception("La descripción no puede tener más de 500 caracteres");
+		}
 		e.setDescripcion(dto.getDescripcion());
-		e.setFechaHoraInicio(dto.getFechaDesde());
-		e.setFechaHoraFin(dto.getFechaHasta());
 
-			/*
-			 * TO-DO: El precio de organización cambia según el horario del cronograma elegido,
-			 * y solo cuando lo hace un usuario no admin del espacio. Si no, es 0.
-			 * El precio de organización se debería setear en base al horario correspondiente,
-			 * y si ninguno coincide, tirar una excepción.
-			 *
-			 * Siempre validar las cosas que dice la US, como de participantes >= 2, aunque lo haga el front también
-			 *
-			 * La US también aclaraba que, cuando cambian los precios de inscripción u organización,
-			 * puede requerirse un pago adicional o una devolución.
-			 * Dejemos lo del pago adicional para después, necesitamos modificar bastante el front y el back para eso.
-			 */
-
-		// Precios y cantidades
-		e.setPrecioInscripcion(dto.getPrecioInscripcion());
-		e.setPrecioOrganizacion(dto.getPrecioOrganizacion());
-		e.setCantidadMaximaInvitados(dto.getCantidadMaximaInvitados());
-		e.setCantidadMaximaParticipantes(dto.getCantidadMaximaParticipantes());
 
 		// Disciplinas
 		if (dto.getDisciplinas() != null) {
-				if (e.getDisciplinasEvento() == null) e.setDisciplinasEvento(new ArrayList<>());
-				e.getDisciplinasEvento().clear();
+			if (e.getDisciplinasEvento() == null) e.setDisciplinasEvento(new ArrayList<>());
+			List<DisciplinaEvento> disciplinaEventos = e.getDisciplinasEvento();
+
+			// Remover las eliminadas
+			int i = 0;
+			for (DisciplinaEvento de : disciplinaEventos) {
+				if (de.getFechaHoraBaja() != null) continue;
+
+				boolean encontrada = false;
 				for (DTOModificarEvento.ItemIdNombre it : dto.getDisciplinas()) {
-				Disciplina d = disciplinaBaseRepo.findById(it.getId())
-						.orElseThrow(() -> new HttpErrorException(400, "Disciplina no encontrada"));
-				e.getDisciplinasEvento().add(DisciplinaEvento.builder()
-						.evento(e).disciplina(d).build());
+					if (Objects.equals(de.getDisciplina().getId(), it.getId())) {
+						encontrada = true;
+						break;
+					}
 				}
+				if (!encontrada) {
+					de.setFechaHoraBaja(LocalDateTime.now());
+					disciplinaEventos.set(i, de);
+				}
+				i += 1;
+			}
+
+			// Agregar las nuevas
+			for (DTOModificarEvento.ItemIdNombre it : dto.getDisciplinas()) {
+				Disciplina d = disciplinaBaseRepo.findById(it.getId())
+						.orElseThrow(() -> new HttpErrorException(400, "Disciplina no encontrada: " + it.getNombre()));
+
+				boolean encontrada = false;
+				for (DisciplinaEvento de : disciplinaEventos) {
+					if (de.getFechaHoraBaja() != null) continue;
+					if (Objects.equals(de.getDisciplina().getId(), it.getId())) {
+						encontrada = true;
+						break;
+					}
+				}
+
+				if (!encontrada) {
+					disciplinaEventos.add(DisciplinaEvento.builder()
+							.evento(e).disciplina(d).fechaHoraAlta(LocalDateTime.now()).build());
+				}
+			}
+
+			e.setDisciplinasEvento(disciplinaEventos);
 		}
+
+
+		// Precios
+		if (dto.getPrecioInscripcion().doubleValue() < 0) {
+			throw new Exception("No puede establecer un precio de inscripción negativo");
+		}
+		e.setPrecioInscripcion(dto.getPrecioInscripcion());
+
+
+		// Participantes e invitados
+		if (dto.getCantidadMaximaParticipantes() < 2) {
+			throw new Exception("Debe haber al menos 2 participantes en el evento");
+		}
+		// Si hay más participantes de los que se está configurando ahora para que haya, cancelar las inscripciones más recientes
+		int participantes = inscripcionRepo.countParticipantesEfectivos(e.getId());
+		if (dto.getCantidadMaximaParticipantes() < e.getCantidadMaximaParticipantes() && dto.getCantidadMaximaParticipantes() < participantes) {
+			List<Inscripcion> inscripciones = inscripcionRepo.findActivasByEventoId(e.getId()).stream().sorted(Comparator.comparing(Inscripcion::getFechaHoraAlta).reversed()).toList();
+			int participantes_removidos = 0;
+			for (Inscripcion ins : inscripciones) {
+				List<ComprobantePago> pagos = ins.getComprobantePagos();
+				for (ComprobantePago c : pagos) {
+					mercadoPagoSingleton.refundPayment(c);
+					registroSingleton.write("Pagos", "devolucion", "ejecucion", "Por cancelación de inscripción de usuario de username '" + username + "' a evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "' por reducción de cantidad máxima de participantes del evento");
+				}
+				registroSingleton.write("Pagos", "pago_comision", "ejecucion", "Por cancelación de inscripción de usuario de username '" + username + "' a evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "' por reducción de cantidad máxima de participantes del evento");
+
+				ins.setFechaHoraBaja(LocalDateTime.now());
+				inscripcionRepo.save(ins);
+
+				mailService.enviar(ins.getUsuario().getMail(), "evtnet - Inscripción cancelada", "Su inscripción al evento '" + e.getNombre() + "' ha sido cancelada por un administrador. Se le devolvió su dinero.");
+				registroSingleton.write("Eventos", "inscripcion", "eliminacion", "Cancelación de inscripción de usuario de username '" + username + "' a evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "' por reducción de cantidad máxima de participantes del evento");
+
+				participantes_removidos += 1 + ins.getInvitados().size();
+				if (participantes_removidos >= e.getCantidadMaximaParticipantes() - dto.getCantidadMaximaParticipantes()) {
+					break;
+				}
+			}
+		}
+
+		e.setCantidadMaximaParticipantes(dto.getCantidadMaximaParticipantes());
+
+		if (dto.getCantidadMaximaInvitados() < 0) {
+			throw new Exception("No puede establecer una cantidad máxima de invitados negativa");
+		}
+		e.setCantidadMaximaInvitados(dto.getCantidadMaximaInvitados());
 
 
 		// Superevento
-		if (dto.getSuperevento() != null && dto.getSuperevento().getId() != null && dto.getSuperevento().getId() > 0) {
-			e.setSuperEvento(superEventoRepo.findById(dto.getSuperevento().getId())
-				.orElseThrow(() -> new HttpErrorException(404, "Superevento no encontrado")));
+		if (dto.getCrearSuperevento()) {
+			// Crear superevento
+			if (dto.getSuperevento().getNombre().length() > 50 || dto.getSuperevento().getNombre().isEmpty()) {
+				throw new Exception("El nombre del superevento debe tener entre 1 y 50 caracteres");
+			}
+			if (dto.getSuperevento().getDescripcion().length() > 500) {
+				throw new Exception("La descripción del superevento no puede tener más de 500 caracteres");
+			}
+
+			SuperEvento s = SuperEvento.builder()
+				.nombre(dto.getSuperevento().getNombre())
+				.descripcion(dto.getSuperevento().getDescripcion())
+				.fechaHoraAlta(LocalDateTime.now())
+				.build();
+
+			TipoAdministradorSuperEvento t = tipoAdminSuperEventoRepo.findByNombreIgnoreCase("Organizador").orElseThrow(() -> new Exception("No se pudo generar el superevento"));
+
+			s = superEventoRepo.save(s);
+
+			AdministradorSuperEvento administradorSuperEvento = AdministradorSuperEvento.builder()
+					.superEvento(s)
+					.usuario(usuario)
+					.tipoAdministradorSuperEvento(t)
+				.build();
+			administradorSuperEvento = administradorSuperEventoRepo.save(administradorSuperEvento);
+
+			e.setSuperEvento(s);
 		} else {
-			e.setSuperEvento(null);
+			if (dto.getSuperevento() == null || dto.getSuperevento().getId() == null) {
+				// No es parte de superevento
+				if (e.getSuperEvento() != null) {
+					// Permitir que se desinscriba con devolución completa
+					List<Inscripcion> inscripciones = inscripcionRepo.findActivasByEventoId(e.getId()).stream().sorted(Comparator.comparing(Inscripcion::getFechaHoraAlta).reversed()).toList();
+					for (Inscripcion ins : inscripciones) {
+						ins.setPermitirDevolucionCompleta(true);
+						inscripcionRepo.save(ins);
+					}
+				}
+
+				e.setSuperEvento(null);
+			} else {
+				// Es parte de un superevento
+				SuperEvento s = superEventoRepo.findById(dto.getSuperevento().getId()).orElseThrow(() -> new Exception("No se encontró el superevento indicado"));
+
+				e.setSuperEvento(s);
+			}
+		}
+
+
+		// Rangos de reintegro
+		if (esOrganizador) {
+			List<PorcentajeReintegroCancelacionInscripcion> rr = new ArrayList<>(e.getPorcentajesReintegroCancelacion());
+
+			for (DTOModificarEvento.RangoReintegro r2 : dto.getRangosReintegro()) {
+				if (r2.getDias() < 0 || r2.getHoras() < 0 || r2.getHoras() > 23 || r2.getMinutos() < 0 || r2.getMinutos() > 59) {
+					throw new Exception("Valores de tiempo inválidos");
+				}
+				if (r2.getPorcentaje() < 0 || r2.getPorcentaje() > 100) {
+					throw new Exception("El porcentaje debe estar entre 0 y 100");
+				}
+			}
+
+			// Quitar los que no estén en la nueva lista
+			int i = 0;
+			for (PorcentajeReintegroCancelacionInscripcion r : rr) {
+				if (r.getFechaHoraBaja() != null) continue;
+				boolean encontrado = false;
+				for (DTOModificarEvento.RangoReintegro r2 : dto.getRangosReintegro()) {
+					int minutos = r2.getMinutos() + r2.getHoras() * 60 + r2.getDias() * 24 * 60;
+					if (r.getMinutosLimite() == minutos && r.getPorcentaje().intValue() == r2.getPorcentaje()) {
+						encontrado = true;
+						break;
+					}
+				}
+				if (!encontrado) {
+					r.setFechaHoraBaja(LocalDateTime.now());
+					r = porcentajeReintegroCancelacionInscripcionRepo.save(r);
+					rr.set(i, r);
+				}
+				i+=1;
+			}
+
+			// Agregar los nuevos
+			for (DTOModificarEvento.RangoReintegro r2 : dto.getRangosReintegro()) {
+				boolean encontrado = false;
+				int minutos = r2.getMinutos() + r2.getHoras() * 60 + r2.getDias() * 24 * 60;
+				for (PorcentajeReintegroCancelacionInscripcion r : rr) {
+					if (r.getFechaHoraBaja() != null) continue;
+					if (r.getMinutosLimite() == minutos && r.getPorcentaje().intValue() == r2.getPorcentaje()) {
+						encontrado = true;
+						break;
+					}
+				}
+				if (!encontrado) {
+					PorcentajeReintegroCancelacionInscripcion r = PorcentajeReintegroCancelacionInscripcion.builder()
+							.evento(e)
+							.fechaHoraAlta(LocalDateTime.now())
+							.porcentaje(new BigDecimal(r2.getPorcentaje()))
+							.minutosLimite(minutos)
+							.build();
+					r = porcentajeReintegroCancelacionInscripcionRepo.save(r);
+					rr.add(r);
+				}
+			}
+
+			e.setPorcentajesReintegroCancelacion(rr);
+
 		}
 
 		eventoRepo.save(e);
-    }
+
+		registroSingleton.write("Eventos", "evento", "modificacion", "Evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
+		if (dto.getCrearSuperevento()) {
+			registroSingleton.write("Eventos", "superevento", "creacion", "Superevento de ID " + e.getSuperEvento().getId() + " nombre '" + e.getSuperEvento().getNombre() + "' creado vinculado al evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
+		}
+	}
 
 
 
@@ -1444,10 +1682,12 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(idEvento, username);
 		boolean esOrganizador = e.getOrganizador() != null && e.getOrganizador().getUsername().equals(username);
 
+		int cuposDisponibles = e.getCantidadMaximaParticipantes() - e.getInscripciones().stream().filter(i -> i.getFechaHoraBaja() == null).mapToInt(i -> 1 + i.getInvitados().size()).sum();
+
 		return DTODatosParaInscripcion.builder()
 			.nombreEvento(e.getNombre())
 			.cantidadMaximaInvitados(e.getCantidadMaximaInvitados())
-			.limiteParticipantes(e.getCantidadMaximaParticipantes())
+			.limiteParticipantes(cuposDisponibles)
 			.esAdministrador(esAdministrador)
 			.esOrganizador(esOrganizador)
 			.build();
