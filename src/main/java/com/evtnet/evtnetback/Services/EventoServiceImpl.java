@@ -28,6 +28,8 @@ import org.springframework.data.domain.PageRequest;
 import com.evtnet.evtnetback.Repositories.specs.DenunciaEventoSpecs;
 
 import org.springframework.beans.factory.annotation.Value;
+
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import com.evtnet.evtnetback.utils.TimeUtil;
@@ -507,8 +509,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		return resultados;
 	}
-    
-	//TODO: Revisar
+
     @Override
     @Transactional
     public List<DTOResultadoBusquedaMisEventos> buscarMisEventos(DTOBusquedaMisEventos filtro) throws Exception {
@@ -563,8 +564,6 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				organizador = true;
 			}
 		}
-
-		// TODO: Capaz habría que ver si es encargado del subespacio
 
 		if (!administrador && !organizador) {
 			if (estado.equalsIgnoreCase("En Revisión") || estado.equalsIgnoreCase("Rechazado")) {
@@ -1072,10 +1071,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		}
 
 		if (e.getPrecioInscripcion().compareTo(BigDecimal.ZERO) != 0)
-			prefs.add(mercadoPagoSingleton.createPreference("Inscripción a evento " + e.getNombre(), e.getPrecioInscripcion(), comision_inscripcion, organizador, url));
+			prefs.add(mercadoPagoSingleton.createPreference("Inscripción a evento " + e.getNombre(), e.getPrecioInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size())), comision_inscripcion, organizador, url));
 
 		if (!publico && e.getAdicionalPorInscripcion().compareTo(BigDecimal.ZERO) != 0) {
-			prefs.add(mercadoPagoSingleton.createPreference("Adicional a espacio por inscripción a evento " + e.getNombre(), e.getAdicionalPorInscripcion(), comision_inscripcion, propietario, url));
+			prefs.add(mercadoPagoSingleton.createPreference("Adicional a espacio por inscripción a evento " + e.getNombre(), e.getAdicionalPorInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size())), comision_inscripcion, propietario, url));
 		}
 
 
@@ -1196,10 +1195,18 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	    Inscripcion ins = inscripcionRepo.findActivaByEventoIdAndUsuarioUsername(idEvento, username)
 	    .orElseThrow(() -> new HttpErrorException(404, "No existe inscripción activa"));
 
-		// TODO: Aplicar rangos de reintegro por cancelación
+		List<PorcentajeReintegroCancelacionInscripcion> rr = ins.getEvento().getPorcentajesReintegroCancelacion().stream().filter(p -> p.getFechaHoraBaja() == null).toList();
+		Duration d = Duration.between(ins.getEvento().getFechaHoraInicio(), LocalDateTime.now());
+		long minutosPendientes = Math.abs(d.toMinutes());
+		int porcentajeDevolucion = rr.stream().filter(p -> p.getMinutosLimite() <= minutosPendientes).max(Comparator.comparing(PorcentajeReintegroCancelacionInscripcion::getMinutosLimite)).orElse(PorcentajeReintegroCancelacionInscripcion.builder().porcentaje(BigDecimal.ZERO).build()).getPorcentaje().intValue();
+
+		if (ins.getPermitirDevolucionCompleta()) {
+			porcentajeDevolucion = 100;
+		}
+
 		List<ComprobantePago> pagos = ins.getComprobantePagos();
 		for (ComprobantePago c : pagos) {
-			mercadoPagoSingleton.refundPayment(c);
+			mercadoPagoSingleton.refundPayment(c, porcentajeDevolucion);
 			registroSingleton.write("Pagos", "devolucion", "ejecucion", "Por cancelación de inscripción a evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "'");
 		}
 		registroSingleton.write("Pagos", "pago_comision", "ejecucion", "Por cancelación de inscripción a evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "'");
@@ -1233,9 +1240,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			java.time.Duration.between(LocalDateTime.now(), e.getFechaHoraInicio()).toMinutes()
 		);
 
-		BigDecimal factor = BigDecimal.ZERO;
+		//BigDecimal factor = BigDecimal.ZERO;
 
-		if (e.getPorcentajesReintegroCancelacion() != null && !e.getPorcentajesReintegroCancelacion().isEmpty()) {
+		/*if (e.getPorcentajesReintegroCancelacion() != null && !e.getPorcentajesReintegroCancelacion().isEmpty()) {
 			Optional<PorcentajeReintegroCancelacionInscripcion> mejor = e.getPorcentajesReintegroCancelacion().stream()
 				.filter(p -> p.getMinutosLimite() != null && minutosHastaInicio <= p.getMinutosLimite())
 				.max(Comparator.comparing(PorcentajeReintegroCancelacionInscripcion::getMinutosLimite));
@@ -1243,7 +1250,17 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			if (mejor.isPresent() && mejor.get().getPorcentaje() != null) {
 				factor = mejor.get().getPorcentaje().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
 			}
+		}*/
+
+		List<PorcentajeReintegroCancelacionInscripcion> rr = inscripcion.getEvento().getPorcentajesReintegroCancelacion().stream().filter(p -> p.getFechaHoraBaja() == null).toList();
+		Duration d = Duration.between(inscripcion.getEvento().getFechaHoraInicio(), LocalDateTime.now());
+		long minutosPendientes = Math.abs(d.toMinutes());
+		BigDecimal factor = rr.stream().filter(p -> p.getMinutosLimite() <= minutosPendientes).max(Comparator.comparing(PorcentajeReintegroCancelacionInscripcion::getMinutosLimite)).orElse(PorcentajeReintegroCancelacionInscripcion.builder().porcentaje(BigDecimal.ZERO).build()).getPorcentaje();
+
+		if (inscripcion.getPermitirDevolucionCompleta()) {
+			factor = new BigDecimal(100);
 		}
+		factor = factor.divide(BigDecimal.valueOf(100));
 
 		return totalPagado.multiply(factor).setScale(2, RoundingMode.HALF_UP);
     }

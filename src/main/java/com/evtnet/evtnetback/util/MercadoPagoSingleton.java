@@ -96,6 +96,10 @@ public class MercadoPagoSingleton {
     }
 
     public void refundPayment(ComprobantePago comprobante) throws Exception {
+        refundPayment(comprobante, 100);
+    }
+
+    public void refundPayment(ComprobantePago comprobante, int porcentaje) throws Exception {
         if (debug) return;
         
         //TO-DO: Reembolsar pagos
