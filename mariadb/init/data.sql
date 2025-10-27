@@ -602,8 +602,8 @@ WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='Cancelado');
 -- EstadoEspacio
 -- =========================
 INSERT INTO estado_espacio (nombre, descripcion)
-SELECT 'En Revision', 'Se revisan los datos correspondientes al espacio'
-WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='En Revision');
+SELECT 'En_Revision', 'Se revisan los datos correspondientes al espacio'
+WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='En_Revision');
 
 INSERT INTO estado_espacio (nombre, descripcion)
 SELECT 'Rechazado', 'Se rechaza el espacio para que no se puedan organizar eventos'

@@ -15,7 +15,7 @@ public class EvtnetApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(EvtnetApplication.class, args);
 
-		MercadoPagoConfig.setAccessToken("APP_USR-faketoken0123456789");
+		MercadoPagoConfig.setAccessToken("APP_USR-8930527766625121-101017-4c842a3303d545b27dd702af7008a195-2918163140");
 
 		System.out.println("Evtnet se ha iniciado correctamente");
 	}

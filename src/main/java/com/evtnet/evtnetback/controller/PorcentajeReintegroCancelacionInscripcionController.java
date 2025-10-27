@@ -1,0 +1,8 @@
+package com.evtnet.evtnetback.Controllers;
+
+import com.evtnet.evtnetback.Entities.PorcentajeReintegroCancelacionInscripcion;
+import com.evtnet.evtnetback.Services.PorcentajeReintegroCancelacionInscripcionServiceImpl;
+
+public class PorcentajeReintegroCancelacionInscripcionController extends BaseControllerImpl <PorcentajeReintegroCancelacionInscripcion, PorcentajeReintegroCancelacionInscripcionServiceImpl> {
+    
+}
