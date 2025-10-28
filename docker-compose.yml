@@ -41,10 +41,10 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
 
       # JWT por ENV (sobrescribe lo del application.properties)
-      APP_JWT_SECRET: "PON_ACA_UN_SECRETO_BIEN_LARGO_ALEATORIO_MIN_32_CHARS"
+      APP_JWT_SECRET: "CLAVE_ALEATORIO_MIN_32_CHARS"
       APP_JWT_EXPIRATION: "3600000"
 
-      # Ruta de storage (opcional si ya está en properties)
+      # Ruta de storage
       APP_STORAGE_PERFILES: "/app/storage/perfiles"
       APP_STORAGE_LOGS: "/app/storage/logs" 
 
