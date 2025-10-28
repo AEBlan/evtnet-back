@@ -1,10 +1,9 @@
-package com.evtnet.evtnetback.Entity;
+package com.evtnet.evtnetback.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

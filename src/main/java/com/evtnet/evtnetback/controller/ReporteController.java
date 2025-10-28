@@ -1,6 +1,6 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Services.ReporteService;
+import com.evtnet.evtnetback.service.ReporteService;
 import com.evtnet.evtnetback.dto.reportes.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;

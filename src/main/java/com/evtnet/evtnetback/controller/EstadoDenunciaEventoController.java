@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.EstadoDenunciaEvento;
-import com.evtnet.evtnetback.Services.EstadoDenunciaEventoServiceImpl;
+import com.evtnet.evtnetback.entity.EstadoDenunciaEvento;
+import com.evtnet.evtnetback.service.EstadoDenunciaEventoServiceImpl;
 import com.evtnet.evtnetback.dto.estadoDenunciaEvento.DTOEstadoDenunciaEvento;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import lombok.AllArgsConstructor;

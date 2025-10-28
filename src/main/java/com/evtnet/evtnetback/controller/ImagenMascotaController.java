@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.ImagenMascota;
-import com.evtnet.evtnetback.Services.ImagenMascotaServiceImpl;
+import com.evtnet.evtnetback.entity.ImagenMascota;
+import com.evtnet.evtnetback.service.ImagenMascotaServiceImpl;
 
 public class ImagenMascotaController extends BaseControllerImpl <ImagenMascota, ImagenMascotaServiceImpl> {
     

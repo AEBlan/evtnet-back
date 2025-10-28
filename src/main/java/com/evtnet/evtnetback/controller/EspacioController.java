@@ -1,14 +1,11 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.Espacio;
-import com.evtnet.evtnetback.Services.EspacioService;
-import com.evtnet.evtnetback.Services.EspacioServiceImpl;
-import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinas;
+import com.evtnet.evtnetback.entity.Espacio;
+import com.evtnet.evtnetback.service.EspacioService;
+import com.evtnet.evtnetback.service.EspacioServiceImpl;
 import com.evtnet.evtnetback.dto.espacios.*;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

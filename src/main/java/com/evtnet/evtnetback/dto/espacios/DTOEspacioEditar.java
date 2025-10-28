@@ -1,6 +1,5 @@
 package com.evtnet.evtnetback.dto.espacios;
 
-import com.evtnet.evtnetback.Entities.EstadoEspacio;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

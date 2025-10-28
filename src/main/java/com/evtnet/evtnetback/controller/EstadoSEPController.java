@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.EstadoSEP;
-import com.evtnet.evtnetback.Services.EstadoSEPServiceImpl;
+import com.evtnet.evtnetback.entity.EstadoSEP;
+import com.evtnet.evtnetback.service.EstadoSEPServiceImpl;
 import com.evtnet.evtnetback.dto.estadoSEP.DTOEstadoSEP;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import lombok.AllArgsConstructor;

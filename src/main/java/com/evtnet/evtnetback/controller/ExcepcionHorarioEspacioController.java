@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.ExcepcionHorarioEspacio;
-import com.evtnet.evtnetback.Services.ExcepcionHorarioEspacioServiceImpl;
+import com.evtnet.evtnetback.entity.ExcepcionHorarioEspacio;
+import com.evtnet.evtnetback.service.ExcepcionHorarioEspacioServiceImpl;
 
 public class ExcepcionHorarioEspacioController extends BaseControllerImpl <ExcepcionHorarioEspacio, ExcepcionHorarioEspacioServiceImpl> {
     

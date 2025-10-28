@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.SolicitudEspacioPublico;
-import com.evtnet.evtnetback.Services.SolicitudEspacioPublicoServiceImpl;
+import com.evtnet.evtnetback.entity.SolicitudEspacioPublico;
+import com.evtnet.evtnetback.service.SolicitudEspacioPublicoServiceImpl;
 
 public class SolicitudEspacioPublicoController extends BaseControllerImpl <SolicitudEspacioPublico, SolicitudEspacioPublicoServiceImpl> {
     

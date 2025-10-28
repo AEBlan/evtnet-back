@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.AdministradorSuperEvento;
-import com.evtnet.evtnetback.Services.AdministradorSuperEventoServiceImpl;
+import com.evtnet.evtnetback.entity.AdministradorSuperEvento;
+import com.evtnet.evtnetback.service.AdministradorSuperEventoServiceImpl;
 
 public class AdministradorSuperEventoController extends BaseControllerImpl <AdministradorSuperEvento, AdministradorSuperEventoServiceImpl> {
     

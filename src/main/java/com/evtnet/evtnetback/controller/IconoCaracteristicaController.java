@@ -1,8 +1,8 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.IconoCaracteristica;
-import com.evtnet.evtnetback.Services.IconoCaracteristicaService;
-import com.evtnet.evtnetback.Services.IconoCaracteristicaServiceImpl;
+import com.evtnet.evtnetback.entity.IconoCaracteristica;
+import com.evtnet.evtnetback.service.IconoCaracteristicaService;
+import com.evtnet.evtnetback.service.IconoCaracteristicaServiceImpl;
 import com.evtnet.evtnetback.dto.iconoCaracteristica.DTOIconoCaracteristica;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import lombok.AllArgsConstructor;

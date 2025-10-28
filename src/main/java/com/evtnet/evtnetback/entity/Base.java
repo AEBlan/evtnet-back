@@ -1,9 +1,8 @@
-package com.evtnet.evtnetback.Entity;
+package com.evtnet.evtnetback.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 @MappedSuperclass
 @Getter

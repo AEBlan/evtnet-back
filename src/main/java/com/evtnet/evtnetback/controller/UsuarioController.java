@@ -1,10 +1,9 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.Usuario;
-import com.evtnet.evtnetback.Services.UsuarioService;
-import com.evtnet.evtnetback.Services.UsuarioService.FotoResponse;
-import com.evtnet.evtnetback.Services.UsuarioService.FotoResponseString;
-import com.evtnet.evtnetback.Services.UsuarioServiceImpl;
+import com.evtnet.evtnetback.entity.Usuario;
+import com.evtnet.evtnetback.service.UsuarioService;
+import com.evtnet.evtnetback.service.UsuarioService.FotoResponseString;
+import com.evtnet.evtnetback.service.UsuarioServiceImpl;
 import com.evtnet.evtnetback.dto.usuarios.*;
 import lombok.RequiredArgsConstructor;
 
@@ -18,16 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.*;
 
-import java.util.Locale;
 import java.util.Map;
-
-import com.evtnet.evtnetback.dto.comunes.BlobJson;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/usuarios")

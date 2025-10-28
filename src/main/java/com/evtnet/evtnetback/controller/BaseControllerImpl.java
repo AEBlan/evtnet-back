@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.Base;
-import com.evtnet.evtnetback.Services.BaseServiceImpl;
+import com.evtnet.evtnetback.entity.Base;
+import com.evtnet.evtnetback.service.BaseServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;

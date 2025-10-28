@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.InstanciaMascotaSecuencia;
-import com.evtnet.evtnetback.Services.InstanciaMascotaSecuenciaServiceImpl;
+import com.evtnet.evtnetback.entity.InstanciaMascotaSecuencia;
+import com.evtnet.evtnetback.service.InstanciaMascotaSecuenciaServiceImpl;
 
 public class InstanciaMascotaSecuenciaController extends BaseControllerImpl <InstanciaMascotaSecuencia, InstanciaMascotaSecuenciaServiceImpl> {
     

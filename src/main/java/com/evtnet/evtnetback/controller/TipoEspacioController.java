@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.TipoEspacio;
-import com.evtnet.evtnetback.Services.TipoEspacioServiceImpl;
+import com.evtnet.evtnetback.entity.TipoEspacio;
+import com.evtnet.evtnetback.service.TipoEspacioServiceImpl;
 
 public class TipoEspacioController extends BaseControllerImpl <TipoEspacio, TipoEspacioServiceImpl > {
     

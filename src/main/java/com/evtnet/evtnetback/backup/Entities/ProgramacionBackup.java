@@ -1,7 +1,7 @@
 package com.evtnet.evtnetback.Backup.Entities;
 import jakarta.persistence.*;
 import lombok.*;
-import java.beans.ConstructorProperties;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProgramacionBackup extends com.evtnet.evtnetback.Entities.Base {
+public class ProgramacionBackup extends com.evtnet.evtnetback.entity.Base {
 
     @Column(name = "fecha_hora_alta", nullable = false)
     private LocalDateTime fechaHoraAlta;

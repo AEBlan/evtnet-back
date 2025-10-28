@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.ResenaEspacio;
-import com.evtnet.evtnetback.Services.ResenaEspacioServiceImpl;
+import com.evtnet.evtnetback.entity.ResenaEspacio;
+import com.evtnet.evtnetback.service.ResenaEspacioServiceImpl;
 
 public class ResenaEspacioController extends BaseControllerImpl <ResenaEspacio, ResenaEspacioServiceImpl> {
     

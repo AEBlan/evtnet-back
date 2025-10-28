@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.RolUsuario;
-import com.evtnet.evtnetback.Services.RolUsuarioServiceImpl;
+import com.evtnet.evtnetback.entity.RolUsuario;
+import com.evtnet.evtnetback.service.RolUsuarioServiceImpl;
 
 public class RolUsuarioController extends BaseControllerImpl <RolUsuario, RolUsuarioServiceImpl> {
     

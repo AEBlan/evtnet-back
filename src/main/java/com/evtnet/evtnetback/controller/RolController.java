@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.Rol;
-import com.evtnet.evtnetback.Services.RolServiceImpl;
+import com.evtnet.evtnetback.entity.Rol;
+import com.evtnet.evtnetback.service.RolServiceImpl;
 
 public class RolController extends BaseControllerImpl <Rol, RolServiceImpl> {
     

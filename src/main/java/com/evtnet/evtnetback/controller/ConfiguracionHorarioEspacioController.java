@@ -1,15 +1,12 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.ConfiguracionHorarioEspacio;
-import com.evtnet.evtnetback.Entities.Espacio;
-import com.evtnet.evtnetback.Services.ConfiguracionHorarioEspacioService;
-import com.evtnet.evtnetback.Services.ConfiguracionHorarioEspacioServiceImpl;
-import com.evtnet.evtnetback.Services.EspacioServiceImpl;
+import com.evtnet.evtnetback.entity.ConfiguracionHorarioEspacio;
+import com.evtnet.evtnetback.service.ConfiguracionHorarioEspacioService;
+import com.evtnet.evtnetback.service.ConfiguracionHorarioEspacioServiceImpl;
 import com.evtnet.evtnetback.dto.cronogramas.DTOCrearCronograma;
 import com.evtnet.evtnetback.dto.cronogramas.DTOCrearExcepcion;
 import com.evtnet.evtnetback.dto.cronogramas.DTOCrearHorario;
 import com.evtnet.evtnetback.dto.cronogramas.DTOCronogramaEspacio;
-import com.evtnet.evtnetback.dto.espacios.DTOBusquedaEspacios;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;

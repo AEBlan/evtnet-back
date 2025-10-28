@@ -1,6 +1,6 @@
 package com.evtnet.evtnetback.mapper;
 
-import com.evtnet.evtnetback.Entities.Evento;
+import com.evtnet.evtnetback.entity.Evento;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.utils.TimeUtil;
 

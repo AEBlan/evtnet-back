@@ -1,8 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.TipoCalificacion;
-import com.evtnet.evtnetback.Services.TipoCalificacionServiceImpl;
-import com.evtnet.evtnetback.Services.TipoCalificacionServiceImpl;
+import com.evtnet.evtnetback.entity.TipoCalificacion;
+import com.evtnet.evtnetback.service.TipoCalificacionServiceImpl;
 import com.evtnet.evtnetback.dto.tipoCalificacion.DTOTipoCalificacion;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import lombok.AllArgsConstructor;

@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.AdministradorEspacio;
-import com.evtnet.evtnetback.Services.AdministradorEspacioServiceImpl;
+import com.evtnet.evtnetback.entity.AdministradorEspacio;
+import com.evtnet.evtnetback.service.AdministradorEspacioServiceImpl;
 
 
 public class AdministradorEspacioController extends BaseControllerImpl <AdministradorEspacio, AdministradorEspacioServiceImpl> {

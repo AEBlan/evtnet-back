@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.Caracteristica;
-import com.evtnet.evtnetback.Services.CaracteristicaServiceImpl;
+import com.evtnet.evtnetback.entity.Caracteristica;
+import com.evtnet.evtnetback.service.CaracteristicaServiceImpl;
 
 public class CaracteristicaController extends BaseControllerImpl <Caracteristica, CaracteristicaServiceImpl> {
     

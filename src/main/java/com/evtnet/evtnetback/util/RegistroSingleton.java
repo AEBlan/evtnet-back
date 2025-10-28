@@ -16,8 +16,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.evtnet.evtnetback.Entities.Registro;
-import com.evtnet.evtnetback.Entities.Usuario;
+import com.evtnet.evtnetback.entity.Registro;
+import com.evtnet.evtnetback.entity.Usuario;
 import com.evtnet.evtnetback.Repositories.RegistroRepository;
 import com.evtnet.evtnetback.Repositories.UsuarioRepository;
 import com.evtnet.evtnetback.dto.registros.DTORegistro;

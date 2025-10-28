@@ -1,11 +1,10 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Services.DisciplinaService;
+import com.evtnet.evtnetback.service.DisciplinaService;
 import com.evtnet.evtnetback.dto.disciplinas.DTOBusquedaDisciplina;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinaRef;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinas;
 import com.evtnet.evtnetback.error.HttpErrorException;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

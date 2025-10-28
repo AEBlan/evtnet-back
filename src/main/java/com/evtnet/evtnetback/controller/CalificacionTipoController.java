@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.CalificacionTipo;
-import com.evtnet.evtnetback.Services.CalificacionTipoServiceImpl;
+import com.evtnet.evtnetback.entity.CalificacionTipo;
+import com.evtnet.evtnetback.service.CalificacionTipoServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

@@ -1,4 +1,4 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
 import java.util.List;
 
@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.evtnet.evtnetback.Entities.SuperEvento;
-import com.evtnet.evtnetback.Services.SuperEventoService;
-import com.evtnet.evtnetback.Services.SuperEventoServiceImpl;
+import com.evtnet.evtnetback.entity.SuperEvento;
+import com.evtnet.evtnetback.service.SuperEventoService;
+import com.evtnet.evtnetback.service.SuperEventoServiceImpl;
 import com.evtnet.evtnetback.dto.supereventos.*;
 import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
 import com.evtnet.evtnetback.dto.comunes.IdResponse;

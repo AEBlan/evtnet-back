@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.Inscripcion;
-import com.evtnet.evtnetback.Services.InscripcionServiceImpl;
+import com.evtnet.evtnetback.entity.Inscripcion;
+import com.evtnet.evtnetback.service.InscripcionServiceImpl;
 
 public class InscripcionController extends BaseControllerImpl <Inscripcion, InscripcionServiceImpl> {
     

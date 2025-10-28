@@ -1,12 +1,7 @@
 package com.evtnet.evtnetback.mapper;
 
-import com.evtnet.evtnetback.Entities.Evento;
-import com.evtnet.evtnetback.dto.eventos.DTOEventoCreate;
-import com.evtnet.evtnetback.dto.eventos.DTOEventoResponse;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.ReportingPolicy;
 
 @Mapper(
     componentModel = "spring",

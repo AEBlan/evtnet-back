@@ -1,9 +1,9 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.*;
-import com.evtnet.evtnetback.Services.GrupoServiceImpl;
+import com.evtnet.evtnetback.entity.*;
+import com.evtnet.evtnetback.service.GrupoServiceImpl;
 import com.evtnet.evtnetback.dto.grupos.*;
-import com.evtnet.evtnetback.Services.GrupoService;
+import com.evtnet.evtnetback.service.GrupoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 

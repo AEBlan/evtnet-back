@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.RolPermiso;
-import com.evtnet.evtnetback.Services.RolPermisoServiceImpl;
+import com.evtnet.evtnetback.entity.RolPermiso;
+import com.evtnet.evtnetback.service.RolPermisoServiceImpl;
 
 public class RolPermisoController extends BaseControllerImpl <RolPermiso, RolPermisoServiceImpl> {
     

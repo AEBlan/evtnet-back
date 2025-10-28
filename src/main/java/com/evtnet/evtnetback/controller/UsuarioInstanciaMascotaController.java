@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.UsuarioInstanciaMascota;
-import com.evtnet.evtnetback.Services.UsuarioInstanciaMascotaServiceImpl;
+import com.evtnet.evtnetback.entity.UsuarioInstanciaMascota;
+import com.evtnet.evtnetback.service.UsuarioInstanciaMascotaServiceImpl;
 
 public class UsuarioInstanciaMascotaController extends BaseControllerImpl <UsuarioInstanciaMascota, UsuarioInstanciaMascotaServiceImpl> {
     

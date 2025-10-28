@@ -1,12 +1,12 @@
 // src/main/java/com/evtnet/evtnetback/Controllers/EventoController.java
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
 import com.evtnet.evtnetback.dto.comunes.CantidadResponse;
 import com.evtnet.evtnetback.dto.comunes.IdResponse;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
 import com.evtnet.evtnetback.dto.usuarios.DTOPreferenciaPago;
-import com.evtnet.evtnetback.Services.EventoService;
+import com.evtnet.evtnetback.service.EventoService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.core.Authentication;

@@ -1,6 +1,6 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Services.ComisionPorInscripcionService;
+import com.evtnet.evtnetback.service.ComisionPorInscripcionService;
 import com.evtnet.evtnetback.dto.comisionPorInscripcion.DTOComisionPorInscripcion;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import lombok.AllArgsConstructor;

@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.ParametroSistema;
-import com.evtnet.evtnetback.Services.ParametroSistemaServiceImpl;
+import com.evtnet.evtnetback.entity.ParametroSistema;
+import com.evtnet.evtnetback.service.ParametroSistemaServiceImpl;
 import com.evtnet.evtnetback.dto.parametroSistema.DTOParametroSistema;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import lombok.AllArgsConstructor;

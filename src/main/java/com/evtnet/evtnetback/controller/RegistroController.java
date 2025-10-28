@@ -1,8 +1,8 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.Registro;
-import com.evtnet.evtnetback.Services.RegistroService;
-import com.evtnet.evtnetback.Services.RegistroServiceImpl;
+import com.evtnet.evtnetback.entity.Registro;
+import com.evtnet.evtnetback.service.RegistroService;
+import com.evtnet.evtnetback.service.RegistroServiceImpl;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;

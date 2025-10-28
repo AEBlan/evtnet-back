@@ -1,10 +1,10 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import com.evtnet.evtnetback.Entities.Base;
+import com.evtnet.evtnetback.entity.Base;
 
 import java.io.Serializable;
 

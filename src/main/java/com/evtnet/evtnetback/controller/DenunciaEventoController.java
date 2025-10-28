@@ -1,7 +1,7 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.DenunciaEvento;
-import com.evtnet.evtnetback.Services.DenunciaEventoServiceImpl;
+import com.evtnet.evtnetback.entity.DenunciaEvento;
+import com.evtnet.evtnetback.service.DenunciaEventoServiceImpl;
 
 public class DenunciaEventoController extends BaseControllerImpl <DenunciaEvento, DenunciaEventoServiceImpl> {
     

@@ -1,4 +1,4 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
 public class ChatController  {
     

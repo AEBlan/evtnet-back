@@ -4,11 +4,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.evtnet.evtnetback.Entities.ComprobantePago;
+import com.evtnet.evtnetback.entity.ComprobantePago;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.evtnet.evtnetback.Entities.Usuario;
+import com.evtnet.evtnetback.entity.Usuario;
 import com.evtnet.evtnetback.dto.usuarios.DTOPago;
 import com.evtnet.evtnetback.dto.usuarios.DTOPreferenciaPago;
 import com.mercadopago.client.preference.PreferenceBackUrlsRequest;

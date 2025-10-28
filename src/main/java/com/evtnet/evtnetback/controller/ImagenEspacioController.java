@@ -1,9 +1,8 @@
-package com.evtnet.evtnetback.Controllers;
+package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.Entities.ImagenEspacio;
-import com.evtnet.evtnetback.Services.ImagenEspacioService;
-import com.evtnet.evtnetback.Services.ImagenEspacioServiceImpl;
-import com.evtnet.evtnetback.dto.cronogramas.DTOCrearExcepcion;
+import com.evtnet.evtnetback.entity.ImagenEspacio;
+import com.evtnet.evtnetback.service.ImagenEspacioService;
+import com.evtnet.evtnetback.service.ImagenEspacioServiceImpl;
 import com.evtnet.evtnetback.dto.imagenes.DTOActualizarImagenesEspacio;
 import com.evtnet.evtnetback.dto.imagenes.DTOImagenEspacio;
 import com.evtnet.evtnetback.error.HttpErrorException;

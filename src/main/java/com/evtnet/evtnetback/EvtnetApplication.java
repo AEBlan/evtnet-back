@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import com.mercadopago.MercadoPagoConfig;
 
 @SpringBootApplication(scanBasePackages = "com.evtnet.evtnetback")
-@EnableJpaRepositories(basePackages = "com.evtnet.evtnetback.Repositories")
-@EntityScan(basePackages = "com.evtnet.evtnetback.Entities")
+@EnableJpaRepositories(basePackages = "com.evtnet.evtnetback.repository")
+@EntityScan(basePackages = "com.evtnet.evtnetback.entity")
 public class EvtnetApplication {
 
 	public static void main(String[] args) {
