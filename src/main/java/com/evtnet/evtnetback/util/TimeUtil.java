@@ -1,4 +1,4 @@
-package com.evtnet.evtnetback.utils;
+package com.evtnet.evtnetback.util;
 
 import java.time.*;
 

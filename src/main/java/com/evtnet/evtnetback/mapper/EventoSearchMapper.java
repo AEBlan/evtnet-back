@@ -2,7 +2,7 @@ package com.evtnet.evtnetback.mapper;
 
 import com.evtnet.evtnetback.entity.Evento;
 import com.evtnet.evtnetback.dto.eventos.*;
-import com.evtnet.evtnetback.utils.TimeUtil;
+import com.evtnet.evtnetback.util.TimeUtil;
 
 import java.util.List;
 import java.util.Objects;
