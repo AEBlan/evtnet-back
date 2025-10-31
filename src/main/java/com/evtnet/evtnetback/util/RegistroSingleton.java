@@ -18,8 +18,8 @@ import org.springframework.stereotype.Component;
 
 import com.evtnet.evtnetback.entity.Registro;
 import com.evtnet.evtnetback.entity.Usuario;
-import com.evtnet.evtnetback.Repositories.RegistroRepository;
-import com.evtnet.evtnetback.Repositories.UsuarioRepository;
+import com.evtnet.evtnetback.repository.RegistroRepository;
+import com.evtnet.evtnetback.repository.UsuarioRepository;
 import com.evtnet.evtnetback.dto.registros.DTORegistro;
 
 import java.nio.file.*;

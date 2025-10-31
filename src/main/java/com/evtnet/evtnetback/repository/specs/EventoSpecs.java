@@ -3,7 +3,7 @@ package com.evtnet.evtnetback.repository.specs;
 import com.evtnet.evtnetback.entity.Evento;
 import com.evtnet.evtnetback.dto.eventos.DTOBusquedaEventos;
 import com.evtnet.evtnetback.dto.eventos.DTOBusquedaMisEventos;
-import com.evtnet.evtnetback.utils.TimeUtil;
+import com.evtnet.evtnetback.util.TimeUtil;
 import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
