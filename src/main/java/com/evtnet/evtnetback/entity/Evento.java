@@ -86,7 +86,7 @@ public class Evento extends Base {
 
     public Usuario getOrganizador() throws Exception {
         for (AdministradorEvento a : administradoresEvento) {
-            if (a.getTipoAdministradorEvento().getNombre().equalsIgnoreCase("Organizador")) {
+            if (a.getTipoAdministradorEvento().getNombre().equalsIgnoreCase("Organizador") && a.getFechaHoraBaja() == null) {
                 return a.getUsuario();
             };
         }

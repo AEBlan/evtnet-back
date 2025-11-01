@@ -284,6 +284,7 @@ INSERT INTO permiso (nombre) SELECT 'VisionLogEventos' WHERE NOT EXISTS (SELECT 
 INSERT INTO permiso (nombre) SELECT 'VisionLogEspacios' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='VisionLogEspacios');
 INSERT INTO permiso (nombre) SELECT 'VisionLogPagos' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='VisionLogPagos');
 INSERT INTO permiso (nombre) SELECT 'VisionLogParametros' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='VisionLogParametros');
+INSERT INTO permiso (nombre) SELECT 'CancelacionEventosAdmin' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='CancelacionEventosAdmin');
 
 -- =========================
 -- Rol (fecha_hora_alta NOT NULL en tu entidad nueva)
@@ -347,7 +348,7 @@ WHERE p.nombre IN (
   'VisionEventos','VisionEspacios','ParticipacionGrupos','CreacionGrupos','AdministracionGrupos',
   'AdministracionEspaciosPublicos','SolicitudEspaciosPublicos','AdministracionParametros',
   'AdministracionMascota','AdministracionRoles','AdministracionUsuarios','RealizacionBackup',
-  'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios', 'DenunciaEventos'
+  'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios', 'DenunciaEventos', 'CancelacionEventosAdmin'
 )
   AND NOT EXISTS (
     SELECT 1 FROM rol_permiso rp

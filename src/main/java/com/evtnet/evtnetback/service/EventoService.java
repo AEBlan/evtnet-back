@@ -32,15 +32,19 @@ public interface EventoService extends BaseService<Evento, Long> {
     DTODatosParaInscripcion obtenerDatosParaInscripcion(long idEvento, String username) throws Exception;
     List<DTOBusquedaUsuario> buscarUsuariosNoInscriptos(Long idEvento, String texto) throws Exception;
     void inscribirUsuario(DTOInscripcion dto) throws Exception;
-    DTOAdministradores obtenerAdministradores(long idEvento, String currentUser) throws Exception;
-    List<DTOBusquedaUsuario> buscarUsuariosNoAdministradores(Long idEvento, String texto);
-    void agregarAdministrador(long idEvento, String username);
-    void quitarAdministrador(long idEvento, String username);
+    public void dejarDeAdministrar(Long eventoId) throws Exception;
+    DTOAdministradores obtenerAdministradores(long idEvento) throws Exception;
+    List<DTOBusquedaUsuario> buscarUsuariosNoAdministradores(Long idEvento, String texto) throws Exception;
+    void agregarAdministrador(long idEvento, String username) throws Exception;
+    void quitarAdministrador(long idEvento, String username) throws Exception;
     void entregarOrganizador(long idEvento, String nuevoOrganizador) throws Exception;
+    void cancelarEvento(long idEvento, String motivo) throws Exception;
     void denunciarEvento(DTODenunciaEvento dto, String username);
     Page<DTODenunciaEventoSimple> buscarDenuncias(DTOBusquedaDenunciasEventos filtro, int page) throws Exception;
     DTODenunciaEventoCompleta obtenerDenunciaCompleta(long idDenuncia) throws Exception;
     DTODatosParaCambioEstadoDenuncia obtenerDatosParaCambioEstado(long idDenuncia);
     void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto, String username);
     DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento, String username);
+
+
 }

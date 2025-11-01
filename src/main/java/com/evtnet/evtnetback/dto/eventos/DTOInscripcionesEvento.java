@@ -12,6 +12,7 @@ public class DTOInscripcionesEvento {
         private String nombreEvento;
         private boolean esAdministrador;
         private boolean esOrganizador;
+        private boolean esEncargado;
         private List<InscripcionDTO> inscripciones;
 
     @Builder
@@ -37,7 +38,7 @@ public class DTOInscripcionesEvento {
     @Builder
     @Data
     public static class TransferenciaDTO {
-        private int numero;
+        private String numero;
         private BigDecimal monto;
     }
 
