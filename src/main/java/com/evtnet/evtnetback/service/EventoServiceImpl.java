@@ -1,5 +1,6 @@
 package com.evtnet.evtnetback.service;
 
+import com.evtnet.evtnetback.dto.supereventos.DTOAdministradoresSuperevento;
 import com.evtnet.evtnetback.entity.*;
 import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.repository.specs.EventoSpecs;
@@ -74,7 +75,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	private final HorarioEspacioRepository horarioRepo;
 	private final ChatRepository chatRepo;
 	private final PorcentajeReintegroCancelacionInscripcionRepository porcentajeReintegroCancelacionInscripcionRepo;
-
+	private final TipoAdministradorEventoRepository tipoAdminRepo;
 	private final RegistroSingleton registroSingleton;
 
 	private final MailService mailService;
@@ -113,6 +114,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		HorarioEspacioRepository horarioRepo,
 		ChatRepository chatRepo,
 		PorcentajeReintegroCancelacionInscripcionRepository porcentajeReintegroCancelacionInscripcionRepo,
+		TipoAdministradorEventoRepository tipoAdminRepo,
 		RegistroSingleton registroSingleton,
 		MailService mailService
     ) {
@@ -146,6 +148,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	this.registroSingleton = registroSingleton;
 	this.mailService = mailService;
 	this.porcentajeReintegroCancelacionInscripcionRepo = porcentajeReintegroCancelacionInscripcionRepo;
+	this.tipoAdminRepo = tipoAdminRepo;
     }
      
 	@Override
@@ -864,8 +867,11 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		Usuario propietario = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEspacio().getNombre().equals("Propietario")).toList().get(0).getUsuario();
 
+		if (h.getPrecioOrganizacion().doubleValue() == 0f) {
+			throw new HttpErrorException(900, "No es necesario realizar un pago");
+		}
 
-		DTOPreferenciaPago pref = mercadoPagoSingleton.createPreference("Organización de evento '" + req.getNombre() + "'", h.getPrecioOrganizacion().add(h.getAdicionalPorInscripcion()), comision_organizacion, propietario, "/CrearEvento/" + subespacio.getEspacio().getId());
+		DTOPreferenciaPago pref = mercadoPagoSingleton.createPreference("Organización de evento '" + req.getNombre() + "'", h.getPrecioOrganizacion().multiply(comision_organizacion.add(BigDecimal.valueOf(1))), comision_organizacion, propietario, "/CrearEvento/" + subespacio.getEspacio().getId());
 
 		return pref;
 	}
@@ -879,17 +885,19 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
 		List<String> admins = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null).map(a -> a.getUsuario().getUsername()).toList();
 
-		boolean pagoRealizado = false;
-
-		if (r.isUsarCronograma() && !admins.contains(username)) {
-			mercadoPagoSingleton.verifyPayments(List.of(r.getPago()));
-			pagoRealizado = true;
-		}
-
 		HorarioEspacio h = null;
 
 		if (r.isUsarCronograma()) {
 			h = horarioRepo.findById(r.getHorarioId()).orElseThrow(() -> new Exception("No se encontró el horario"));
+		}
+
+		boolean pagoRealizado = false;
+
+		if (r.isUsarCronograma() && !admins.contains(username)) {
+			if (h.getPrecioOrganizacion().doubleValue() > 0f) {
+				mercadoPagoSingleton.verifyPayments(List.of(r.getPago()));
+			}
+			pagoRealizado = true;
 		}
 
 		int cant_max_invitados_default = parametroSistemaService.getInt("cant_max_invitados_default", 5);
@@ -1088,6 +1096,16 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		
 		String username = CurrentUser.getUsername().orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
+		List<EventoEstado> ees = e.getEventosEstado().stream().filter(es -> es.getFechaHoraBaja() == null).toList();
+
+		if (ees.size() != 1) {
+			throw new Exception("El evento se encuentra en un estado no válido");
+		}
+
+		if (!ees.get(0).getEstadoEvento().getNombre().equalsIgnoreCase("Aceptado")) {
+			throw new Exception("No puede inscribirse al evento, pues el mismo no se encuentra en estado 'Aceptado'");
+		}
+
 		// ya inscripto (solo si tiene una inscripción activa)
 		if (inscripcionRepo.countActivasByEventoIdAndUsuarioUsername(e.getId(), username) > 0) 
 			throw new Exception("Ya está inscripto a este evento");
@@ -1214,7 +1232,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	    
 	    inscripcionRepo.save(ins);
 
-		registroSingleton.write("Eventos", "inscripcion", "eliminacion", "A evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "'");
+		registroSingleton.write("Eventos", "inscripcion", "eliminacion", "A evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "' por parte del mismo usuario");
 	}
 
     @Override
@@ -1273,6 +1291,16 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
 		Usuario usuario = usuarioRepo.findByUsername(username).orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+		List<EventoEstado> ees = e.getEventosEstado().stream().filter(es -> es.getFechaHoraBaja() == null).toList();
+
+		if (ees.size() != 1) {
+			throw new Exception("El evento se encuentra en un estado no válido");
+		}
+
+		if (!ees.get(0).getEstadoEvento().getNombre().equalsIgnoreCase("Aceptado")) {
+			throw new Exception("No se puede modificar el evento, pues el mismo no se encuentra en estado 'Aceptado'");
+		}
 
 		// Validar si el usuario actual es administrador del evento
 		boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(idEvento, username);
@@ -1366,6 +1394,16 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
 		Usuario usuario = usuarioRepo.findByUsername(username).orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+		List<EventoEstado> ees = e.getEventosEstado().stream().filter(es -> es.getFechaHoraBaja() == null).toList();
+
+		if (ees.size() != 1) {
+			throw new Exception("El evento se encuentra en un estado no válido");
+		}
+
+		if (!ees.get(0).getEstadoEvento().getNombre().equalsIgnoreCase("Aceptado")) {
+			throw new Exception("No se puede modificar el evento, pues el mismo no se encuentra en estado 'Aceptado'");
+		}
 
 		// Validar si el usuario actual es administrador del evento
 		boolean esAdministrador = eventoRepo.existsByEventoIdAndAdministradorUsername(dto.getId(), username);
@@ -1626,6 +1664,16 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		boolean esOrganizador = e.getOrganizador() != null &&
 			e.getOrganizador().getUsername().equals(currentUser);
 
+		boolean esEncargado = false;
+		EncargadoSubEspacio ese = e.getSubEspacio().getEncargadoSubEspacio();
+		if (ese != null) {
+			esEncargado = ese.getUsuario().getUsername().equals(currentUser);
+		}
+
+		if (!esAdministrador && !esOrganizador && !esEncargado) {
+			throw new Exception("No tiene permiso para acceder a esta información");
+		}
+
 		var inscripciones = inscripcionRepo.findByEventoIdAndFiltro(idEvento, texto).stream()
 			.map(i -> DTOInscripcionesEvento.InscripcionDTO.builder()
 				.id(i.getId())
@@ -1637,7 +1685,21 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 					.build())
 				.fechaInscripcion(i.getFechaHoraAlta())
 				.fechaCancelacionInscripcion(i.getFechaHoraBaja())
-				.transferencias(List.of()) // ⚠️ TODO: mapear entidad Transferencia
+				.transferencias(i.getComprobantePagos().stream()
+					.map(c -> DTOInscripcionesEvento.TransferenciaDTO.builder()
+						.numero(c.getNumero())
+						.monto(c.getItems().stream()
+							.filter(it -> it.getCobro().getUsername().equals(i.getUsuario().getUsername())
+								|| it.getPago().getUsername().equals(i.getUsuario().getUsername()))
+							.map(it ->
+								it.getMontoUnitario()
+									.multiply(BigDecimal.valueOf(it.getCantidad()))
+									.multiply(BigDecimal.valueOf(
+										it.getCobro().getUsername().equals(i.getUsuario().getUsername()) ? -1f : 1f
+									))
+							).reduce(BigDecimal.ZERO, BigDecimal::add)).build()
+					).toList()
+				)
 				.invitados(i.getInvitados().stream()
 					.map(inv -> DTOInscripcionesEvento.InvitadoDTO.builder()
 						.nombre(inv.getNombre())
@@ -1652,6 +1714,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			.nombreEvento(e.getNombre())
 			.esAdministrador(esAdministrador)
 			.esOrganizador(esOrganizador)
+			.esEncargado(esEncargado)
 			.inscripciones(inscripciones)
 			.build();
 	}
@@ -1681,6 +1744,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		ins.setFechaHoraBaja(LocalDateTime.now(zone));
 
 		inscripcionRepo.save(ins);
+
+		mailService.enviar(ins.getUsuario().getMail(), "evtnet - Inscripción cancelada", "Su inscripción al evento '" + e.getNombre() + "' ha sido cancelada. Se le devolvió su dinero.");
+		registroSingleton.write("Eventos", "inscripcion", "eliminacion", "Cancelación de inscripción de usuario de username '" + ins.getUsuario().getUsername() + "' a evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "' por decisión de un administrador u organizador del evento");
 	}
 
 
@@ -1767,118 +1833,342 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		}
 	}
 
-
 	@Override
-	@Transactional
-	public DTOAdministradores obtenerAdministradores(long idEvento, String currentUser) throws Exception {
-	Evento e = eventoRepo.findById(idEvento)
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+	public void dejarDeAdministrar(Long eventoId) throws Exception {
+		Evento evento = eventoRepo.findById(eventoId).orElseThrow(() -> new Exception("No se encontró el evento"));
 
-	boolean esOrganizador = e.getOrganizador() != null &&
-		e.getOrganizador().getUsername().equals(currentUser);
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Sesión no iniciada"));
 
-	var admins = e.getAdministradoresEvento().stream()
-		.map(a -> DTOAdministradores.AdministradorDTO.builder()
-			.username(a.getUsuario().getUsername())
-			.nombre(a.getUsuario().getNombre())
-			.apellido(a.getUsuario().getApellido())
-			.vigente(a.getFechaHoraBaja() == null)
-			.historico(List.of(DTOAdministradores.HistoricoDTO.builder()
-				.fechaDesde(a.getFechaHoraAlta())
-				.fechaHasta(a.getFechaHoraBaja())
-				.build()))
-			.build())
-		.toList();
+		List<AdministradorEvento> admins = evento.getAdministradoresEvento().stream().filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername().equals(username)).toList();
 
-	return DTOAdministradores.builder()
-		.esOrganizador(esOrganizador)
-		.nombreEvento(e.getNombre())
-		.administradores(admins)
-		.build();
+		if (admins.isEmpty()) {
+			throw new Exception("No es administrador del evento");
+		}
+
+		AdministradorEvento admin = admins.get(0);
+
+		if (admin.getTipoAdministradorEvento().getNombre().equals("Organizador")) {
+			throw new Exception("No puede dejar de administrar el evento porque es su organizador. Pase el rol de organizador a otro administrador primero.");
+		}
+
+		admin.setFechaHoraBaja(LocalDateTime.now());
+
+		administradorEventoRepo.save(admin);
+
+		registroSingleton.write("Eventos", "administrador_evento", "eliminacion", "Dejó de administrar por cuenta propia al evento de ID " + evento.getId() + " nombre '" + evento.getNombre() + "'");
 	}
 
 	@Override
 	@Transactional
-	public List<DTOBusquedaUsuario> buscarUsuariosNoAdministradores(Long idEvento, String texto) {
-	return usuarioRepo.buscarUsuariosNoAdministradores(idEvento, texto).stream()
-		.map((Usuario u) -> DTOBusquedaUsuario.builder()
-			.username(u.getUsername())
-			.nombre(u.getNombre())
-			.apellido(u.getApellido())
-			.mail(u.getMail())
-			.dni(u.getDni())
-			.fechaNacimiento( u.getFechaNacimiento() != null ? u.getFechaNacimiento().toLocalDate() : null )
-			.build()
-		)
-		.toList();
+	public DTOAdministradores obtenerAdministradores(long idEvento) throws Exception {
+		Evento e = eventoRepo.findById(idEvento)
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Sesión no iniciada"));
+
+		boolean esOrganizador = e.getOrganizador() != null &&
+			e.getOrganizador().getUsername().equals(username);
+
+		if (!esOrganizador) {
+			return  DTOAdministradores.builder().esOrganizador(false).build();
+		}
+
+		List<DTOAdministradores.AdministradorDTO> admins = e.getAdministradoresEvento().stream()
+			.collect(java.util.stream.Collectors.groupingBy(a -> a.getUsuario().getUsername()))
+			.entrySet().stream()
+			.map(entry -> {
+				Usuario user = entry.getValue().get(0).getUsuario();
+				boolean vigente = entry.getValue().stream().anyMatch(a -> a.getFechaHoraBaja() == null);
+
+				List<DTOAdministradores.HistoricoDTO> historico = entry.getValue().stream()
+						.map(a -> DTOAdministradores.HistoricoDTO.builder()
+								.fechaDesde(a.getFechaHoraAlta())
+								.fechaHasta(a.getFechaHoraBaja())
+								.organizador(a.getTipoAdministradorEvento().getNombre().equals("Organizador"))
+								.build())
+						.toList();
+
+				return DTOAdministradores.AdministradorDTO.builder()
+						.nombre(user.getNombre())
+						.apellido(user.getApellido())
+						.username(user.getUsername())
+						.vigente(vigente)
+						.historico(historico)
+						.build();
+			}).toList();
+
+		return DTOAdministradores.builder()
+			.esOrganizador(esOrganizador)
+			.nombreEvento(e.getNombre())
+			.administradores(admins)
+			.build();
+	}
+
+	@Override
+	@Transactional
+	public List<DTOBusquedaUsuario> buscarUsuariosNoAdministradores(Long idEvento, String texto) throws Exception {
+		Evento evento = eventoRepo.findById(idEvento).orElseThrow(() -> new Exception("No se encontró el evento"));
+
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Sesión no iniciada"));
+
+		boolean esOrganizador = evento.getAdministradoresEvento().stream()
+				.filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEvento().getNombre().equals("Organizador") && a.getUsuario().getUsername().equals(username))
+				.count() > 0;
+
+		if (!esOrganizador) {
+			throw new Exception("Debe ser el organizador del evento para gestionar sus administradores");
+		}
+
+		// Generación de keywords
+		List<String> keywords = Arrays.asList(texto.split("\\s"))
+				.stream().filter(k -> k.length() > 2).toList();
+
+		String jpql = "SELECT DISTINCT u FROM Usuario u WHERE u.fechaHoraBaja IS NULL";
+
+		for (int i = 0; i < keywords.size(); i++) {
+			jpql += " AND (" +
+					"LOWER(TRIM(u.nombre)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR " +
+					"LOWER(TRIM(u.apellido)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR " +
+					"LOWER(TRIM(u.username)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%'))" +
+					")";
+		}
+
+		TypedQuery<Usuario> query = entityManager.createQuery(jpql, Usuario.class);
+
+		for (int i = 0; i < keywords.size(); i++) {
+			query.setParameter("kw" + i, keywords.get(i));
+		}
+
+		List<Usuario> usuarios = query.getResultList();
+
+		// Filtrar usuarios que ya son administradores activos
+		List<String> usernamesAdmins = evento.getAdministradoresEvento().stream()
+				.filter(a -> a.getFechaHoraBaja() == null)
+				.map(a -> a.getUsuario().getUsername())
+				.toList();
+
+		return usuarios.stream()
+			.filter(u -> !usernamesAdmins.contains(u.getUsername()))
+			.map((Usuario u) -> DTOBusquedaUsuario.builder()
+				.username(u.getUsername())
+				.nombre(u.getNombre())
+				.apellido(u.getApellido())
+				.build()
+			)
+			.toList();
 	}
 
 
 	@Override
 	@Transactional
-	public void agregarAdministrador(long idEvento, String username) {
-	Evento e = eventoRepo.findById(idEvento)
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
-	Usuario u = usuarioRepo.findByUsername(username)
-		.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+	public void agregarAdministrador(long idEvento, String username) throws Exception {
+		Evento e = eventoRepo.findById(idEvento)
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+		Usuario u = usuarioRepo.findByUsername(username)
+			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-	// Evitar duplicados
-	boolean yaEsAdmin = e.getAdministradoresEvento().stream()
-		.anyMatch(a -> a.getUsuario().equals(u) && a.getFechaHoraBaja() == null);
-	if (yaEsAdmin) return;
+		String currentUser = CurrentUser.getUsername().orElseThrow(() -> new Exception("Sesión no iniciada"));
 
-	AdministradorEvento ae = AdministradorEvento.builder()
-		.evento(e)
-		.usuario(u)
-		.fechaHoraAlta(LocalDateTime.now())
-		.build();
+		boolean esOrganizador = e.getAdministradoresEvento().stream()
+				.filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEvento().getNombre().equals("Organizador") && a.getUsuario().getUsername().equals(currentUser))
+				.count() > 0;
 
-	administradorEventoRepo.save(ae);
-	}
+		if (!esOrganizador) {
+			throw new Exception("Debe ser el organizador del superevento para gestionar sus administradores");
+		}
 
-	@Override
-	@Transactional
-	public void quitarAdministrador(long idEvento, String username) {
-	AdministradorEvento ae = administradorEventoRepo
-		.findByEventoIdAndUsuarioUsernameAndFechaHoraBajaIsNull(idEvento, username)
-		.orElseThrow(() -> new HttpErrorException(404, "Administrador no encontrado o ya dado de baja"));
+		TipoAdministradorEvento tipoAdmin = tipoAdminRepo.findByNombreIgnoreCase("Administrador")
+				.orElseThrow(() -> new Exception("No se pudo asignar el tipo de administrador"));
 
-	ae.setFechaHoraBaja(LocalDateTime.now());
-	administradorEventoRepo.save(ae);
-	}
+		// Evitar duplicados
+		boolean yaEsAdmin = e.getAdministradoresEvento().stream()
+			.anyMatch(a -> a.getUsuario().equals(u) && a.getFechaHoraBaja() == null);
+			if (yaEsAdmin) {
+				throw new Exception("El usuario ya es administrador del evento");
+			}
 
-	@Override
-	@Transactional
-	public void entregarOrganizador(long idEvento, String nuevoOrganizador) throws Exception {
-	Evento e = eventoRepo.findById(idEvento)
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
-
-	Usuario nuevo = usuarioRepo.findByUsername(nuevoOrganizador)
-		.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
-
-	// El organizador actual pasa a ser administrador
-	if (e.getOrganizador() != null) {
-		Usuario anterior = e.getOrganizador();
-
-		// Validar en DB si ya es administrador activo
-		boolean yaEsAdmin = administradorEventoRepo.existeAdministradorActivo(
-			e.getId(), anterior.getId()
-		);
-
-		if (!yaEsAdmin) {
 		AdministradorEvento ae = AdministradorEvento.builder()
 			.evento(e)
-			.usuario(anterior)
+			.usuario(u)
+			.tipoAdministradorEvento(tipoAdmin)
 			.fechaHoraAlta(LocalDateTime.now())
 			.build();
-		administradorEventoRepo.save(ae);
-		}
-	   }
 
-	// Cambiar organizador
-		// TO-DO
-	//e.setOrganizador(nuevo);
-	eventoRepo.save(e);
+		administradorEventoRepo.save(ae);
+
+		registroSingleton.write("Eventos", "administrador_evento", "creacion", "Usuario '" + username + "' agregado como administrador del evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
+	}
+
+	@Override
+	@Transactional
+	public void quitarAdministrador(long idEvento, String usernameAdminAQuitar) throws Exception {
+		Evento evento = eventoRepo.findById(idEvento).orElseThrow(() -> new Exception("No se encontró el evento"));
+
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Sesión no iniciada"));
+
+		boolean esOrganizador = evento.getAdministradoresEvento().stream()
+				.filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEvento().getNombre().equals("Organizador") && a.getUsuario().getUsername().equals(username))
+				.count() > 0;
+
+		if (!esOrganizador) {
+			throw new Exception("Debe ser el organizador del evento para gestionar sus administradores");
+		}
+
+		List<AdministradorEvento> admins = evento.getAdministradoresEvento().stream()
+				.filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername().equals(usernameAdminAQuitar))
+				.toList();
+
+		if (admins.size() == 0) {
+			throw new Exception("El usuario no es administrador del evento");
+		}
+
+		AdministradorEvento admin = admins.get(0);
+
+		if (admin.getTipoAdministradorEvento().getNombre().equals("Organizador")) {
+			throw new Exception("No puede quitar al organizador. Primero debe transferir el rol de organizador a otro administrador.");
+		}
+
+		admin.setFechaHoraBaja(LocalDateTime.now());
+
+		administradorEventoRepo.save(admin);
+
+		registroSingleton.write("Eventos", "administrador_evento", "eliminacion", "Usuario '" + usernameAdminAQuitar + "' removido como administrador del evento de ID " + evento.getId() + " nombre '" + evento.getNombre() + "'");
+	}
+
+	@Override
+	@Transactional
+	public void entregarOrganizador(long idEvento, String usernameNuevoOrganizador) throws Exception {
+		Evento e = eventoRepo.findById(idEvento)
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+
+		Usuario nuevo = usuarioRepo.findByUsername(usernameNuevoOrganizador)
+			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Sesión no iniciada"));
+
+		List<AdministradorEvento> organizadores = e.getAdministradoresEvento().stream()
+				.filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEvento().getNombre().equals("Organizador") && a.getUsuario().getUsername().equals(username))
+				.toList();
+
+		if (organizadores.size() == 0) {
+			throw new Exception("Usted no es el organizador de este evento");
+		}
+
+		AdministradorEvento organizadorActual = organizadores.get(0);
+
+		List<AdministradorEvento> nuevosOrganizadores = e.getAdministradoresEvento().stream()
+				.filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername().equals(usernameNuevoOrganizador))
+				.toList();
+
+		if (nuevosOrganizadores.isEmpty()) {
+			throw new Exception("El usuario al que intenta entregar el rol de organizador no es administrador del evento");
+		}
+
+		AdministradorEvento adminActual = nuevosOrganizadores.get(0);
+
+		if (adminActual.getTipoAdministradorEvento().getNombre().equals("Organizador")) {
+			throw new Exception("El usuario ya es el organizador");
+		}
+
+		TipoAdministradorEvento tipoOrganizador = tipoAdminRepo.findByNombreIgnoreCase("Organizador")
+				.orElseThrow(() -> new Exception("No se encontró el tipo Organizador"));
+		TipoAdministradorEvento tipoAdministrador = tipoAdminRepo.findByNombreIgnoreCase("Administrador")
+				.orElseThrow(() -> new Exception("No se encontró el tipo Administrador"));
+
+		// Cambiar el organizador
+		organizadorActual.setFechaHoraBaja(LocalDateTime.now());
+
+		AdministradorEvento nuevoOrganizador = AdministradorEvento.builder()
+				.usuario(adminActual.getUsuario())
+				.evento(e)
+				.tipoAdministradorEvento(tipoOrganizador)
+				.fechaHoraAlta(LocalDateTime.now())
+				.build();
+
+
+		// Cambiar el nuevo administrador
+		adminActual.setFechaHoraBaja(LocalDateTime.now());
+
+		AdministradorEvento nuevoAdmin = AdministradorEvento.builder()
+				.usuario(organizadorActual.getUsuario())
+				.evento(e)
+				.tipoAdministradorEvento(tipoAdministrador)
+				.fechaHoraAlta(LocalDateTime.now())
+				.build();
+
+		administradorEventoRepo.save(organizadorActual);
+		administradorEventoRepo.save(nuevoOrganizador);
+		administradorEventoRepo.save(adminActual);
+		administradorEventoRepo.save(nuevoAdmin);
+
+		registroSingleton.write("Eventos", "administrador_evento", "modificacion", "Transferencia de rol de organizador del evento de ID " + e.getId() + " nombre '" + e.getNombre() + "' de @" + username + " a @" + usernameNuevoOrganizador);
+
+	}
+
+	@Override
+	public void cancelarEvento(long idEvento, String motivo) throws Exception {
+		if (motivo.length() > 500) {
+			throw new Exception("El motivo de cancelación no puede superar los 500 caracteres de longitud");
+		}
+
+		Evento evento = eventoRepo.findById(idEvento).orElseThrow(() -> new Exception("No se encontró el evento"));
+
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Sesión no iniciada"));
+
+		boolean esOrganizador = evento.getOrganizador().getUsername().equals(username);
+
+		Usuario usuario = usuarioRepo.findByUsername(username).orElseThrow(() -> new Exception("Sesión no iniciada"));
+
+		boolean esAdminSistema = usuario.getPermisos().stream().filter(p -> p.equalsIgnoreCase("CancelacionEventosAdmin")).count() == 1;
+
+		if (!esOrganizador && !esAdminSistema) {
+			throw new Exception("No tiene permiso dar de baja el evento");
+		}
+
+		List<EventoEstado> ees = evento.getEventosEstado().stream().filter(e -> e.getFechaHoraBaja() == null).toList();
+
+		if (ees.size() != 1) {
+			throw new Exception("El evento se encuentra en un estado no válido");
+		}
+
+		EventoEstado eeAnterior = ees.get(0);
+		if (!eeAnterior.getEstadoEvento().getNombre().equalsIgnoreCase("Aceptado") && !eeAnterior.getEstadoEvento().getNombre().equalsIgnoreCase("En Revisión")) {
+			throw new Exception("No se puede cancelar el evento, pues el mismo no se encuentra en estado 'Aceptado' ni 'En Revisión'");
+		}
+
+		eeAnterior.setFechaHoraBaja(LocalDateTime.now());
+
+		EstadoEvento cancelado = estadoEventoRepo.findByNombreIgnoreCase("Cancelado").orElseThrow(() -> new Exception("No se pudo asignar el estado 'Cancelado' al evento"));
+
+		EventoEstado eeNuevo = EventoEstado.builder()
+				.evento(evento)
+				.estadoEvento(cancelado)
+				.descripcion(motivo)
+				.fechaHoraAlta(LocalDateTime.now())
+				.build();
+
+		List<Inscripcion> inscripciones = inscripcionRepo.findActivasByEventoId(evento.getId()).stream().sorted(Comparator.comparing(Inscripcion::getFechaHoraAlta).reversed()).toList();
+		for (Inscripcion ins : inscripciones) {
+			List<ComprobantePago> pagos = ins.getComprobantePagos();
+			for (ComprobantePago c : pagos) {
+				mercadoPagoSingleton.refundPayment(c);
+				registroSingleton.write("Pagos", "devolucion", "ejecucion", "Por cancelación de evento de ID '" + evento.getId() + "', nombre '" + evento.getNombre() + "' al que estaba inscripto el usuario de username '" + username + "'");
+			}
+			registroSingleton.write("Pagos", "pago_comision", "ejecucion", "Por cancelación de evento de ID '" + evento.getId() + "', nombre '" + evento.getNombre() + "' al que estaba inscripto el usuario de username '" + username + "'");
+
+			ins.setFechaHoraBaja(LocalDateTime.now());
+			inscripcionRepo.save(ins);
+
+			mailService.enviar(ins.getUsuario().getMail(), "evtnet - Inscripción cancelada", "El evento '" + evento.getNombre() + "' ha sido cancelado. Se le devolvió su dinero.");
+			registroSingleton.write("Eventos", "inscripcion", "eliminacion", "Cancelación de inscripción de usuario de username '" + username + "' a evento de ID " + ins.getEvento().getId() + " nombre '" + ins.getEvento().getNombre() + "' por cancelación del evento");
+		}
+
+		eventoEstadoRepo.save(eeAnterior);
+		eventoEstadoRepo.save(eeNuevo);
+		eventoRepo.save(evento);
+
+		registroSingleton.write("Eventos", "evento", "eliminacion", "Evento de ID " + evento.getId() + " nombre '" + evento.getNombre() + "' por motivo: '" + motivo + "'" + (esAdminSistema && !esOrganizador ? " (Dado de baja por un administrador del sistema)" : ""));
+
 	}
 
 
