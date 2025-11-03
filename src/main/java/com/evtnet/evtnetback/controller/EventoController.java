@@ -117,7 +117,6 @@ public class EventoController {
         return ResponseEntity.ok(service.buscarUsuariosNoInscriptos(idEvento, texto));
     }
 
-
     @GetMapping("/obtenerInscripciones")
     public ResponseEntity<DTOInscripcionesEvento> obtenerInscripciones(
         @RequestParam long id,
@@ -143,26 +142,30 @@ public class EventoController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/dejarDeAdministrar")
+    public ResponseEntity<Void> dejarDeAdministrar(@RequestParam Long eventoId) throws Exception {
+        service.dejarDeAdministrar(eventoId);
+        return ResponseEntity.ok().build();
+    }
 
     @GetMapping("/obtenerAdministradores")
     public ResponseEntity<DTOAdministradores> obtenerAdministradores(
-        @RequestParam long idEvento,
-        Authentication auth) throws Exception {
-    return ResponseEntity.ok(service.obtenerAdministradores(idEvento, auth.getName()));
+        @RequestParam long idEvento) throws Exception {
+    return ResponseEntity.ok(service.obtenerAdministradores(idEvento));
     }
 
     @GetMapping("/buscarUsuariosNoAdministradores")
     public ResponseEntity<List<DTOBusquedaUsuario>> buscarUsuariosNoAdministradores(
             @RequestParam long idEvento,
             @RequestParam(required = false, defaultValue = "") String texto
-    ) {
+    ) throws Exception {
         return ResponseEntity.ok(service.buscarUsuariosNoAdministradores(idEvento, texto));
     }
 
     @PostMapping("/agregarAdministrador")
     public ResponseEntity<Void> agregarAdministrador(
         @RequestParam long idEvento,
-        @RequestParam String username) {
+        @RequestParam String username) throws Exception {
     service.agregarAdministrador(idEvento, username);
     return ResponseEntity.ok().build();
     }
@@ -170,7 +173,7 @@ public class EventoController {
     @DeleteMapping("/quitarAdministrador")
     public ResponseEntity<Void> quitarAdministrador(
         @RequestParam long idEvento,
-        @RequestParam String username) {
+        @RequestParam String username) throws Exception {
     service.quitarAdministrador(idEvento, username);
     return ResponseEntity.ok().build();
     }
@@ -181,6 +184,12 @@ public class EventoController {
         @RequestParam String username) throws Exception {
     service.entregarOrganizador(idEvento, username);
     return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/cancelarEvento")
+    public ResponseEntity<Void> cancelarEvento(@RequestParam long idEvento, @RequestParam String motivo) throws Exception {
+        service.cancelarEvento(idEvento, motivo);
+        return ResponseEntity.ok().build();
     }
 
     // --- DENUNCIAS ---

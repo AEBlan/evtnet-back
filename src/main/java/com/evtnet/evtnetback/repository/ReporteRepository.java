@@ -20,73 +20,97 @@ public interface ReporteRepository extends JpaRepository<Evento, Long> {
             e.nombre,
             e.fechaHoraInicio,
             e.fechaHoraFin,
-            COUNT(DISTINCT i.id)
+            COUNT(i.id)
         )
         FROM Evento e
-        LEFT JOIN e.inscripciones i
-            ON i.fechaHoraBaja IS NULL
+        JOIN e.inscripciones i
+        LEFT JOIN e.subEspacio s
+        LEFT JOIN s.espacio esp
+        WHERE (
+            (:subespacioId IS NULL AND esp.id = :espacioId)
+            OR (s.id = :subespacioId)
+        )
+        AND e.fechaHoraInicio >= :fechaDesde
+        AND e.fechaHoraFin <= :fechaHasta
+        GROUP BY e.id, e.nombre, e.fechaHoraInicio, e.fechaHoraFin
+        ORDER BY COUNT(i.id) DESC
+    """)
+    List<DatoLocal> reportePersonasPorEventoEnEspacio(
+            @Param("espacioId") Long espacioId,
+            @Param("subespacioId") Long subespacioId,
+            @Param("fechaDesde") LocalDateTime fechaDesde,
+            @Param("fechaHasta") LocalDateTime fechaHasta);
+
+
+    // ==========================================================
+//  Contar Eventos por Subespacio (dentro de un Espacio)
+// ==========================================================
+    // ==========================================================
+//  Contar Eventos por Subespacio dentro de varios Espacios
+// ==========================================================
+        public interface RowEventosPorSubespacio {
+            Long getEspacioId();
+            String getEspacio();
+            Long getSubespacioId();
+            String getSubespacio();
+            long getEventos();
+        }
+
+        @Query("""
+            SELECT
+                esp.id AS espacioId,
+                esp.nombre AS espacio,
+                sub.id AS subespacioId,
+                sub.nombre AS subespacio,
+                COUNT(DISTINCT e.id) AS eventos
+            FROM Evento e
+            JOIN e.subEspacio sub
+            JOIN sub.espacio esp
+            WHERE esp.id IN :espaciosIds
+            AND e.fechaHoraInicio >= :desde
+            AND e.fechaHoraFin <= :hasta
+            GROUP BY esp.id, esp.nombre, sub.id, sub.nombre
+            ORDER BY esp.nombre ASC, COUNT(DISTINCT e.id) DESC
+        """)
+        List<RowEventosPorSubespacio> contarEventosPorSubespaciosDeEspacios(
+                @Param("espaciosIds") Collection<Long> espaciosIds,
+                @Param("desde") LocalDateTime desde,
+                @Param("hasta") LocalDateTime hasta
+        );
+
+
+
+
+    // ===============================================================
+    //  Contar Participantes por Subespacio y rango de tiempo
+    // ===============================================================
+    @Query("""
+        SELECT
+            sub.id AS subespacioId,
+            sub.nombre AS subespacio,
+            COUNT(i.id) AS participantes
+        FROM Evento e
+        JOIN e.inscripciones i
         JOIN e.subEspacio sub
         JOIN sub.espacio esp
         WHERE esp.id = :espacioId
-          AND e.fechaHoraInicio < :hasta
-          AND e.fechaHoraFin > :desde
-        GROUP BY e.id, e.nombre, e.fechaHoraInicio, e.fechaHoraFin
-        ORDER BY COUNT(DISTINCT i.id) DESC
+        AND e.fechaHoraInicio >= :desde
+        AND e.fechaHoraFin <= :hasta
+        GROUP BY sub.id, sub.nombre
     """)
-    List<DatoLocal> reportePersonasPorEventoEnEspacio(
+    List<RowParticipantesPorSubespacio> contarParticipantesPorRango(
             @Param("espacioId") Long espacioId,
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta
     );
 
-
-    // ==========================================================
-    //  Contar Eventos por Espacio (suma de todos sus subespacios)
-    // ==========================================================
-    interface RowEventosPorEspacio {
-        Long getEspacioId();
-        String getEspacio();
-        long getEventos();
+    // DTO de proyección para la query
+    public interface RowParticipantesPorSubespacio {
+        Long getSubespacioId();
+        String getSubespacio();
+        long getParticipantes();
     }
 
-    @Query("""
-        SELECT
-            esp.id AS espacioId,
-            esp.nombre AS espacio,
-            COUNT(DISTINCT e.id) AS eventos
-        FROM Evento e
-        JOIN e.subEspacio sub
-        JOIN sub.espacio esp
-        WHERE esp.id IN :espacios
-          AND e.fechaHoraInicio < :hasta
-          AND e.fechaHoraFin > :desde
-        GROUP BY esp.id, esp.nombre
-        ORDER BY COUNT(DISTINCT e.id) DESC
-    """)
-    List<RowEventosPorEspacio> contarEventosPorEspacio(
-            @Param("espacios") Collection<Long> espacios,
-            @Param("desde") LocalDateTime desde,
-            @Param("hasta") LocalDateTime hasta
-    );
-
-
-    // ==========================================================
-    //  Contar Participantes en un rango (por espacio o todos)
-    // ==========================================================
-    @Query("""
-        SELECT COUNT(i)
-        FROM Inscripcion i
-        JOIN i.evento ev
-        JOIN ev.subEspacio sub
-        JOIN sub.espacio esp
-        WHERE (:espacioId IS NULL OR esp.id = :espacioId)
-          AND ev.fechaHoraInicio < :hasta
-          AND ev.fechaHoraFin > :desde
-          AND i.fechaHoraBaja IS NULL
-    """)
-    long contarParticipantesPorRango(
-            @Param("espacioId") Long espacioId, // null si es "todos"
-            @Param("desde") LocalDateTime desde,
-            @Param("hasta") LocalDateTime hasta
-    );
+    
+    
 }

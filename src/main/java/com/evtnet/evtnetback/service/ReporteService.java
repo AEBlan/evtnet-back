@@ -21,66 +21,7 @@ public class ReporteService {
     private final ReporteRepository reporteRepository;
     private final EspacioRepository espacioRepository;
 
-    public DTOReporteEventosPorEspacio generarEventosPorEspacio(
-            List<Long> espaciosIds, long fechaDesdeMs, long fechaHastaMs) throws Exception {
-
-        if (espaciosIds == null || espaciosIds.isEmpty())
-            throw new IllegalArgumentException("Debe seleccionar al menos un espacio");
-        if (fechaDesdeMs >= fechaHastaMs)
-            throw new IllegalArgumentException("El rango de fechas es inválido");
-
-        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("No autenticado"));
-
-        // Verificar existencia de los espacios
-        List<Espacio> espacios = espacioRepository.findAllById(espaciosIds);
-        if (espacios.size() != new HashSet<>(espaciosIds).size())
-            throw new IllegalArgumentException("Alguno de los espacios no existe");
-
-        // Verificar propiedad de los espacios
-        boolean todosPropios = espacios.stream().allMatch(e ->
-                e.getAdministradoresEspacio().stream()
-                        .anyMatch(ae -> ae.getTipoAdministradorEspacio() != null &&
-                                ae.getTipoAdministradorEspacio().getNombre().equalsIgnoreCase("PROPIETARIO") &&
-                                ae.getUsuario() != null &&
-                                ae.getUsuario().getUsername().equalsIgnoreCase(username))
-        );
-
-        if (!todosPropios)
-            throw new SecurityException("No posee permisos sobre los espacios seleccionados");
-
-        ZoneId tz = ZoneId.systemDefault();
-        Instant iDesde = Instant.ofEpochMilli(fechaDesdeMs);
-        Instant iHasta = Instant.ofEpochMilli(fechaHastaMs);
-        LocalDateTime desde = LocalDateTime.ofInstant(iDesde, tz);
-        LocalDateTime hasta = LocalDateTime.ofInstant(iHasta, tz);
-
-        // 🔹 Adaptado: ahora cuenta eventos a nivel de subespacios vinculados al espacio
-        var filas = reporteRepository.contarEventosPorEspacio(espaciosIds, desde, hasta);
-
-        Map<Long, Long> conteos = filas.stream()
-                .collect(Collectors.toMap(
-                        ReporteRepository.RowEventosPorEspacio::getEspacioId,
-                        ReporteRepository.RowEventosPorEspacio::getEventos
-                ));
-
-        List<DTOReporteEventosPorEspacio.Dato> datos = espacios.stream()
-                .map(e -> DTOReporteEventosPorEspacio.Dato.builder()
-                        .espacio(e.getNombre())
-                        .fechaDesde(iDesde)
-                        .fechaHasta(iHasta)
-                        .eventos(conteos.getOrDefault(e.getId(), 0L))
-                        .build())
-                .sorted(Comparator
-                        .comparingLong(DTOReporteEventosPorEspacio.Dato::getEventos).reversed()
-                        .thenComparing(DTOReporteEventosPorEspacio.Dato::getEspacio))
-                .toList();
-
-        return DTOReporteEventosPorEspacio.builder()
-                .fechaHoraGeneracion(Instant.now())
-                .datos(datos)
-                .build();
-    }
-
+   /*
 
     // ===============================================================
     //  Reporte: Participantes por rango temporal
@@ -140,43 +81,204 @@ public class ReporteService {
                 .fechaHoraGeneracion(Instant.now())
                 .datos(datos)
                 .build();
-    }
+    }*/
 
 
-    // ===============================================================
-    // 3 Reporte: Personas en eventos de un espacio
-    // ===============================================================
-    public DTOReportePersonsasEnEventosEnEspacio generarPersonasEnEventosEnEspacio(
-            Long espacioId, long fechaDesdeMs, long fechaHastaMs) throws Exception {
+
+
+    //Actualizados
+    public DTOReportePersonasEnEventosEnEspacio generarPersonasEnEventosEnEspacio(
+            Long espacioId,
+            Long subespacioId,
+            long fechaDesdeMs,
+            long fechaHastaMs) throws Exception {
 
         if (espacioId == null)
-            throw new IllegalArgumentException("espacioId es requerido");
+            throw new Exception("El parámetro 'espacioId' es requerido.");
+
         if (fechaDesdeMs >= fechaHastaMs)
-            throw new IllegalArgumentException("El rango de fechas es inválido");
+            throw new Exception("El rango de fechas es inválido.");
 
         var espacio = espacioRepository.findById(espacioId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Espacio no encontrado"));
 
+        // 🔹 Conversión de milisegundos a LocalDateTime
         ZoneId tz = ZoneId.systemDefault();
         LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
         LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
 
-        // 🔹 Adaptado: cuenta inscripciones de eventos en subespacios de este espacio
-        var filas = reporteRepository.reportePersonasPorEventoEnEspacio(espacioId, desde, hasta);
+        // 🔹 Consulta al repositorio: si subespacioId es null, cuenta todos los subespacios del espacio
+        var filas = reporteRepository.reportePersonasPorEventoEnEspacio(
+                espacioId, subespacioId, desde, hasta);
 
+        if (filas == null || filas.isEmpty()) {
+            throw new Exception("No se encontraron eventos en el rango de fechas indicado.");
+        }
+
+        // 🔹 Mapeo a DTO
         var datos = filas.stream()
-                .map(f -> DTOReportePersonsasEnEventosEnEspacio.Dato.builder()
+                .map(f -> DTOReportePersonasEnEventosEnEspacio.Dato.builder()
                         .evento(f.getEvento())
                         .fechaDesde(f.getFechaDesde().atZone(tz).toInstant())
                         .fechaHasta(f.getFechaHasta().atZone(tz).toInstant())
                         .participantes(f.getParticipantes())
                         .build())
+                .sorted(Comparator
+                        .comparingLong(DTOReportePersonasEnEventosEnEspacio.Dato::getParticipantes).reversed()
+                        .thenComparing(DTOReportePersonasEnEventosEnEspacio.Dato::getEvento))
                 .toList();
 
-        return DTOReportePersonsasEnEventosEnEspacio.builder()
+        // 🔹 Devuelve el DTO completo
+        return DTOReportePersonasEnEventosEnEspacio.builder()
                 .fechaHoraGeneracion(Instant.now())
                 .datos(datos)
                 .build();
     }
+     
+    
+    
+    public DTOReporteEventosPorEspacio generarEventosPorEspacio(
+        List<Long> espaciosIds, long fechaDesdeMs, long fechaHastaMs) throws Exception {
+
+        if (espaciosIds == null || espaciosIds.isEmpty())
+                throw new IllegalArgumentException("Debe seleccionar al menos un espacio.");
+        if (fechaDesdeMs >= fechaHastaMs)
+                throw new IllegalArgumentException("El rango de fechas es inválido.");
+
+        // 🔐 Validar usuario autenticado
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("No autenticado"));
+
+        // 🔎 Verificar existencia de los espacios
+        List<Espacio> espacios = espacioRepository.findAllById(espaciosIds);
+        if (espacios.size() != new HashSet<>(espaciosIds).size())
+                throw new IllegalArgumentException("Alguno de los espacios no existe.");
+
+        // 🔎 Verificar propiedad (todos deben ser del usuario)
+        boolean todosPropios = espacios.stream().allMatch(e ->
+                e.getAdministradoresEspacio().stream()
+                        .anyMatch(ae -> ae.getTipoAdministradorEspacio() != null &&
+                                ae.getTipoAdministradorEspacio().getNombre().equalsIgnoreCase("PROPIETARIO") &&
+                                ae.getUsuario() != null &&
+                                ae.getUsuario().getUsername().equalsIgnoreCase(username))
+        );
+
+        if (!todosPropios)
+                throw new SecurityException("No posee permisos sobre los espacios seleccionados.");
+
+        // 🕒 Convertir fechas
+        ZoneId tz = ZoneId.systemDefault();
+        Instant iDesde = Instant.ofEpochMilli(fechaDesdeMs);
+        Instant iHasta = Instant.ofEpochMilli(fechaHastaMs);
+        LocalDateTime desde = LocalDateTime.ofInstant(iDesde, tz);
+        LocalDateTime hasta = LocalDateTime.ofInstant(iHasta, tz);
+
+        // 📊 Consultar eventos por subespacio
+        var filas = reporteRepository.contarEventosPorSubespaciosDeEspacios(espaciosIds, desde, hasta);
+
+        if (filas.isEmpty())
+                throw new NoSuchElementException("No se encontraron eventos en el rango de fechas indicado.");
+
+        // 🧩 Mapear resultados al DTO (subespacios como “espacio” visual)
+        var datos = filas.stream()
+                .map(f -> DTOReporteEventosPorEspacio.Dato.builder()
+                        .espacio(f.getEspacio() + " - " + f.getSubespacio())  // Ej: "Club Municipal - Cancha 1"
+                        .fechaDesde(iDesde)
+                        .fechaHasta(iHasta)
+                        .eventos(f.getEventos())
+                        .build())
+                .sorted(Comparator
+                        .comparingLong(DTOReporteEventosPorEspacio.Dato::getEventos).reversed()
+                        .thenComparing(DTOReporteEventosPorEspacio.Dato::getEspacio))
+                .toList();
+
+        return DTOReporteEventosPorEspacio.builder()
+                .fechaHoraGeneracion(Instant.now())
+                .datos(datos)
+                .build();
+        }
+
+        // ===============================================================
+        //  Reporte: Participantes por rango temporal
+        //  👉 Puede agrupar por subespacio o sumar por espacio completo
+        // ===============================================================
+        public DTOReporteParticipantesPorRangoTemporal generarParticipantesPorRangoTemporal(
+                boolean todosLosEspacios,
+                List<Long> espaciosIds,
+                long fechaDesdeMs,
+                long fechaHastaMs,
+                int anios,
+                int meses,
+                int dias,
+                int horas,
+                boolean porSubespacio,      
+                String username
+        ) throws Exception {
+
+        if (fechaDesdeMs >= fechaHastaMs)
+                throw new IllegalArgumentException("Rango de fechas inválido");
+
+        ZoneId tz = ZoneId.systemDefault();
+        LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
+        LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
+
+        // 🔹 Crear los intervalos de tiempo
+        Period periodo = Period.of(anios, meses, dias);
+        Duration duracion = Duration.ofHours(horas);
+        List<LocalDateTime[]> intervalos = new ArrayList<>();
+        LocalDateTime cursor = desde;
+        while (cursor.isBefore(hasta)) {
+                LocalDateTime next = cursor.plus(periodo).plus(duracion);
+                if (next.isAfter(hasta)) next = hasta;
+                intervalos.add(new LocalDateTime[]{cursor, next});
+                cursor = next;
+        }
+
+        // 🔹 Espacios del usuario o seleccionados manualmente
+        List<Espacio> espacios = todosLosEspacios
+                ? espacioRepository.findByPropietarioUsername(username)
+                : espacioRepository.findAllById(espaciosIds);
+
+        List<DTOReporteParticipantesPorRangoTemporal.Dato> datos = new ArrayList<>();
+
+        for (Espacio e : espacios) {
+                for (LocalDateTime[] par : intervalos) {
+
+                if (porSubespacio) {
+                        // 🔸 Detalle por subespacio
+                        var filas = reporteRepository.contarParticipantesPorRango(e.getId(), par[0], par[1]);
+
+                        for (ReporteRepository.RowParticipantesPorSubespacio f : filas) {
+                        datos.add(DTOReporteParticipantesPorRangoTemporal.Dato.builder()
+                                .espacio(e.getNombre())
+                                .subespacio(f.getSubespacio())
+                                .fechaDesde(par[0].atZone(tz).toInstant())
+                                .fechaHasta(par[1].atZone(tz).toInstant())
+                                .participantes(f.getParticipantes())
+                                .build());
+                        }
+
+                } else {
+                        // 🔹 Total por espacio (suma de todos sus subespacios)
+                        var filas = reporteRepository.contarParticipantesPorRango(e.getId(), par[0], par[1]);
+                        long total = filas.stream().mapToLong(ReporteRepository.RowParticipantesPorSubespacio::getParticipantes).sum();
+
+                        datos.add(DTOReporteParticipantesPorRangoTemporal.Dato.builder()
+                                .espacio(e.getNombre())
+                                .subespacio("Todos los subespacios") // etiqueta genérica
+                                .fechaDesde(par[0].atZone(tz).toInstant())
+                                .fechaHasta(par[1].atZone(tz).toInstant())
+                                .participantes(total)
+                                .build());
+                }
+                }
+        }
+
+        return DTOReporteParticipantesPorRangoTemporal.builder()
+                .fechaHoraGeneracion(Instant.now())
+                .datos(datos)
+                .build();
+        }
+
 
 }

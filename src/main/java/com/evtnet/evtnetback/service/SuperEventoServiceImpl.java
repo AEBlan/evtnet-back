@@ -715,7 +715,6 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
         List<String> keywords = Arrays.asList(texto.split("\\s"))
             .stream().filter(k -> k.length() > 2).toList();
 
-        // TODO: Verificar si la búsqueda debe incluir solo usuarios activos o también dados de baja
         String jpql = "SELECT DISTINCT u FROM Usuario u WHERE u.fechaHoraBaja IS NULL";
 
         for (int i = 0; i < keywords.size(); i++) {

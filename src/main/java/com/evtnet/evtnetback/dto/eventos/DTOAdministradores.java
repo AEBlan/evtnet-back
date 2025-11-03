@@ -33,5 +33,6 @@ public class DTOAdministradores {
     public static class HistoricoDTO {
         private LocalDateTime fechaDesde;
         private LocalDateTime fechaHasta; // null si sigue vigente
+        private Boolean organizador;
     }
 }

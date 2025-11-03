@@ -3,7 +3,10 @@ package com.evtnet.evtnetback.dto.reportes;
 import lombok.*;
 import java.time.LocalDateTime;
 
-@Data @AllArgsConstructor
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class DatoLocal {
     private String evento;
     private LocalDateTime fechaDesde;

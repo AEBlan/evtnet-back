@@ -1314,5 +1314,140 @@ WHERE NOT EXISTS (
   SELECT 1 FROM chat c WHERE c.evento_id = e.id
 );
 
+-- Datos de prueba para reportes
+
+-- ==============================================================
+-- 👤 Usuarios simulados (solo si no existen)
+-- ==============================================================
+INSERT INTO usuario (id, nombre, apellido, username, dni, fecha_nacimiento, mail, contrasena, fecha_hora_alta)
+SELECT 40, 'Juan', 'Pérez', 'juanp', '12345678', '1990-01-01', 'juan@example.com',
+       '$2a$10$Y85YHk7oewaB7jgFBHMR1uUs.ek9VlJ3n1VOjhvZt77S1xoVVRLKe', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 40);
+
+INSERT INTO usuario (id, nombre, apellido, username, dni, fecha_nacimiento, mail, contrasena, fecha_hora_alta)
+SELECT 41, 'Lucía', 'Gómez', 'luciag', '87654321', '1995-05-12', 'lucia@example.com',
+       '$2a$10$Y85YHk7oewaB7jgFBHMR1uUs.ek9VlJ3n1VOjhvZt77S1xoVVRLKe', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 41);
+
+INSERT INTO usuario (id, nombre, apellido, username, dni, fecha_nacimiento, mail, contrasena, fecha_hora_alta)
+SELECT 42, 'Sergio', 'Albino', 'sergioa', '12312312', '1994-03-05', 'sergio@example.com',
+       '$2a$10$Y85YHk7oewaB7jgFBHMR1uUs.ek9VlJ3n1VOjhvZt77S1xoVVRLKe', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 42);
+
+INSERT INTO usuario (id, nombre, apellido, username, dni, fecha_nacimiento, mail, contrasena, fecha_hora_alta)
+SELECT 43, 'Tatiana', 'Ríos', 'tatir', '22233344', '1998-08-20', 'tatiana@example.com',
+       '$2a$10$Y85YHk7oewaB7jgFBHMR1uUs.ek9VlJ3n1VOjhvZt77S1xoVVRLKe', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE id = 43);
+
+-- ==============================================================
+-- ⚙️ Tipo de espacio
+-- ==============================================================
+INSERT INTO tipo_espacio (id, nombre, descripcion, fecha_hora_alta)
+SELECT 50, 'Polideportivo', 'Espacio deportivo con múltiples áreas', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM tipo_espacio WHERE id = 50);
+
+-- ==============================================================
+-- 🏟️ Espacio principal
+-- ==============================================================
+INSERT INTO espacio (id, nombre, descripcion, direccion_ubicacion, latitud_ubicacion, longitud_ubicacion,
+                     tipo_espacio_id, fecha_hora_alta)
+SELECT 50, 'Complejo Los Andes', 'Centro deportivo con gimnasio y canchas varias',
+       'Av. Rivadavia 1234', -32.890, -68.842, 50, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM espacio WHERE id = 50);
+
+-- ==============================================================
+-- 👑 Tipo de administrador de espacio
+-- ==============================================================
+INSERT INTO tipo_administrador_espacio (id, nombre)
+SELECT 50, 'PROPIETARIO'
+WHERE NOT EXISTS (SELECT 1 FROM tipo_administrador_espacio WHERE id = 50);
+
+-- ==============================================================
+-- 🔑 Asignar propietario (Sergio Albino)
+-- ==============================================================
+INSERT INTO administrador_espacio (id, usuario_id, espacio_id, tipo_administrador_espacio_id, fecha_hora_alta)
+SELECT 50, 42, 50, 50, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM administrador_espacio WHERE id = 50);
+
+-- ==============================================================
+-- 🏐 Subespacios dentro del espacio
+-- ==============================================================
+INSERT INTO subespacio (id, nombre, descripcion, capacidad_maxima, espacio_id, fecha_hora_alta)
+SELECT 50, 'Cancha Norte', 'Campo principal de fútbol 11', 60, 50, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM subespacio WHERE id = 50);
+
+INSERT INTO subespacio (id, nombre, descripcion, capacidad_maxima, espacio_id, fecha_hora_alta)
+SELECT 51, 'Cancha Sur', 'Cancha auxiliar de fútbol 7', 40, 50, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM subespacio WHERE id = 51);
+
+INSERT INTO subespacio (id, nombre, descripcion, capacidad_maxima, espacio_id, fecha_hora_alta)
+SELECT 52, 'Gimnasio Central', 'Salón cerrado para entrenamiento funcional', 35, 50, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM subespacio WHERE id = 52);
+
+-- ==============================================================
+-- 🎯 Disciplinas
+-- ==============================================================
+INSERT INTO disciplina (id, nombre, fecha_hora_alta)
+SELECT 50, 'Fútbol', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE id = 50);
+
+INSERT INTO disciplina (id, nombre, fecha_hora_alta)
+SELECT 51, 'Yoga', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE id = 51);
+
+INSERT INTO disciplina (id, nombre, fecha_hora_alta)
+SELECT 52, 'Crossfit', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE id = 52);
+
+-- ==============================================================
+-- 🎉 Eventos en distintos subespacios
+-- ==============================================================
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, subespacio_id)
+SELECT 50, 'Torneo Primavera', 'Campeonato amistoso de fútbol', '2025-10-05 09:00:00', '2025-10-05 12:00:00', 50
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 50);
+
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, subespacio_id)
+SELECT 51, 'Entrenamiento matutino', 'Práctica de fútbol juvenil', '2025-10-06 08:00:00', '2025-10-06 10:00:00', 51
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 51);
+
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, subespacio_id)
+SELECT 52, 'Clase de Yoga Libre', 'Sesión abierta al público', '2025-10-07 09:00:00', '2025-10-07 10:00:00', 52
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 52);
+
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, subespacio_id)
+SELECT 53, 'Torneo Clausura', 'Final de temporada', '2025-11-01 10:00:00', '2025-11-01 12:00:00', 50
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 53);
+
+INSERT INTO evento (id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, subespacio_id)
+SELECT 54, 'Crossfit Libre', 'Entrenamiento funcional grupal', '2025-11-02 18:00:00', '2025-11-02 19:30:00', 52
+WHERE NOT EXISTS (SELECT 1 FROM evento WHERE id = 54);
+
+-- ==============================================================
+-- 👥 Inscripciones (participantes en eventos)
+-- ==============================================================
+INSERT INTO inscripcion (id, evento_id, usuario_id, fecha_hora_alta)
+SELECT 50, 50, 42, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 50);
+
+INSERT INTO inscripcion (id, evento_id, usuario_id, fecha_hora_alta)
+SELECT 51, 50, 40, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 51);
+
+INSERT INTO inscripcion (id, evento_id, usuario_id, fecha_hora_alta)
+SELECT 52, 51, 41, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 52);
+
+INSERT INTO inscripcion (id, evento_id, usuario_id, fecha_hora_alta)
+SELECT 53, 52, 41, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 53);
+
+INSERT INTO inscripcion (id, evento_id, usuario_id, fecha_hora_alta)
+SELECT 54, 53, 42, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 54);
+
+INSERT INTO inscripcion (id, evento_id, usuario_id, fecha_hora_alta)
+SELECT 55, 54, 43, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 55);
+
 
 COMMIT;
