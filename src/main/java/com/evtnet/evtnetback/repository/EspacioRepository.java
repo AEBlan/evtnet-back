@@ -278,5 +278,15 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
 """)
     List<Espacio> findAllPrivados();
 
+    @Query("""
+    SELECT DISTINCT e
+    FROM Espacio e
+    JOIN e.administradoresEspacio ae
+    JOIN ae.usuario u
+    WHERE ae.tipoAdministradorEspacio.nombre like 'Propietario'
+        AND u.username like :username
+        AND ae.fechaHoraBaja is null
+""")
+    List<Espacio> findEspaciosPropios(@Param("username") String username);
 }
 

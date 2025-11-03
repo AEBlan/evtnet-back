@@ -315,5 +315,32 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
+
+    @GetMapping("/buscarEspaciosPropios")
+    public ResponseEntity buscarEspaciosPropios(Authentication auth){
+        try{
+            return ResponseEntity.status(HttpStatus.OK).body(espacioService.buscarEspaciosPropios(auth.getName()));
+        } catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudieron obtener los espacios - "+e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @PostMapping("/actualizarCaracteristicasSubEspacio")
+    public ResponseEntity actualizarCaracteristicasEspacio(@RequestBody DTOActualizarCaracteristicasSubespacio dtoCaracteristicaSubEspacio){
+        try{
+            espacioService.actualizarCarateristicasEspacio(dtoCaracteristicaSubEspacio);
+            return ResponseEntity.status(HttpStatus.OK).build();
+        } catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo crear la característica para el subespacio - "+e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
 }
 

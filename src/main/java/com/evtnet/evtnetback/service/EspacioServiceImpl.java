@@ -1,6 +1,7 @@
 package com.evtnet.evtnetback.service;
 
 import com.evtnet.evtnetback.dto.estadoSEP.DTOEstadoSEP;
+import com.evtnet.evtnetback.dto.imagenes.DTOActualizarImagenesEspacio;
 import com.evtnet.evtnetback.entity.*;
 import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinas;
@@ -39,6 +40,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
     private final CaracteristicaRepository caracteristicaRepository;
     private final EventoRepository eventoRepository;
     private final ResenaEspacioRepository resenaEspacioRepository;
+    private final IconoCaracteristicaRepository iconoCaracteristicaRepository;
 
     @Value("${app.storage.documentacion:/app/storage/documentacion}")
     private String directorioBase;
@@ -60,7 +62,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             ImagenEspacioRepository imagenEspacioRepository,
             CaracteristicaRepository caracteristicaRepository,
             EventoRepository eventoRepository,
-            ResenaEspacioRepository resenaEspacioRepository
+            ResenaEspacioRepository resenaEspacioRepository,
+            IconoCaracteristicaRepository iconoCaracteristicaRepository
     ) {
         super(espacioRepository);
         this.espacioRepository = espacioRepository;
@@ -80,6 +83,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         this.caracteristicaRepository = caracteristicaRepository;
         this.eventoRepository  = eventoRepository;
         this.resenaEspacioRepository = resenaEspacioRepository;
+        this.iconoCaracteristicaRepository = iconoCaracteristicaRepository;
     }
 
     @Override
@@ -952,6 +956,79 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 .build();
         this.resenaEspacioRepository.save(resena);
     }
+
+    @Override
+    public List<DTOBusquedaEspacio>buscarEspaciosPropios(String username)throws Exception{
+        List<Espacio>espaciosPropios=this.espacioRepository.findEspaciosPropios(username);
+        if(espaciosPropios.isEmpty()) throw new Exception("No tiene espacios propios");
+        List<DTOBusquedaEspacio>dtoEspaciosPropios=new ArrayList<>();
+        for(Espacio espacio:espaciosPropios){
+            DTOBusquedaEspacio dtoBusquedaEspacio=DTOBusquedaEspacio.builder()
+                    .id(espacio.getId())
+                    .direccion(espacio.getDireccionUbicacion())
+                    .nombre(espacio.getNombre())
+                    .build();
+
+            Set<String> disciplinasSet = new HashSet<>();
+
+            for (SubEspacio subEspacio : espacio.getSubEspacios()) {
+                disciplinasSet.addAll(this.disciplinaSubEspacioRepository.disciplinasNombre(subEspacio.getId()));
+            }
+            dtoBusquedaEspacio.setDisciplinas(new ArrayList<>(disciplinasSet));
+            dtoEspaciosPropios.add(dtoBusquedaEspacio);
+        }
+        return dtoEspaciosPropios;
+    }
+
+    @Override
+    public void actualizarCarateristicasEspacio(DTOActualizarCaracteristicasSubespacio dtoCaracteristicaSubEspacio) throws Exception {
+        if (dtoCaracteristicaSubEspacio.getCaracteristicas().isEmpty()) {
+            throw new Exception("Lista de características vacía");
+        }
+
+        SubEspacio subEspacio = this.subEspacioRepository.findById(dtoCaracteristicaSubEspacio.getIdSubEspacio())
+                .orElseThrow(() -> new Exception("Subespacio no encontrado"));
+
+        List<Caracteristica> caracteristicasActuales = this.caracteristicaRepository.findBySubEspacio(subEspacio.getId());
+
+        Set<Long> idsDelDTO = dtoCaracteristicaSubEspacio.getCaracteristicas().stream()
+                .map(DTOActualizarCaracteristicasSubespacio.DTOCaracteristicas::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        for (Caracteristica existente : caracteristicasActuales) {
+            if (!idsDelDTO.contains(existente.getId())) {
+                this.caracteristicaRepository.delete(existente);
+            }
+        }
+
+        for (DTOActualizarCaracteristicasSubespacio.DTOCaracteristicas dto : dtoCaracteristicaSubEspacio.getCaracteristicas()) {
+
+            IconoCaracteristica icono = this.iconoCaracteristicaRepository.findById(dto.getIdIconoCaracteristica())
+                    .orElseThrow(() -> new Exception("Ícono de característica no encontrado"));
+
+            Caracteristica caracteristica;
+
+            if (dto.getId() != 0) {
+                caracteristica = this.caracteristicaRepository.findById(dto.getId())
+                        .orElseThrow(() -> new Exception("Característica no encontrada: " + dto.getId()));
+
+                caracteristica.setIconoCaracteristica(icono);
+                caracteristica.setNombre(dto.getNombre());
+                caracteristica.setSubEspacio(subEspacio);
+            } else {
+                caracteristica = Caracteristica.builder()
+                        .subEspacio(subEspacio)
+                        .iconoCaracteristica(icono)
+                        .nombre(dto.getNombre())
+                        .build();
+            }
+
+            this.caracteristicaRepository.save(caracteristica);
+        }
+    }
+
+
 
     //Región de métodos auxiliares
     private void validarDatosCreacion (DTOCrearEspacio dtoEspacio, List<MultipartFile> documentacion) throws Exception {
