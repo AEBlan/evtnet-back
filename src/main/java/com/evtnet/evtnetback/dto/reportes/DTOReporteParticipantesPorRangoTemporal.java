@@ -14,6 +14,7 @@ public class DTOReporteParticipantesPorRangoTemporal {
     @NoArgsConstructor @AllArgsConstructor
     public static class Dato {
         private String espacio;
+        private String subespacio;
         private Instant fechaDesde;
         private Instant fechaHasta;
         private long participantes;

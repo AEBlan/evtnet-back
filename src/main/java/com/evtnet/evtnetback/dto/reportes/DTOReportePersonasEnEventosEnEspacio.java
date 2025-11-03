@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
-public class DTOReportePersonsasEnEventosEnEspacio {
+public class DTOReportePersonasEnEventosEnEspacio {
     private Instant fechaHoraGeneracion;
     private List<Dato> datos;
 
@@ -14,5 +14,6 @@ public class DTOReportePersonsasEnEventosEnEspacio {
         private Instant fechaDesde;   // inicio del evento
         private Instant fechaHasta;   // fin del evento
         private long participantes;   // cantidad de inscriptos (ver nota abajo)
+
     }
 }
