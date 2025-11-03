@@ -121,10 +121,10 @@ public class IconoCaracteristicaController extends BaseControllerImpl <IconoCara
         }
     }
 
-    @GetMapping("/obtenerCaracteristicasEspacio")
-    public ResponseEntity obtenerCaracteristicasEspacio(@RequestParam(name = "idEspacio", required = true) Long idEspacio) {
+    @GetMapping("/obtenerCaracteristicasSubEspacio")
+    public ResponseEntity obtenerCaracteristicasEspacio(@RequestParam(name = "idSubEspacio", required = true) Long idSubEspacio) {
         try {
-            return ResponseEntity.status(HttpStatus.OK).body(iconoCaracteristicaService.obtenerCaracteristicasSubEspacio(idEspacio));
+            return ResponseEntity.status(HttpStatus.OK).body(iconoCaracteristicaService.obtenerCaracteristicasSubEspacio(idSubEspacio));
         }
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(

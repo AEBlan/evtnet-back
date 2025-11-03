@@ -37,8 +37,8 @@ public final class EventoSearchMapper {
         // Revisar si es ENCARGADO
         if (e.getSubEspacio() != null && e.getSubEspacio().getEncargadoSubEspacio() != null) {
             var encargado = e.getSubEspacio().getEncargadoSubEspacio();
-            if (encargado.getUsuario() != null
-                    && encargado.getUsuario().getUsername().equals(username)
+            if (encargado != null
+                    && encargado.getUsername().equals(username)
                     && encargado.getFechaHoraBaja() == null) {
                 rol += ", Encargado";
             }

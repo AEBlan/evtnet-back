@@ -2087,6 +2087,36 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		.build();
 	}
 
+	@Override
+	public void aprobarRechazarEvento(Long idEvento, String estado){
+		Evento evento=this.eventoRepo.findById(idEvento).orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+		EventoEstado eventoEstado=this.eventoEstadoRepo.findUltimoByEvento(idEvento);
+		eventoEstado.setFechaHoraBaja(LocalDateTime.now());
+		this.eventoEstadoRepo.save(eventoEstado);
+		EstadoEvento estadoEvento=this.estadoEventoRepo.findByNombreIgnoreCase(estado).orElseThrow(() -> new HttpErrorException(404, "Estado de evento no encontrado"));
+		EventoEstado eventoEstadoNuevo=EventoEstado.builder()
+				.fechaHoraAlta(LocalDateTime.now())
+				.estadoEvento(estadoEvento)
+				.evento(evento)
+				.build();
+		this.eventoEstadoRepo.save(eventoEstadoNuevo);
+	}
+
+	@Override
+	public void cancelarEvento(Long idEvento){
+		Evento evento=this.eventoRepo.findById(idEvento).orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+		EventoEstado eventoEstado=this.eventoEstadoRepo.findUltimoByEvento(idEvento);
+		eventoEstado.setFechaHoraBaja(LocalDateTime.now());
+		this.eventoEstadoRepo.save(eventoEstado);
+		EstadoEvento estadoEvento=this.estadoEventoRepo.findByNombreIgnoreCase("Cancelado").orElseThrow(() -> new HttpErrorException(404, "Estado de evento no encontrado"));
+		EventoEstado eventoEstadoNuevo=EventoEstado.builder()
+				.fechaHoraAlta(LocalDateTime.now())
+				.estadoEvento(estadoEvento)
+				.evento(evento)
+				.build();
+		this.eventoEstadoRepo.save(eventoEstadoNuevo);
+	}
+
 
     private static int[] splitMinutes(Integer minutos) {
 	int total = (minutos != null) ? Math.max(0, minutos) : 0;

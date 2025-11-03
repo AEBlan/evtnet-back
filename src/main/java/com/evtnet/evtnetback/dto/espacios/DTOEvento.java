@@ -17,6 +17,7 @@ public class DTOEvento {
     private String nombre;
     private LocalDateTime fechaHoraInicio;
     private BigDecimal precioInscripcion;
+    private String estado;
 
     @Override
     public boolean equals(Object o) {

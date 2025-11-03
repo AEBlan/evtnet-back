@@ -20,4 +20,6 @@ public interface EstadoSEPRepository extends BaseRepository <EstadoSEP, Long> {
     @Transactional
     @Query("UPDATE EstadoSEP esep SET esep.fechaHoraBaja = :fecha WHERE esep.id = :id")
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
+
+    EstadoSEP findByNombre(String nombre);
 }

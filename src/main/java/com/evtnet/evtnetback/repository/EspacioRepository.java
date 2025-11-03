@@ -1,8 +1,10 @@
 package com.evtnet.evtnetback.repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
+import com.evtnet.evtnetback.entity.SolicitudEspacioPublico;
 import com.evtnet.evtnetback.entity.SubEspacio;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -96,7 +98,11 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
       AND ee.estadoEspacio.nombre like "Habilitado"
       AND ee.fechaHoraBaja is null
 """)
-    List<Espacio> findEspaciosByUbicacion(@Param("latitudDesde")BigDecimal latitudDesde, @Param("latitudHasta") BigDecimal latitudHasta, @Param("longitudDesde")BigDecimal longitudDesde, @Param("longitudHasta") BigDecimal longitudHasta);
+    List<Espacio> findEspaciosByUbicacion(
+            @Param("latitudDesde")BigDecimal latitudDesde,
+            @Param("latitudHasta") BigDecimal latitudHasta,
+            @Param("longitudDesde")BigDecimal longitudDesde,
+            @Param("longitudHasta") BigDecimal longitudHasta);
 
     @Query("""
     SELECT DISTINCT e FROM Espacio e
@@ -165,7 +171,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
         OR LOWER(e.descripcion) LIKE CONCAT('%', LOWER(:texto), '%')
         OR LOWER(e.direccionUbicacion) LIKE CONCAT('%', LOWER(:texto), '%')
         OR LOWER(sub.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
-        OR LOWER(sub.descripcion) LIKE CONCAT('%', LOWER(:texto), '%')        
+        OR LOWER(sub.descripcion) LIKE CONCAT('%', LOWER(:texto), '%')
         OR LOWER(c.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
         OR LOWER(d.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
       )
@@ -194,10 +200,83 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     SELECT s
     FROM SubEspacio s
     LEFT JOIN s.encargadoSubEspacio es
-    LEFT JOIN es.usuario
     WHERE s.espacio.id = :idEspacio
     """)
     List<SubEspacio>findEncargadoByEspacio(@Param("idEspacio")Long idEspacio);
+
+    @Query("""
+    SELECT e
+    FROM Espacio e
+    WHERE e.tipoEspacio.nombre like "Público"
+    """)
+    List<Espacio> findPublicos();
+
+    @Query("""
+    SELECT DISTINCT e FROM Espacio e
+    JOIN e.tipoEspacio te
+    WHERE (
+        LOWER(e.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
+        OR LOWER(e.descripcion) LIKE CONCAT('%', LOWER(:texto), '%')
+        OR LOWER(e.direccionUbicacion) LIKE CONCAT('%', LOWER(:texto), '%')
+      )
+      AND te.nombre like 'Privado'
+""")
+    List<Espacio> findEspaciosByTextoSolicitud(@Param("texto") String texto);
+
+    @Query("""
+    SELECT DISTINCT e FROM Espacio e
+    JOIN e.espacioEstado ee
+    JOIN e.tipoEspacio te
+    WHERE ee.id IN (:estado)
+      AND ee.fechaHoraBaja is null
+      AND te.nombre like 'Privado'
+""")
+    List<Espacio> findEspaciosByEstado(@Param("estado")List<Long>estado);
+
+    @Query("""
+    SELECT DISTINCT e FROM Espacio e
+    JOIN e.tipoEspacio te
+    WHERE e.latitudUbicacion BETWEEN :latitudDesde AND :latitudHasta
+      AND e.longitudUbicacion BETWEEN :longitudDesde AND :longitudHasta
+      AND te.nombre like 'Privado'
+""")
+    List<Espacio> findEspaciosByUbicacionSolicitud(
+            @Param("latitudDesde")BigDecimal latitudDesde,
+            @Param("latitudHasta") BigDecimal latitudHasta,
+            @Param("longitudDesde")BigDecimal longitudDesde,
+            @Param("longitudHasta") BigDecimal longitudHasta);
+
+    @Query("""
+    SELECT DISTINCT e
+    FROM Espacio e
+    JOIN e.tipoEspacio te
+    WHERE FUNCTION('DATE',e.fechaHoraAlta) BETWEEN :fechaIngresoDesde AND :fechaIngresoHasta
+        AND te.nombre like 'Privado'
+""")
+    List<Espacio> findEspaciosByFechaIngreso(
+            @Param("fechaIngresoDesde") LocalDate fechaIngresoDesde,
+            @Param("fechaIngresoHasta") LocalDate fechaIngresoHasta);
+
+    @Query("""
+    SELECT DISTINCT e
+    FROM Espacio e
+    JOIN e.espacioEstado ee
+    JOIN e.tipoEspacio te
+    WHERE FUNCTION('DATE',ee.fechaHoraAlta) BETWEEN :fechaCambioDesde AND :fechaCambioHasta
+        AND ee.fechaHoraBaja is null
+        AND te.nombre like 'Privado'
+""")
+    List<Espacio> findEspaciosByFechaCambioEstado(
+            @Param("fechaCambioDesde") LocalDate fechaCambioDesde,
+            @Param("fechaCambioHasta") LocalDate fechaCambioHasta);
+
+    @Query("""
+    SELECT DISTINCT e
+    FROM Espacio e
+    JOIN e.tipoEspacio te
+    WHERE te.nombre like 'Privado'
+""")
+    List<Espacio> findAllPrivados();
 
 }
 

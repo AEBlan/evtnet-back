@@ -17,4 +17,5 @@ public class DTOResultadoBusquedaEventosPorEspacio {
     private Long fechaHoraInicio;
     private double precio;
     private List<String> disciplinas;
+    private String estado;
 }

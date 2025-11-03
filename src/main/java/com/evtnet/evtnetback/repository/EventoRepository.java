@@ -98,10 +98,12 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
 
 
     @Query("""
-    SELECT DISTINCT new com.evtnet.evtnetback.dto.espacios.DTOEvento(
-                   e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion)
+    SELECT DISTINCT new com.evtnet.evtnetback.dto.espacios.DTOEvento(e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion, estadoEvento.nombre)
     FROM Evento e
+    JOIN e.eventosEstado eventoEstado
+    JOIN eventoEstado.estadoEvento estadoEvento
     WHERE e.subEspacio.espacio.id = :idEspacio
+        AND eventoEstado.fechaHoraBaja is null
     """)
     List<DTOEvento> findEventosByEspacio(@Param("idEspacio") Long idEspacio);
 
@@ -155,14 +157,6 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
       AND DATE(e.fechaHoraInicio) = :fechaEvento
     """)
     List<Evento> findBySubEspacioAndFecha(@Param("idSubEspacio") Long idSubEspacio, @Param("fechaEvento") LocalDate fechaEvento);
-    @Query("""
-        SELECT e
-        FROM Evento e
-        WHERE e.subEspacio.id = :idSubEspacio
-          AND e.fechaHoraInicio < :fin
-          AND e.fechaHoraFin > :inicio
-    """)
-    List<Evento> findEventosEnRango(@Param("idSubEspacio") Long idSubEspacio, @Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
     @Query("""
     SELECT e
@@ -183,24 +177,30 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
 
     @Query("""
     SELECT DISTINCT new com.evtnet.evtnetback.dto.espacios.DTOEvento(
-     e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion)
+     e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion, estadoEvento.nombre)
     FROM Evento e
     JOIN e.subEspacio sub
     JOIN sub.espacio esp
+    JOIN e.eventosEstado eventoEstado
+    JOIN eventoEstado.estadoEvento estadoEvento
     WHERE esp.id = :idEspacio
       AND (LOWER(e.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
            OR LOWER(e.descripcion) LIKE CONCAT('%', LOWER(:texto), '%'))
+      AND eventoEstado.fechaHoraBaja is null
 """)
     List<DTOEvento> findEventosByTexto(@Param("idEspacio") Long idEspacio, @Param("texto") String texto);
 
     @Query("""
     SELECT DISTINCT new com.evtnet.evtnetback.dto.espacios.DTOEvento(
-        e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion)
+        e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion, estadoEvento.nombre)
     FROM Evento e
     JOIN e.subEspacio sub
     JOIN sub.espacio esp
+    JOIN e.eventosEstado eventoEstado
+    JOIN eventoEstado.estadoEvento estadoEvento
     WHERE esp.id = :idEspacio
       AND FUNCTION('DATE',e.fechaHoraInicio) BETWEEN :fechaInicio AND :fechaFin
+      AND eventoEstado.fechaHoraBaja is null
 """)
     List<DTOEvento> findEventosByFecha(
             @Param("idEspacio") Long idEspacio,
@@ -209,12 +209,15 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
 
     @Query("""
     SELECT DISTINCT new com.evtnet.evtnetback.dto.espacios.DTOEvento(
-        e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion)
+        e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion, estadoEvento.nombre)
     FROM Evento e
     JOIN e.subEspacio sub
     JOIN sub.espacio esp
+    JOIN e.eventosEstado eventoEstado
+    JOIN eventoEstado.estadoEvento estadoEvento
     WHERE esp.id = :idEspacio
       AND FUNCTION('TIME',e.fechaHoraInicio) BETWEEN :horaInicio AND :horaFin
+      AND eventoEstado.fechaHoraBaja is null
 """)
     List<DTOEvento> findEventosByHora(
             @Param("idEspacio") Long idEspacio,
@@ -223,13 +226,16 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
 
     @Query("""
     SELECT DISTINCT new com.evtnet.evtnetback.dto.espacios.DTOEvento(
-        e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion)
+        e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion, estadoEvento.nombre)
     FROM Evento e
     JOIN e.subEspacio sub
     JOIN sub.espacio esp
+    JOIN e.eventosEstado eventoEstado
+    JOIN eventoEstado.estadoEvento estadoEvento
     WHERE esp.id = :idEspacio
       AND FUNCTION('DATE',e.fechaHoraInicio) BETWEEN :fechaInicio AND :fechaFin
       AND FUNCTION('TIME',e.fechaHoraInicio) BETWEEN :horaInicio AND :horaFin
+      AND eventoEstado.fechaHoraBaja is null
 """)
     List<DTOEvento> findEventosByFechaYHora(
             @Param("idEspacio") Long idEspacio,
@@ -241,26 +247,32 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
 
     @Query("""
     SELECT DISTINCT new com.evtnet.evtnetback.dto.espacios.DTOEvento(
-                            e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion)
+                            e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion, estadoEvento.nombre)
     FROM Evento e
     JOIN e.subEspacio sub
     JOIN sub.espacio esp
+    JOIN e.eventosEstado eventoEstado
+    JOIN eventoEstado.estadoEvento estadoEvento
     WHERE esp.id = :idEspacio
       AND e.precioInscripcion <= :precioLimite
+      AND eventoEstado.fechaHoraBaja is null
 """)
     List<DTOEvento> findEventosByPrecio(@Param("idEspacio") Long idEspacio,
                                      @Param("precioLimite") BigDecimal precioLimite);
 
     @Query("""
     SELECT DISTINCT new com.evtnet.evtnetback.dto.espacios.DTOEvento(
-                            e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion)
+                            e.id, e.nombre, e.fechaHoraInicio, e.precioInscripcion, estadoEvento.nombre)
     FROM Evento e
     JOIN e.subEspacio sub
     JOIN sub.espacio esp
     LEFT JOIN e.disciplinasEvento de
     LEFT JOIN de.disciplina d
+    JOIN e.eventosEstado eventoEstado
+    JOIN eventoEstado.estadoEvento estadoEvento
     WHERE esp.id = :idEspacio
       AND d.id IN :disciplinas
+      AND eventoEstado.fechaHoraBaja is null
 """)
     List<DTOEvento> findEventosByDisciplinas(@Param("idEspacio") Long idEspacio,
                                           @Param("disciplinas") List<Long> disciplinas);

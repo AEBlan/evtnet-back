@@ -41,6 +41,22 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         }
     }
 
+    @PostMapping(value="/crearEspacioPublico")
+    public ResponseEntity crearEspacioPublico(
+            @RequestBody()DTOCrearEspacio espacio) {
+        try{
+            Long espacioID = espacioService.crearEspacioPublico(espacio);
+            Map<String, Long> respuesta = Map.of("id", espacioID);
+            return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+        } catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo crear el espacio - "+e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
     @GetMapping("/obtenerEspacio")
     public ResponseEntity obtenerEspacio(@RequestParam(name="id", required=true) Long id, Authentication auth){
         try{
@@ -255,6 +271,46 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
                     "No se pudieron obtener los subespacios y sus encargados - "+e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/obtenerResenasEspacio")
+    public ResponseEntity obtenerResenasEspacio(@RequestParam(name="idEspacio", required=true) Long id){
+        try{
+            return ResponseEntity.status(HttpStatus.OK).body(espacioService.obtenerResenasEspacio(id));
+        } catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudieron obtener las reseñas del espacio - "+e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+    @PostMapping("/crearResenaEspacio")
+    public ResponseEntity crearResenaEspacio(@RequestBody DTOCrearResenaEspacio dtoResenaEspacio, Authentication auth){
+        try{
+            espacioService.crearResenaEspacio(dtoResenaEspacio, auth.getName());
+            return ResponseEntity.status(HttpStatus.OK).build();
+        } catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo crear la reseña para el espacio - "+e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/obtenerEstadosEspacio")
+    public ResponseEntity obtenerEstadosEspacio() {
+        try {
+            return ResponseEntity.ok(espacioService.obtenerEstadosEspacio());
+        }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudieron obtener los estados de espacios"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

@@ -120,4 +120,15 @@ public interface UsuarioRepository extends BaseRepository<Usuario, Long> {
     """)
     List<Usuario> buscarUsuariosAdministradoresEspacio(@Param("idEspacio") Long idEspacio);
 
+    @Query("""
+      select u
+      from Usuario u
+      join u.administradoresEspacio ae
+      join ae.tipoAdministradorEspacio tae
+      where ae.espacio.id = :idEspacio
+        and u.fechaHoraBaja is null
+        and tae.nombre like "Propietario"
+    """)
+    Usuario buscarUsuarioPropietarioEspacio(@Param("idEspacio") Long idEspacio);
+
 }

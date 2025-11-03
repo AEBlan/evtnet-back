@@ -1,5 +1,6 @@
 package com.evtnet.evtnetback.service;
 
+import com.evtnet.evtnetback.dto.estadoSEP.DTOEstadoSEP;
 import com.evtnet.evtnetback.entity.*;
 import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinas;
@@ -37,7 +38,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
     private final ImagenEspacioRepository imagenEspacioRepository;
     private final CaracteristicaRepository caracteristicaRepository;
     private final EventoRepository eventoRepository;
-    private final EncargadoSubEspacioRepository encargadoSubEspacioRepository;
+    private final ResenaEspacioRepository resenaEspacioRepository;
 
     @Value("${app.storage.documentacion:/app/storage/documentacion}")
     private String directorioBase;
@@ -59,7 +60,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             ImagenEspacioRepository imagenEspacioRepository,
             CaracteristicaRepository caracteristicaRepository,
             EventoRepository eventoRepository,
-            EncargadoSubEspacioRepository encargadoSubEspacioRepository
+            ResenaEspacioRepository resenaEspacioRepository
     ) {
         super(espacioRepository);
         this.espacioRepository = espacioRepository;
@@ -78,21 +79,17 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         this.imagenEspacioRepository = imagenEspacioRepository;
         this.caracteristicaRepository = caracteristicaRepository;
         this.eventoRepository  = eventoRepository;
-        this.encargadoSubEspacioRepository = encargadoSubEspacioRepository;
+        this.resenaEspacioRepository = resenaEspacioRepository;
     }
 
     @Override
     public Long crearEspacio(DTOCrearEspacio dtoEspacio, MultipartFile basesYCondiciones, List<MultipartFile> documentacion) throws Exception{
-        validarDatosCreacion(dtoEspacio);
+        validarDatosCreacion(dtoEspacio, documentacion);
+        String rutaBasesYCondiciones="";
+        if(basesYCondiciones!=null && !basesYCondiciones.isEmpty())
+            rutaBasesYCondiciones = guardarArchivo(basesYCondiciones, dtoEspacio.getNombre());
 
-        String rutaBasesYCondiciones = guardarArchivo(basesYCondiciones, dtoEspacio.getNombre());
-
-        TipoEspacio tipoEspacio;
-        if(dtoEspacio.isEsPublico()){
-            tipoEspacio = this.tipoEspacioRepository.findByNombre("Público").get();
-        }else{
-            tipoEspacio = this.tipoEspacioRepository.findByNombre("Privado").get();
-        }
+        TipoEspacio tipoEspacio = this.tipoEspacioRepository.findByNombre("Privado").get();
 
         Espacio espacio = Espacio.builder()
                 .nombre(dtoEspacio.getNombre())
@@ -106,13 +103,14 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 .requiereAprobarEventos(dtoEspacio.isRequiereAprobarEventos())
                 .build();
 
+        espacio = save(espacio);
+
         SolicitudEspacioPublico solicitud;
         if(dtoEspacio.getSepId()!=null && dtoEspacio.getSepId()>0 ){
             solicitud=this.solicitudEspacioPublicoRepository.findById(dtoEspacio.getSepId()).get();
-            espacio.setSolicitudEspacioPublico(solicitud);
+            solicitud.setEspacio(espacio);
+            this.solicitudEspacioPublicoRepository.save(solicitud);
         }
-
-        espacio = save(espacio);
 
         AdministradorEspacio propietario = AdministradorEspacio.builder()
                 .espacio(espacio)
@@ -141,6 +139,72 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 this.documentacionEspacioRepository.save(documentacionEspacio);
             }
         }
+
+        for (DTOSubespacio dtoSubEspacio : dtoEspacio.getSubEspacios()){
+            SubEspacio subEspacio = SubEspacio.builder()
+                    .nombre(dtoSubEspacio.getNombre())
+                    .descripcion(dtoSubEspacio.getDescripcion())
+                    .capacidadmaxima(dtoSubEspacio.getCapacidadMaxima())
+                    .espacio(espacio)
+                    .fechaHoraAlta(LocalDateTime.now())
+                    .build();
+            subEspacio=this.subEspacioRepository.save(subEspacio);
+            if (!dtoSubEspacio.getDisciplinas().isEmpty()) {
+                List<DisciplinaSubEspacio> disciplinas = new ArrayList<>();
+                for (Long disciplinaID : dtoSubEspacio.getDisciplinas()) {
+                    this.disciplinaSubEspacioRepository.save(DisciplinaSubEspacio.builder()
+                            .disciplina(this.disciplinaRepository.findById(disciplinaID).get())
+                            .subEspacio(subEspacio)
+                            .build());
+                }
+            }
+
+        }
+
+        return espacio.getId();
+    }
+
+    @Override
+    public Long crearEspacioPublico(DTOCrearEspacio dtoEspacio) throws Exception{
+        validarDatosCreacionEspacioPublido(dtoEspacio);
+
+        TipoEspacio tipoEspacio = this.tipoEspacioRepository.findByNombre("Público").get();
+
+        Espacio espacio = Espacio.builder()
+                .nombre(dtoEspacio.getNombre())
+                .descripcion(dtoEspacio.getDescripcion())
+                .direccionUbicacion(dtoEspacio.getDireccion())
+                .latitudUbicacion(new BigDecimal(dtoEspacio.getLatitud()))
+                .longitudUbicacion(new BigDecimal(dtoEspacio.getLongitud()))
+                .fechaHoraAlta(LocalDateTime.now())
+                .tipoEspacio(tipoEspacio)
+                .requiereAprobarEventos(false)
+                .build();
+
+        espacio = save(espacio);
+
+        SolicitudEspacioPublico solicitud;
+        if(dtoEspacio.getSepId()!=null && dtoEspacio.getSepId()>0 ){
+            solicitud=this.solicitudEspacioPublicoRepository.findById(dtoEspacio.getSepId()).get();
+            solicitud.setEspacio(espacio);
+            this.solicitudEspacioPublicoRepository.save(solicitud);
+        }
+
+        AdministradorEspacio administrador = AdministradorEspacio.builder()
+                .espacio(espacio)
+                .usuario(this.usuarioRepository.findByUsername(dtoEspacio.getUsername()).get())
+                .tipoAdministradorEspacio(this.tipoAdministradorEspacioRepository.findByNombre("Administrador").get())
+                .fechaHoraAlta(LocalDateTime.now())
+                .build();
+
+        this.administradorEspacioRepository.save(administrador);
+
+        EspacioEstado espacioEstado = EspacioEstado.builder()
+                .estadoEspacio(this.estadoEspacioRepository.findByNombre("Habilitado").get())
+                .espacio(espacio)
+                .fechaHoraAlta(LocalDateTime.now())
+                .build();
+        this.espacioEstadoRepository.save(espacioEstado);
 
         for (DTOSubespacio dtoSubEspacio : dtoEspacio.getSubEspacios()){
             SubEspacio subEspacio = SubEspacio.builder()
@@ -263,13 +327,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             archivos.add(archivo);
         }
 
-        byte[] content = Files.readAllBytes(Paths.get(directorioBase, espacio.getBasesYCondiciones()));
-        DTOArchivo archivo = DTOArchivo.builder()
-                .nombreArchivo(espacio.getBasesYCondiciones())
-                .base64(Base64.getEncoder().encodeToString(content))
-                .build();
-
-        return DTOEspacioEditar.builder()
+        DTOEspacioEditar espacioDTO= DTOEspacioEditar.builder()
                 .id(id)
                 .nombre(espacio.getNombre())
                 .descripcion(espacio.getDescripcion())
@@ -286,10 +344,20 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                         .descripcion(espacioEstado.getDescripcion())
                         .build())
                 .documentacion(archivos)
-                .basesYCondiciones(archivo)
                 .estadosEspacio(estadosTransicion)
                 .requiereAprobacion(espacio.getRequiereAprobarEventos())
                 .build();
+
+        DTOArchivo archivo;
+        if(!espacio.getBasesYCondiciones().isEmpty()){
+            byte[] content = Files.readAllBytes(Paths.get(directorioBase, espacio.getBasesYCondiciones()));
+            archivo = DTOArchivo.builder()
+                    .nombreArchivo(espacio.getBasesYCondiciones())
+                    .base64(Base64.getEncoder().encodeToString(content))
+                    .build();
+            espacioDTO.setBasesYCondiciones(archivo);
+        }
+        return espacioDTO;
     }
 
     @Override
@@ -297,14 +365,12 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         Espacio espacio = this.espacioRepository.findById(dtoEspacio.getId())
                 .orElseThrow(() -> new Exception("Espacio no encontrado"));
 
-        validarDatosEdicion(dtoEspacio);
+        validarDatosEdicion(dtoEspacio, documentacion);
 
         if (basesYCondiciones != null && !basesYCondiciones.isEmpty()) {
-            // Se subió un nuevo archivo → reemplazo
             String rutaBasesYCondiciones = guardarArchivo(basesYCondiciones, dtoEspacio.getNombre());
             espacio.setBasesYCondiciones(rutaBasesYCondiciones);
         }
-        //String rutaBasesYCondiciones = guardarArchivo(basesYCondiciones, dtoEspacio.getNombre());
 
         espacio.setNombre(dtoEspacio.getNombre());
         espacio.setDescripcion(dtoEspacio.getDescripcion());
@@ -327,21 +393,20 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             this.espacioEstadoRepository.save(espacioEstado);
         }
 
-        // Obtener los documentos existentes del espacio
-        List<DocumentacionEspacio> docsExistentes = this.documentacionEspacioRepository.findByEspacioId(espacio.getId());
+        List<DocumentacionEspacio> documentosExistentes = this.documentacionEspacioRepository.findByEspacioId(espacio.getId());
 
-        List<Long> idsDocsMantener = dtoEspacio.getDocumentacion() != null
+        List<Long> idsDocumentosMantener = dtoEspacio.getDocumentacion() != null
                 ? dtoEspacio.getDocumentacion().stream()
                 .map(DTOArchivo::getId)
                 .filter(Objects::nonNull)
                 .toList()
                 : new ArrayList<>();
 
-        // Eliminar documentos que ya no están en la lista enviada
-        for (DocumentacionEspacio doc : docsExistentes) {
-            if (!idsDocsMantener.contains(doc.getId())) {
-                documentacionEspacioRepository.delete(doc);
-                eliminarArchivoFisico(doc.getDocumentacion());
+        for (DocumentacionEspacio documento : documentosExistentes) {
+            if (!idsDocumentosMantener.contains(documento.getId())) {
+                documento.setFechaHoraBaja(LocalDateTime.now());
+                this.documentacionEspacioRepository.save(documento);
+                //eliminarArchivoFisico(documento.getDocumentacion());
             }
         }
 
@@ -349,74 +414,71 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             for (MultipartFile file : documentacion) {
                 if (file != null && !file.isEmpty()) {
                     String ruta = guardarArchivo(file, dtoEspacio.getNombre());
-                    DocumentacionEspacio nuevaDoc = DocumentacionEspacio.builder()
+                    DocumentacionEspacio nuevaDocumentacion = DocumentacionEspacio.builder()
                             .espacio(espacio)
                             .documentacion(ruta)
                             .fechaHoraAlta(LocalDateTime.now())
                             .build();
-                    documentacionEspacioRepository.save(nuevaDoc);
+                    this.documentacionEspacioRepository.save(nuevaDocumentacion);
                 }
             }
         }
-        // Obtener subespacios existentes
+
         List<SubEspacio> subEspaciosExistentes = this.subEspacioRepository.findAllByEspacio(espacio.getId());
 
-        // Lista de IDs enviados desde el front
+
         List<Long> idsSubespaciosEnviados = dtoEspacio.getSubEspacios().stream()
                 .map(DTOSubespacioEditar::getId)
                 .filter(Objects::nonNull)
                 .toList();
 
-        // Eliminar subespacios que no están en la lista enviada
-        for (SubEspacio sub : subEspaciosExistentes) {
-            if (!idsSubespaciosEnviados.contains(sub.getId())) {
-                this.subEspacioRepository.delete(sub);
+
+        for (SubEspacio subEspacio : subEspaciosExistentes) {
+            if (!idsSubespaciosEnviados.contains(subEspacio.getId())) {
+                subEspacio.setFechaHoraBaja(LocalDateTime.now());
+                this.subEspacioRepository.save(subEspacio);
             }
         }
 
-        for (DTOSubespacioEditar dtoSub : dtoEspacio.getSubEspacios()) {
+        for (DTOSubespacioEditar dtoSubEspacio : dtoEspacio.getSubEspacios()) {
             SubEspacio subEspacio;
-            if (dtoSub.getId() != null) {
-                // Subespacio existente
-                subEspacio = this.subEspacioRepository.findById(dtoSub.getId())
-                        .orElseThrow(() -> new Exception("SubEspacio no encontrado: " + dtoSub.getNombre()));
+            if (dtoSubEspacio.getId() != null) {
+                subEspacio = this.subEspacioRepository.findById(dtoSubEspacio.getId())
+                        .orElseThrow(() -> new Exception("SubEspacio no encontrado: " + dtoSubEspacio.getNombre()));
             } else {
-                // Subespacio nuevo
                 subEspacio = SubEspacio.builder()
                         .espacio(espacio)
                         .fechaHoraAlta(LocalDateTime.now())
                         .build();
             }
 
-            // Actualizamos los datos básicos
-            subEspacio.setNombre(dtoSub.getNombre());
-            subEspacio.setDescripcion(dtoSub.getDescripcion());
-            subEspacio.setCapacidadmaxima(dtoSub.getCapacidadMaxima());
+            subEspacio.setNombre(dtoSubEspacio.getNombre());
+            subEspacio.setDescripcion(dtoSubEspacio.getDescripcion());
+            subEspacio.setCapacidadmaxima(dtoSubEspacio.getCapacidadMaxima());
 
-            // --------- Actualización de disciplinas ---------
-            // Traer disciplinas actuales
+
             List<DisciplinaSubEspacio> disciplinasExistentes = subEspacio.getDisciplinasSubespacio();
 
             if (disciplinasExistentes == null) {
                 disciplinasExistentes = new ArrayList<>();
             }
 
-            // IDs de disciplinas enviadas por el front
-            List<Long> idsEnviadas = dtoSub.getDisciplinas() != null
-                    ? dtoSub.getDisciplinas().stream().map(DTODisciplinas::getId).toList()
+
+            List<Long> idsDisciplinasEnviadas = dtoSubEspacio.getDisciplinas() != null
+                    ? dtoSubEspacio.getDisciplinas().stream().map(DTODisciplinas::getId).toList()
                     : new ArrayList<>();
 
-            // Eliminar las que ya no están
-            disciplinasExistentes.removeIf(dse -> !idsEnviadas.contains(dse.getDisciplina().getId()));
 
-            // Agregar nuevas disciplinas
-            for (DTODisciplinas dtoDisc : dtoSub.getDisciplinas()) {
+            disciplinasExistentes.removeIf(dse -> !idsDisciplinasEnviadas.contains(dse.getDisciplina().getId()));
+
+
+            for (DTODisciplinas dtoDisciplina : dtoSubEspacio.getDisciplinas()) {
                 boolean existe = disciplinasExistentes.stream()
-                        .anyMatch(dse -> dse.getDisciplina().getId().equals(dtoDisc.getId()));
+                        .anyMatch(dse -> dse.getDisciplina().getId().equals(dtoDisciplina.getId()));
                 if (!existe) {
                     disciplinasExistentes.add(DisciplinaSubEspacio.builder()
-                            .disciplina(this.disciplinaRepository.findById(dtoDisc.getId())
-                                    .orElseThrow(() -> new Exception("Disciplina no encontrada: " + dtoDisc.getId())))
+                            .disciplina(this.disciplinaRepository.findById(dtoDisciplina.getId())
+                                    .orElseThrow(() -> new Exception("Disciplina no encontrada: " + dtoDisciplina.getId())))
                             .build());
                 }
             }
@@ -460,7 +522,6 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         Set<Espacio> resultadoFinal = new HashSet<>();
         List<Set<Espacio>> setsPorFiltro = new ArrayList<>();
 
-        // --- Filtro por ubicación ---
         if (dtoEspacio.getUbicacion() != null) {
             double rangoMetros = dtoEspacio.getUbicacion().getRango();
             double gradosPorMetro = 1.0 / 111_320.0;
@@ -481,7 +542,6 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             ));
         }
 
-        // --- Filtro por texto ---
         if (dtoEspacio.getTexto() != null && !dtoEspacio.getTexto().isBlank()) {
             String[] palabras = dtoEspacio.getTexto().split(" ");
             Set<Espacio> porTexto = new HashSet<>();
@@ -494,29 +554,24 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             setsPorFiltro.add(porTexto);
         }
 
-        // --- Filtro por tipo ---
         if (dtoEspacio.getTipos() != null && !dtoEspacio.getTipos().isEmpty()) {
             setsPorFiltro.add(new HashSet<>(espacioRepository.findEspaciosByTipo(dtoEspacio.getTipos())));
         }
 
-        // --- Filtro por disciplina ---
         if (dtoEspacio.getDisciplinas() != null && !dtoEspacio.getDisciplinas().isEmpty()) {
             setsPorFiltro.add(new HashSet<>(espacioRepository.findEspaciosByDisciplina(dtoEspacio.getDisciplinas())));
         }
 
-        // --- Sin filtros: traer todos los habilitados ---
         if (setsPorFiltro.isEmpty()) {
             resultadoFinal.addAll(espacioRepository.findAllHabilitados());
         } else {
-            // Iniciar con el primer conjunto y hacer intersección con los demás
             resultadoFinal.addAll(setsPorFiltro.get(0));
 
             for (int i = 1; i < setsPorFiltro.size(); i++) {
-                resultadoFinal.retainAll(setsPorFiltro.get(i)); // 🔹 Intersección de Sets
+                resultadoFinal.retainAll(setsPorFiltro.get(i));
             }
         }
 
-        // --- Mapear a DTO ---
         List<DTOResultadoBusquedaEspacios> espaciosDto = new ArrayList<>();
         for (Espacio espacio : resultadoFinal) {
             Set<String> disciplinasSet = new HashSet<>();
@@ -549,7 +604,6 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             espacios.addAll(espacioRepository.findMisEspacios(dtoEspacio.getTexto(), dtoEspacio.isAdministrador(), dtoEspacio.isPropietario(), username));
         }
 
-        // Eliminar duplicados por ID
         List<Espacio> espaciosUnicos = espacios.stream()
                 .collect(Collectors.collectingAndThen(
                         Collectors.toMap(Espacio::getId, e -> e, (e1, e2) -> e1),
@@ -575,10 +629,10 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
 
     @Override
     public List<DTOResultadoBusquedaEventosPorEspacio> buscarEventosPorEspacio(DTOBusquedaEventosPorEspacio dto) throws Exception {
+
         Set<DTOEvento> resultadoFinal = new HashSet<>();
         List<Set<DTOEvento>> setsPorFiltro = new ArrayList<>();
 
-        // --- Filtro por texto ---
         if (dto.getTexto() != null && !dto.getTexto().isBlank()) {
             String[] palabras = dto.getTexto().split(" ");
             Set<DTOEvento> porTexto = new HashSet<>();
@@ -590,7 +644,6 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             setsPorFiltro.add(porTexto);
         }
 
-        // --- Filtro por fechas ---
         if ((dto.getFechaDesde() != null || dto.getFechaHasta() != null) && (dto.getHoraDesde() == null && dto.getHoraHasta() == null)) {
             LocalDate fechaDesde = dto.getFechaDesde() != null
                     ? Instant.ofEpochMilli(dto.getFechaDesde()).atZone(ZoneId.systemDefault()).toLocalDate()
@@ -609,7 +662,6 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             setsPorFiltro.add(new HashSet<>(eventoRepository.findEventosByHora(dto.getIdEspacio(), horaDesde, horaHasta)));
         }
 
-        // --- Filtro por fechas y horas ---
         if (dto.getFechaDesde() != null && dto.getFechaHasta() != null && (dto.getHoraDesde() != null && dto.getHoraHasta() != null)) {
 
             LocalDate fechaDesde = dto.getFechaDesde() != null
@@ -635,37 +687,24 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
 
         }
 
-        // --- Filtro por precio ---
         if (dto.getPrecioLimite() >0) {
             setsPorFiltro.add(new HashSet<>(eventoRepository.findEventosByPrecio(dto.getIdEspacio(), new BigDecimal(dto.getPrecioLimite()))));
         }
 
-        // --- Filtro por disciplinas ---
         if (dto.getDisciplinas() != null && !dto.getDisciplinas().isEmpty()) {
             setsPorFiltro.add(new HashSet<>(eventoRepository.findEventosByDisciplinas(dto.getIdEspacio(), dto.getDisciplinas())));
         }
 
 
-        // --- Sin filtros: traer todos los eventos del espacio ---
         if (setsPorFiltro.isEmpty()) {
-            //List<DTOEvento>eventos=new ArrayList<>();
             resultadoFinal.addAll(eventoRepository.findEventosByEspacio(dto.getIdEspacio()));
-//            Set<Long> idsVistos = new HashSet<>();
-//            for(DTOEvento evento : resultadoFinal){
-//                if (idsVistos.add(evento.getId())) { // add() devuelve true si no estaba antes
-//                    eventos.add(evento); // solo agrego si no se había visto antes
-//                }
-//            }
-//            resultadoFinal=new HashSet<>(eventos);
         } else {
-            // Iniciar con el primer conjunto y hacer intersección con los demás
             resultadoFinal.addAll(setsPorFiltro.get(0));
             for (int i = 1; i < setsPorFiltro.size(); i++) {
-                resultadoFinal.retainAll(setsPorFiltro.get(i)); // Intersección de sets
+                resultadoFinal.retainAll(setsPorFiltro.get(i));
             }
         }
 
-        // --- Mapear a DTO ---
         List<DTOResultadoBusquedaEventosPorEspacio> eventosDto = new ArrayList<>();
         for (DTOEvento evento : resultadoFinal) {
             List<String> disciplinas = this.eventoRepository.findDisciplinasByEvento(evento.getId());
@@ -680,6 +719,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                             ? evento.getPrecioInscripcion().doubleValue()
                             : 0)
                     .disciplinas(disciplinas)
+                    .estado(evento.getEstado())
                     .build());
         }
 
@@ -695,7 +735,6 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 usuarios.addAll(this.usuarioRepository.buscarUsuariosNoAdministradoresEspacio(idEspacio, palabra));
             }
         }
-        // Eliminar duplicados por ID
         List<Usuario> usuariosUnicos = usuarios.stream()
                 .collect(Collectors.collectingAndThen(
                         Collectors.toMap(Usuario::getId, e -> e, (e1, e2) -> e1),
@@ -746,6 +785,12 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                                         null : administrador.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                         .build());
             }
+            historicoDTO.sort((f1, f2) -> {
+                long t1 = f1.getFechaDesde() != null ? f1.getFechaDesde() : 0L;
+                long t2 = f2.getFechaDesde() != null ? f2.getFechaDesde() : 0L;
+                return Long.compare(t2, t1); // descendente
+            });
+
             dtoAdministrador.setFechasAdministracion(historicoDTO);
             dtoAdministradores.add(dtoAdministrador);
             historicoDTO=new ArrayList<>();
@@ -814,12 +859,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
     public void agregarEncargadoSubespacio(Long idSubEspacio, String username)throws Exception{
         SubEspacio subEspacio = this.subEspacioRepository.findById(idSubEspacio).get();
         Usuario usuario = this.usuarioRepository.findByUsername(username).get();
-        EncargadoSubEspacio encargadoSubEspacio = EncargadoSubEspacio.builder()
-                .subEspacio(subEspacio)
-                .usuario(usuario)
-                .fechaHoraAlta(LocalDateTime.now())
-                .build();
-        this.encargadoSubEspacioRepository.save(encargadoSubEspacio);
+        subEspacio.setEncargadoSubEspacio(usuario);
+        this.subEspacioRepository.save(subEspacio);
     }
 
     @Override
@@ -834,10 +875,10 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
 
             if(subEspacio.getEncargadoSubEspacio()!=null){
                 if(subEspacio.getEncargadoSubEspacio().getFechaHoraBaja()==null){
-                    encargadoSubespacio.setNombreApellidoEncargado(subEspacio.getEncargadoSubEspacio().getUsuario().getNombre() + subEspacio.getEncargadoSubEspacio().getUsuario().getApellido());
-                    encargadoSubespacio.setUsername(subEspacio.getEncargadoSubEspacio().getUsuario().getUsername());
-                    if(subEspacio.getEncargadoSubEspacio().getUsuario().getFotoPerfil()!=null){
-                        String base64Image = encodeFileToBase64(subEspacio.getEncargadoSubEspacio().getUsuario().getFotoPerfil());
+                    encargadoSubespacio.setNombreApellidoEncargado(subEspacio.getEncargadoSubEspacio().getNombre() + subEspacio.getEncargadoSubEspacio().getApellido());
+                    encargadoSubespacio.setUsername(subEspacio.getEncargadoSubEspacio().getUsername());
+                    if(subEspacio.getEncargadoSubEspacio().getFotoPerfil()!=null){
+                        String base64Image = encodeFileToBase64(subEspacio.getEncargadoSubEspacio().getFotoPerfil());
                         String[] parts = base64Image.split(",");
                         String base64Data = parts[1];
                         String mimeType = parts[0].split(";")[0].split(":")[1];
@@ -852,11 +893,114 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         return encargados;
     }
 
+    @Override
+    public DTOResenasEspacio obtenerResenasEspacio(Long idEspacio)throws Exception{
+        List<ResenaEspacio> resenas=this.resenaEspacioRepository.resenasByEspacio(idEspacio);
+        List<DTOResenasEspacio.DTOResenaEspacio> dtoResenasEspacios=new ArrayList<>();
+        for(ResenaEspacio resena:resenas){
+            dtoResenasEspacios.add(DTOResenasEspacio.DTOResenaEspacio.builder()
+                    .titulo(resena.getTitulo())
+                    .fecha(resena.getFechaHora() == null
+                            ? null
+                            : resena.getFechaHora().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                    .puntuacion(resena.getPuntaje())
+                    .comentario(resena.getComentario())
+                    .username(resena.getUsuario().getUsername())
+                    .usuario(resena.getUsuario().getNombre() + " " + resena.getUsuario().getApellido())
+                    .build());
+        }
 
+        List<DTOResenasEspacio.Puntuacion> puntuaciones=new ArrayList<>();
+        for(int i=1; i<=5; i++){
+            final int puntaje=i;
+            puntuaciones.add(DTOResenasEspacio.Puntuacion.builder()
+                            .puntuacion(i)
+                            .cantidad(resenas.stream().filter(r->Objects.equals(r.getPuntaje(),puntaje)).count())
+                    .build());
+        }
+        return DTOResenasEspacio.builder()
+                .resenas(dtoResenasEspacios)
+                .puntuaciones(puntuaciones)
+                .build();
+    }
+
+    @Override
+    public List<DTOEstadoEspacio> obtenerEstadosEspacio() throws Exception {
+        List<EstadoEspacio> estadosEspacio = estadoEspacioRepository.findAll();
+        return estadosEspacio.stream()
+                .map(me->DTOEstadoEspacio.builder()
+                        .id(me.getId())
+                        .nombre(me.getNombre())
+                        .build()
+                ).toList();
+    }
+
+    @Override
+    public void crearResenaEspacio(DTOCrearResenaEspacio dto, String username)throws Exception{
+        if(dto.getIdEspacio()==null & dto.getComentario().isEmpty() && dto.getTitulo().isEmpty() && dto.getPuntuacion()==null)
+            throw new Exception("Los datos no pueden estar vacíos");
+
+        Usuario usuario=this.usuarioRepository.findByUsername(username).orElseThrow(() -> new Exception("Usuario no encontrado"));
+        Espacio espacio=this.espacioRepository.findById(dto.getIdEspacio()).orElseThrow(() -> new Exception("Espacio no encontrado"));
+        ResenaEspacio resena = ResenaEspacio.builder()
+                .titulo(dto.getTitulo())
+                .puntaje(dto.getPuntuacion())
+                .comentario(dto.getComentario())
+                .fechaHora(LocalDateTime.now())
+                .espacio(espacio)
+                .usuario(usuario)
+                .build();
+        this.resenaEspacioRepository.save(resena);
+    }
 
     //Región de métodos auxiliares
-    private void validarDatosCreacion (DTOCrearEspacio dtoEspacio) throws Exception {
-        if (dtoEspacio == null) throw new Exception("Payload requerido");
+    private void validarDatosCreacion (DTOCrearEspacio dtoEspacio, List<MultipartFile> documentacion) throws Exception {
+        if (dtoEspacio == null) throw new Exception("Datos de espacio requerido");
+        if (dtoEspacio.getNombre() == null || dtoEspacio.getNombre().isBlank())
+            throw new Exception("El nombre es obligatorio");
+        if (dtoEspacio.getNombre().length() > 50)
+            throw new Exception("El nombre no debe superar 50 caracteres");
+        if (dtoEspacio.getDireccion() == null || dtoEspacio.getDireccion().isBlank())
+            throw new Exception("La dirección es obligatoria");
+        if (dtoEspacio.getDireccion().length() > 50)
+            throw new Exception("La dirección no debe superar 50 caracteres");
+        if (dtoEspacio.getDescripcion() != null && dtoEspacio.getDescripcion().length() > 500)
+            throw new Exception("La descripción no debe superar 500 caracteres");
+        if (dtoEspacio.getLatitud() == 0 || dtoEspacio.getLongitud() == 0)
+            throw new Exception("Debe indicar la ubicación (lat/lon)");
+        if (dtoEspacio.getSubEspacios().isEmpty()) throw new Exception("Debe agregar al menos un subespacio");
+
+        ParametroSistema parametroRangoUbicacion = this.parametroSistemaRepository.findByNombre("rango_validar_ubicacion");
+
+        double rangoMetros = Double.parseDouble(parametroRangoUbicacion.getValor());
+
+        // Conversión: 1° de latitud ≈ 111.320 metros
+        double gradosPorMetro = 1.0 / 111_320.0;
+
+        double rangoGrados = rangoMetros * gradosPorMetro;
+
+        double latDesde = dtoEspacio.getLatitud() - rangoGrados;
+        double latHasta = dtoEspacio.getLatitud() + rangoGrados;
+        double lonDesde = dtoEspacio.getLongitud() - rangoGrados;
+        double lonHasta = dtoEspacio.getLongitud() + rangoGrados;
+
+        Long otrosEspacios = this.espacioRepository.findDuplicado(dtoEspacio.getNombre(), dtoEspacio.getUsername(), new BigDecimal(latDesde), new BigDecimal(latHasta), new BigDecimal(lonDesde), new BigDecimal(lonHasta));
+        if (otrosEspacios > 0) throw new Exception("Ya existe otro espacio con estos datos");
+
+        Set<String> nombres = new HashSet<>();
+
+        for (var subEspacio : dtoEspacio.getSubEspacios()) {
+            String nombreNormalizado = subEspacio.getNombre().trim().toLowerCase();
+            if (!nombres.add(nombreNormalizado)) {
+                throw new Exception("No puede haber dos subespacios con el mismo nombre: " + subEspacio.getNombre());
+            }
+        }
+        if(documentacion.isEmpty()) throw new Exception("La documentación es requerida");
+
+    }
+
+    private void validarDatosCreacionEspacioPublido (DTOCrearEspacio dtoEspacio) throws Exception {
+        if (dtoEspacio == null) throw new Exception("Datos de espacio requerido");
         if (dtoEspacio.getNombre() == null || dtoEspacio.getNombre().isBlank())
             throw new Exception("El nombre es obligatorio");
         if (dtoEspacio.getNombre().length() > 50)
@@ -898,8 +1042,9 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         }
     }
 
-    private void validarDatosEdicion (DTOEspacioEditar dtoEspacio) throws Exception {
+    private void validarDatosEdicion (DTOEspacioEditar dtoEspacio, List<MultipartFile> documentacion) throws Exception {
         if (dtoEspacio == null) throw new Exception("Payload requerido");
+
         if (dtoEspacio.getNombre() == null || dtoEspacio.getNombre().isBlank())
             throw new Exception("El nombre es obligatorio");
         if (dtoEspacio.getNombre().length() > 50)
@@ -939,27 +1084,24 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 throw new Exception("No puede haber dos subespacios con el mismo nombre: " + subEspacio.getNombre());
             }
         }
+
+        if(documentacion.isEmpty()) throw new Exception("La documentación es requerida");
     }
 
     private String guardarArchivo (MultipartFile archivo, String nombreEspacio) throws IOException {
-//        File directorio = new File(directorioBase);
-//        if (!directorio.exists()) {
-//            directorio.mkdirs();
-//        }
 
-                if (!Files.exists(Paths.get(directorioBase))) {
-                    Files.createDirectories(Paths.get(directorioBase));
-                }
-
-                String nombreArchivo = nombreEspacio + "_" + archivo.getOriginalFilename();
-                //Path rutaDestino = Path.of(directorioBase, nombreArchivo);
-                Path filePath = Paths.get(directorioBase).resolve(nombreArchivo).toAbsolutePath().normalize();
-                Files.write(filePath, archivo.getBytes());
-
-                //archivo.transferTo(rutaDestino.toFile());
-
-                return nombreArchivo;
+        if(archivo!=null){
+            if (!Files.exists(Paths.get(directorioBase))) {
+                Files.createDirectories(Paths.get(directorioBase));
             }
+
+            String nombreArchivo = nombreEspacio + "_" + archivo.getOriginalFilename();
+            Path filePath = Paths.get(directorioBase).resolve(nombreArchivo).toAbsolutePath().normalize();
+            Files.write(filePath, archivo.getBytes());
+            return nombreArchivo;
+        }
+        return "";
+    }
 
     private String encodeFileToBase64(String filePath) {
         try {

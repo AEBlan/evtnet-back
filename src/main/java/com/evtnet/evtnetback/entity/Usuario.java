@@ -48,7 +48,6 @@ public class Usuario extends Base {
     @Column(name = "fecha_hora_baja")
     private LocalDateTime fechaHoraBaja;
 
-    // Relaciones (las existentes que ya tenías)
     @OneToMany(mappedBy = "usuario")
     private List<RolUsuario> rolesUsuario;
 
@@ -106,15 +105,10 @@ public class Usuario extends Base {
     @OneToMany(mappedBy = "responsable")
     private List<SEPEstado> sepEstados;
 
-    @OneToMany(mappedBy = "usuario")
-    private List<EncargadoSubEspacio> encargadoSubEspacios;
-
+    @OneToMany(mappedBy = "encargadoSubEspacio")
+    private List<SubEspacio> subEspacios;
 
     public List<String> getPermisos() {
         return this.getRolesUsuario().stream().map(r -> r.getRol().getRolPermisos().stream().map(p -> p.getPermiso().getNombre()).toList()).flatMap(List::stream).toList();
     }
-
-    
-
-    
 }
