@@ -21,4 +21,11 @@ public interface ComisionPorOrganizacionRepository extends BaseRepository <Comis
     @Transactional
     @Query("UPDATE ComisionPorOrganizacion cpo SET cpo.fechaHasta = :fecha WHERE cpo.id = :id")
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
+
+    @Query(""" 
+    SELECT c
+    FROM ComisionPorOrganizacion c
+    WHERE c.montoLimite <= :valor
+    """)
+    ComisionPorOrganizacion findComisionByValor(@Param("valor") double valor);
 }

@@ -26,7 +26,7 @@ public class SEPEstado extends Base {
 
     // n..1: muchas filas -> un Usuario (quien registró el estado)
     @ManyToOne(optional = false)
-    @JoinColumn(name = "responsable_id", nullable = false)
+    @JoinColumn(name = "responsable_id")
     private Usuario responsable;
 
     // n..1: muchas filas -> una SolicitudEspacioPublico (objeto al que pertenece el estado)

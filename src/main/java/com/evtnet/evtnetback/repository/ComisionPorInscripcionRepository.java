@@ -21,4 +21,11 @@ public interface ComisionPorInscripcionRepository extends BaseRepository <Comisi
     @Transactional
     @Query("UPDATE ComisionPorInscripcion cpi SET cpi.fechaHasta = :fecha WHERE cpi.id = :id")
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
+
+    @Query(""" 
+    SELECT c
+    FROM ComisionPorInscripcion c
+    WHERE c.montoLimite <= :valor
+    """)
+    ComisionPorInscripcion findComisionByValor(@Param("valor") double valor);
 }

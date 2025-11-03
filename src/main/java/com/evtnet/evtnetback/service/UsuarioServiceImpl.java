@@ -340,8 +340,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .build();
         u = usuarioRepository.save(u);
 
-        Rol rolPend = rolRepository.findByNombre("PendienteConfirmacion")
-                .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmacion"));
+        Rol rolPend = rolRepository.findByNombre("PendienteConfirmación")
+                .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmación"));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolPend)) {
             rolUsuarioRepository.save(
                     RolUsuario.builder().usuario(u).rol(rolPend).fechaHoraAlta(LocalDateTime.now()).build()
@@ -389,8 +389,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         }
 
         // 3) Rol inicial igual que en register(...)
-        Rol rolPend = rolRepository.findByNombre("PendienteConfirmacion")
-                .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmacion"));
+        Rol rolPend = rolRepository.findByNombre("PendienteConfirmación")
+                .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmación"));
         if (!rolUsuarioRepository.existsByUsuarioAndRol(u, rolPend)) {
             RolUsuario ru = RolUsuario.builder().usuario(u).rol(rolPend).build();
             ru.setFechaHoraAlta(LocalDateTime.now());
@@ -441,8 +441,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         Usuario u = usuarioRepository.findByMail(mail)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
-        Rol rolPend = rolRepository.findByNombre("PendienteConfirmacion")
-                .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmacion"));
+        Rol rolPend = rolRepository.findByNombre("PendienteConfirmación")
+                .orElseThrow(() -> new IllegalStateException("Falta rol PendienteConfirmación"));
         Rol rolUsr = rolRepository.findByNombre("Usuario")
                 .orElseThrow(() -> new IllegalStateException("Falta rol Usuario"));
 

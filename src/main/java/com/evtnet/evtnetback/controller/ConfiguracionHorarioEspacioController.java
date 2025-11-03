@@ -223,4 +223,30 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         }
     }
 
+    @GetMapping("/comisionOrganizacion")
+    public ResponseEntity comisionOrganizacion(@RequestParam(name="valor", required=true) double valor){
+        try{
+            return ResponseEntity.status(HttpStatus.OK).body(configuracionHorarioEspacioService.getComisionOrganizacion(valor));
+        } catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se verificar obtener el valor de comisión - "+e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/comisionInscripcion")
+    public ResponseEntity comisionInscripcion(@RequestParam(name="valor", required=true) double valor){
+        try{
+            return ResponseEntity.status(HttpStatus.OK).body(configuracionHorarioEspacioService.getComisionInscripcion(valor));
+        } catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se verificar obtener el valor de comisión - "+e.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
 }

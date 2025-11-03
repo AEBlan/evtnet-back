@@ -25,7 +25,7 @@ public class EstadoSEPController extends BaseControllerImpl <EstadoSEP, EstadoSE
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los estados de denuncia de evento"
+                    "No se pudieron obtener los estados de solicitud de espacio público"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -39,7 +39,7 @@ public class EstadoSEPController extends BaseControllerImpl <EstadoSEP, EstadoSE
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener el estado de denuncia de evento"
+                    "No se pudo obtener el estado de solicitud de espacio público"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -54,7 +54,7 @@ public class EstadoSEPController extends BaseControllerImpl <EstadoSEP, EstadoSE
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo dar de alta el estado de denuncia de evento"
+                    "No se pudo dar de alta el estado de solicitud de espacio público"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -69,7 +69,7 @@ public class EstadoSEPController extends BaseControllerImpl <EstadoSEP, EstadoSE
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo actualizar el estado de denuncia de evento"
+                    "No se pudo actualizar el estado de solicitud de espacio público"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -84,7 +84,21 @@ public class EstadoSEPController extends BaseControllerImpl <EstadoSEP, EstadoSE
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo dar de baja el estado de denuncia de evento"
+                    "No se pudo dar de baja el estado de solicitud de espacio público"
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/obtenerEstadosSEP")
+    public ResponseEntity obtenerEstadosSEP() {
+        try {
+            return ResponseEntity.ok(service.obtenerEstadosSEP());
+        }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudieron obtener los estados de solicitud de espacio público"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

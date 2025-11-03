@@ -52,9 +52,8 @@ public class Espacio extends Base {
     @JoinColumn(name = "tipo_espacio_id")
     private TipoEspacio tipoEspacio;
 
-    @ManyToOne
-    @JoinColumn(name = "solicitud_espacio_publico_id")
-    private SolicitudEspacioPublico solicitudEspacioPublico;
+    @OneToMany(mappedBy = "espacio", fetch = FetchType.EAGER)
+    private List<SolicitudEspacioPublico> solicitudesEspacioPublico;
 
     @OneToOne(mappedBy = "espacio")
     private Chat chat;

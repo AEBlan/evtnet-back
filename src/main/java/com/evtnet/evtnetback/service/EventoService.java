@@ -45,6 +45,6 @@ public interface EventoService extends BaseService<Evento, Long> {
     DTODatosParaCambioEstadoDenuncia obtenerDatosParaCambioEstado(long idDenuncia);
     void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto, String username);
     DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento, String username);
-
-
+    void aprobarRechazarEvento(Long idEvento, String estado);
+    void cancelarEvento(Long idEvento);
 }

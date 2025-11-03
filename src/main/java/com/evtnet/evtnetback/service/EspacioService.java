@@ -12,6 +12,7 @@ import java.util.List;
 
 public interface EspacioService extends BaseService<Espacio, Long> {
     Long crearEspacio(DTOCrearEspacio dtoEspacio, MultipartFile basesYCondiciones, List<MultipartFile> documentacion) throws Exception;
+    Long crearEspacioPublico(DTOCrearEspacio dtoEspacio) throws Exception;
     DTOEspacio obtenerEspacio(Long id, String username) throws Exception;
     DTOEspacioEditar obtenerEspacioEditar(Long id, String username) throws Exception;
     void editarEspacio(DTOEspacioEditar dtoEspacio, MultipartFile basesYCondiciones, List<MultipartFile> documentacion) throws Exception;
@@ -28,5 +29,9 @@ public interface EspacioService extends BaseService<Espacio, Long> {
     void entregarPropietario (Long idEspacio, String username, String usernamePropietario)throws Exception;
     void agregarEncargadoSubespacio (Long idSubEspacio, String username)throws Exception;
     List<DTOEncargadoSubespacio>obtenerEncargadosSubespacios(Long idEspacio)throws Exception;
-    //List<DTOEstadoEspacio>obtenerEstadosEspacio() throws Exception;
+    DTOResenasEspacio obtenerResenasEspacio(Long idEspacio)throws Exception;
+    void crearResenaEspacio(DTOCrearResenaEspacio dto, String username)throws Exception;
+    List<DTOEstadoEspacio> obtenerEstadosEspacio() throws Exception;
+    List<DTOBusquedaEspacio>buscarEspaciosPropios(String username)throws Exception;
+    void actualizarCarateristicasEspacio(DTOActualizarCaracteristicasSubespacio dtoCaracteristicaSubEspacio)throws Exception;
 }

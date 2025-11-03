@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class EstadoSEPServiceImpl extends BaseServiceImpl <EstadoSEP, Long> implements EstadoSEPService {
@@ -58,6 +59,17 @@ public class EstadoSEPServiceImpl extends BaseServiceImpl <EstadoSEP, Long> impl
     @Override
     public void bajaEstadoSEP(Long id) throws Exception {
         estadoSEPRepository.delete(id, LocalDateTime.now());
+    }
+
+    @Override
+    public List<DTOEstadoSEP> obtenerEstadosSEP() throws Exception {
+        List<EstadoSEP> estadosSEP = estadoSEPRepository.findAll();
+        return estadosSEP.stream()
+                .map(me->DTOEstadoSEP.builder()
+                        .id(me.getId())
+                        .nombre(me.getNombre())
+                        .build()
+                ).toList();
     }
     
 }

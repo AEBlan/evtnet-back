@@ -230,4 +230,16 @@ public class EventoController {
             @RequestParam long idEvento, Authentication auth) {
         return ResponseEntity.ok(service.obtenerDatosParaDenunciar(idEvento, auth.getName()));
     }
+
+    @PutMapping("/aprobarRechazarEvento")
+    public ResponseEntity<Void> aprobarEvento(@RequestParam("idEvento") Long idEvento, @RequestParam("estado") String estado) {
+        service.aprobarRechazarEvento(idEvento, estado);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/cancelarEvento")
+    public ResponseEntity<Void> cancelarEvento(@RequestParam("idEvento") Long idEvento) {
+        service.cancelarEvento(idEvento);
+        return ResponseEntity.ok().build();
+    }
 }

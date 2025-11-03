@@ -22,4 +22,6 @@ public interface ConfiguracionHorarioEspacioService extends BaseService<Configur
     void crearExcepcion(DTOCrearExcepcion dtoCrearExcepcion)throws Exception;
     List<DTOHorarioDisponible>buscarHorariosDisponibles(Long idSubEspacio, Long dia)throws Exception;
     List<DTOPeriodoDisponible> obtenerPeriodosLibres(Long idSubEspacio)throws Exception;
+    double getComisionOrganizacion(double valor)throws Exception;
+    double getComisionInscripcion(double valor)throws Exception;
 }

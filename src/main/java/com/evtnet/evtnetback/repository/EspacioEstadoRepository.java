@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface EspacioEstadoRepository extends BaseRepository<EspacioEstado, Long>{
     @Query("""
@@ -16,4 +18,11 @@ public interface EspacioEstadoRepository extends BaseRepository<EspacioEstado, L
     """)
     EspacioEstado findActualByEspacio(@Param("idEspacio") Long idEspacio);
 
+    @Query("""
+        SELECT espacioEstado
+        FROM EspacioEstado espacioEstado
+        JOIN espacioEstado.estadoEspacio estadoEspacio
+        WHERE espacioEstado.espacio.id = :idEspacio
+    """)
+    List<EspacioEstado>findAllByEspacio(@Param("idEspacio") Long idEspacio);
 }

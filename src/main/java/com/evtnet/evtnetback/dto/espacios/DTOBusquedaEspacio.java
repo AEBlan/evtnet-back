@@ -11,11 +11,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DTOResultadoBusquedaEventosPorEspacio {
+public class DTOBusquedaEspacio {
     private Long id;
     private String nombre;
-    private Long fechaHoraInicio;
-    private double precio;
-    private List<String> disciplinas;
-    private String estado;
+    private String direccion;
+    private List<String>disciplinas;
 }
