@@ -307,6 +307,10 @@ INSERT INTO rol (nombre, descripcion, fecha_hora_alta)
 SELECT 'Perito', NULL, NOW()
 WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='Perito');
 
+INSERT INTO rol (nombre, descripcion, fecha_hora_alta)
+SELECT 'GestorEspacios', NULL, NOW()
+    WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='GestorEspacios');
+
 -- =========================
 -- Rol-Permiso (rol_permiso ahora exige fecha_hora_alta NOT NULL)
 -- =========================
@@ -376,6 +380,18 @@ WHERE p.nombre IN (
     SELECT 1 FROM rol_permiso rp
     WHERE rp.rol_id=@rol AND rp.permiso_id=p.id
   );
+
+-- 6) Gestor -> visión de solicitudes de espacio
+SET @rol := (SELECT id FROM rol WHERE nombre='GestorEspacios');
+INSERT INTO rol_permiso (rol_id, permiso_id, fecha_hora_alta)
+SELECT @rol, p.id, NOW() FROM permiso p
+WHERE p.nombre IN (
+                   'AdministracionEspaciosPublicos','AdministracionEspaciosPrivados','VisionEspacios','VisionPerfilPropio'
+    )
+  AND NOT EXISTS (
+    SELECT 1 FROM rol_permiso rp
+    WHERE rp.rol_id=@rol AND rp.permiso_id=p.id
+);
 
 -- Saneamos por si había filas antiguas sin fecha
 UPDATE rol_permiso SET fecha_hora_alta = NOW() WHERE fecha_hora_alta IS NULL;
@@ -624,6 +640,42 @@ WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Oculto');
 INSERT INTO estado_espacio (nombre, descripcion)
 SELECT 'Clausurado', 'Se clausura el espacio debido a irregularidades en el mismo'
 WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Clausurado');
+
+-- =========================
+-- TransicionEstadoEspacio
+-- =========================
+
+insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
+select 1, now(), 1,2;
+WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=1);
+
+insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
+select 2, now(), 1,4;
+WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=2);
+
+insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
+select 3, now(), 1,5;
+WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=3);
+
+insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
+select 4, now(), 2,3;
+WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=4);
+
+insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
+select 5, now(), 2,6;
+WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=5);
+
+insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
+select 6, now(), 3,2;
+WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=6);
+
+insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
+select 7, now(), 4,1;
+WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=7);
+
+insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
+select 8, now(), 4,5;
+WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=8);
 
 
 -- =========================
