@@ -1665,9 +1665,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			e.getOrganizador().getUsername().equals(currentUser);
 
 		boolean esEncargado = false;
-		EncargadoSubEspacio ese = e.getSubEspacio().getEncargadoSubEspacio();
+		Usuario ese = e.getSubEspacio().getEncargadoSubEspacio();
 		if (ese != null) {
-			esEncargado = ese.getUsuario().getUsername().equals(currentUser);
+			esEncargado = ese.getUsername().equals(currentUser);
 		}
 
 		if (!esAdministrador && !esOrganizador && !esEncargado) {
@@ -2393,7 +2393,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	}
 
 	@Override
-	public void cancelarEvento(Long idEvento){
+	public void cancelarEventoEspacio(Long idEvento){
 		Evento evento=this.eventoRepo.findById(idEvento).orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 		EventoEstado eventoEstado=this.eventoEstadoRepo.findUltimoByEvento(idEvento);
 		eventoEstado.setFechaHoraBaja(LocalDateTime.now());

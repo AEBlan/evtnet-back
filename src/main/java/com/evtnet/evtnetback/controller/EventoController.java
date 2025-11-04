@@ -237,9 +237,9 @@ public class EventoController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/cancelarEvento")
-    public ResponseEntity<Void> cancelarEvento(@RequestParam("idEvento") Long idEvento) {
-        service.cancelarEvento(idEvento);
+    @PutMapping("/cancelarEventoEspacio")
+    public ResponseEntity<Void> cancelarEventoEspacio(@RequestParam("idEvento") Long idEvento) {
+        service.cancelarEventoEspacio(idEvento);
         return ResponseEntity.ok().build();
     }
 }
