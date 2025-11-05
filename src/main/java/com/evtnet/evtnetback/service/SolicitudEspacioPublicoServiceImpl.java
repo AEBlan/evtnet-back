@@ -496,6 +496,7 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
                 .estadoEspacio(estadoEspacio)
                 .espacio(espacio)
                 .fechaHoraAlta(LocalDateTime.now())
+                .descripcion(dtoCambioEstado.getDescripcion())
                 .build();
         this.espacioEstadoRepository.save(espacioEstado);
     }

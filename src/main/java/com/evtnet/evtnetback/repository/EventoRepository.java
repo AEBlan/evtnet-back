@@ -104,6 +104,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     JOIN eventoEstado.estadoEvento estadoEvento
     WHERE e.subEspacio.espacio.id = :idEspacio
         AND eventoEstado.fechaHoraBaja is null
+        AND (estadoEvento.nombre not like 'Cancelado' OR estadoEvento.nombre not like 'Rechazado')
     """)
     List<DTOEvento> findEventosByEspacio(@Param("idEspacio") Long idEspacio);
 
@@ -187,6 +188,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
       AND (LOWER(e.nombre) LIKE CONCAT('%', LOWER(:texto), '%')
            OR LOWER(e.descripcion) LIKE CONCAT('%', LOWER(:texto), '%'))
       AND eventoEstado.fechaHoraBaja is null
+      AND (estadoEvento.nombre not like 'Cancelado' OR estadoEvento.nombre not like 'Rechazado')
 """)
     List<DTOEvento> findEventosByTexto(@Param("idEspacio") Long idEspacio, @Param("texto") String texto);
 
@@ -201,6 +203,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     WHERE esp.id = :idEspacio
       AND FUNCTION('DATE',e.fechaHoraInicio) BETWEEN :fechaInicio AND :fechaFin
       AND eventoEstado.fechaHoraBaja is null
+      AND (estadoEvento.nombre not like 'Cancelado' OR estadoEvento.nombre not like 'Rechazado')
 """)
     List<DTOEvento> findEventosByFecha(
             @Param("idEspacio") Long idEspacio,
@@ -218,6 +221,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     WHERE esp.id = :idEspacio
       AND FUNCTION('TIME',e.fechaHoraInicio) BETWEEN :horaInicio AND :horaFin
       AND eventoEstado.fechaHoraBaja is null
+      AND (estadoEvento.nombre not like 'Cancelado' OR estadoEvento.nombre not like 'Rechazado')
 """)
     List<DTOEvento> findEventosByHora(
             @Param("idEspacio") Long idEspacio,
@@ -236,6 +240,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
       AND FUNCTION('DATE',e.fechaHoraInicio) BETWEEN :fechaInicio AND :fechaFin
       AND FUNCTION('TIME',e.fechaHoraInicio) BETWEEN :horaInicio AND :horaFin
       AND eventoEstado.fechaHoraBaja is null
+      AND (estadoEvento.nombre not like 'Cancelado' OR estadoEvento.nombre not like 'Rechazado')
 """)
     List<DTOEvento> findEventosByFechaYHora(
             @Param("idEspacio") Long idEspacio,
@@ -256,6 +261,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     WHERE esp.id = :idEspacio
       AND e.precioInscripcion <= :precioLimite
       AND eventoEstado.fechaHoraBaja is null
+      AND (estadoEvento.nombre not like 'Cancelado' OR estadoEvento.nombre not like 'Rechazado')
 """)
     List<DTOEvento> findEventosByPrecio(@Param("idEspacio") Long idEspacio,
                                      @Param("precioLimite") BigDecimal precioLimite);
@@ -273,6 +279,7 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     WHERE esp.id = :idEspacio
       AND d.id IN :disciplinas
       AND eventoEstado.fechaHoraBaja is null
+      AND (estadoEvento.nombre not like 'Cancelado' OR estadoEvento.nombre not like 'Rechazado')
 """)
     List<DTOEvento> findEventosByDisciplinas(@Param("idEspacio") Long idEspacio,
                                           @Param("disciplinas") List<Long> disciplinas);

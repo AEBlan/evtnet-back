@@ -18,4 +18,5 @@ public class DTOResultadoBusquedaEventosPorEspacio {
     private double precio;
     private List<String> disciplinas;
     private String estado;
+    private boolean requiereAprobacion;
 }

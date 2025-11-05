@@ -180,7 +180,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
         OR (:esPropietario = TRUE AND tae.nombre = 'Propietario' AND u.username=:username)
       )
       AND ae.fechaHoraBaja IS NULL
-      AND espacioEstado.estadoEspacio.nombre like "Habilitado"
+      
     """)
     List<Espacio> findMisEspacios(@Param("texto") String texto, @Param("esAdmin")boolean esAdmin, @Param("esPropietario")boolean esPropietario, @Param("username") String username);
 
@@ -227,7 +227,7 @@ public interface EspacioRepository extends BaseRepository<Espacio, Long> {
     SELECT DISTINCT e FROM Espacio e
     JOIN e.espacioEstado ee
     JOIN e.tipoEspacio te
-    WHERE ee.id IN (:estado)
+    WHERE ee.estadoEspacio.id IN (:estado)
       AND ee.fechaHoraBaja is null
       AND te.nombre like 'Privado'
 """)
