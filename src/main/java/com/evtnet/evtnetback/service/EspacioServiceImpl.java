@@ -386,11 +386,15 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
 
         EspacioEstado espacioEstadoActual =  this.espacioEstadoRepository.findActualByEspacio(dtoEspacio.getId());
 
-        if(espacioEstadoActual.getEstadoEspacio().getId()!=dtoEspacio.getEstado().getId()){
+        if(espacioEstadoActual.getEstadoEspacio().getId()!=dtoEspacio.getEstado().getId() || espacioEstadoActual.getEstadoEspacio().getNombre().equals("Observado")){
             espacioEstadoActual.setFechaHoraBaja(LocalDateTime.now());
             this.espacioEstadoRepository.save(espacioEstadoActual);
+            EstadoEspacio estadoEspacio;
+            if(espacioEstadoActual.getEstadoEspacio().getNombre().equals("Observado"))
+                estadoEspacio=this.estadoEspacioRepository.findByNombre("En_revisión").orElseThrow(() -> new Exception("Estado de Espacio no encontrado"));
+            else estadoEspacio=this.estadoEspacioRepository.findByNombre(dtoEspacio.getEstado().getNombre()).get();
             EspacioEstado espacioEstado = EspacioEstado.builder()
-                    .estadoEspacio(this.estadoEspacioRepository.findByNombre(dtoEspacio.getEstado().getNombre()).get())
+                    .estadoEspacio(estadoEspacio)
                     .espacio(espacio)
                     .fechaHoraAlta(LocalDateTime.now())
                     .build();
@@ -724,6 +728,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                             : 0)
                     .disciplinas(disciplinas)
                     .estado(evento.getEstado())
+                    .requiereAprobacion(this.espacioRepository.findById(dto.getIdEspacio()).get().getRequiereAprobarEventos())
                     .build());
         }
 
@@ -1162,7 +1167,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             }
         }
 
-        if(documentacion.isEmpty()) throw new Exception("La documentación es requerida");
+        if((documentacion==null || documentacion.isEmpty()) && (dtoEspacio.getDocumentacion()==null || dtoEspacio.getDocumentacion().isEmpty())) throw new Exception("La documentación es requerida");
     }
 
     private String guardarArchivo (MultipartFile archivo, String nombreEspacio) throws IOException {
