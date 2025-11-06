@@ -717,7 +717,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			espacio.getRequiereAprobarEventos(),
 			comision_inscripcion.doubleValue(),
 			espacio.getTipoEspacio().getNombre().equalsIgnoreCase("Público"),
-			administrador
+			administrador,
+			espacio.getBasesYCondiciones() != null && !espacio.getBasesYCondiciones().isEmpty()
 		);
     }
 

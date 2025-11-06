@@ -34,4 +34,6 @@ public interface EspacioService extends BaseService<Espacio, Long> {
     List<DTOEstadoEspacio> obtenerEstadosEspacio() throws Exception;
     List<DTOBusquedaEspacio>buscarEspaciosPropios(String username)throws Exception;
     void actualizarCarateristicasEspacio(DTOActualizarCaracteristicasSubespacio dtoCaracteristicaSubEspacio)throws Exception;
+
+    byte[] obtenerBasesYCondiciones(Long idEspacio) throws Exception;
 }

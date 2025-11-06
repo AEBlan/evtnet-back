@@ -13,7 +13,9 @@ public record DTODatosCreacionEvento(
 
 
     Boolean espacioPublico,
-    Boolean administrador
+    Boolean administrador,
+
+    Boolean tieneBasesYCondiciones
     
 ) {
     public record SubEspacio(

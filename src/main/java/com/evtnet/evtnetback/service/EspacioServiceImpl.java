@@ -1033,7 +1033,27 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         }
     }
 
+    @Override
+    public byte[] obtenerBasesYCondiciones(Long idEspacio) throws Exception {
+        var espacio = espacioRepository.findById(idEspacio)
+                .orElseThrow(() -> new Exception("Espacio no encontrado"));
 
+        if (espacio.getBasesYCondiciones() == null || espacio.getBasesYCondiciones().isEmpty()) {
+            throw new Exception("El espacio no tiene bases y condiciones");
+        }
+
+        if (!espacio.getBasesYCondiciones().toLowerCase().endsWith(".pdf")) {
+            throw new Exception("El archivo no es un PDF");
+        }
+
+        Path path = Paths.get(directorioBase, espacio.getBasesYCondiciones());
+
+        if (!Files.exists(path)) {
+            throw new Exception("Archivo de bases y condiciones no encontrado");
+        }
+
+        return Files.readAllBytes(path);
+    }
 
     //Región de métodos auxiliares
     private void validarDatosCreacion (DTOCrearEspacio dtoEspacio, List<MultipartFile> documentacion) throws Exception {
