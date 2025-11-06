@@ -41,13 +41,40 @@ WHERE NOT EXISTS (SELECT 1 FROM comision_por_organizacion);
 -- Disciplina (tiene fecha_hora_alta/baja opcionales)
 -- =========================
 INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
-SELECT 'Futbol', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Futbol');
+SELECT 'Fútbol', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Futbol');
 
 INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
-SELECT 'Padel', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Padel');
+SELECT 'Fútbol 5', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Futbol 5');
+
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Pádel', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Pádel');
+
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Tenis', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Tenis');
+
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Tenis de mesa', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Tenis de mesa');
 
 INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
 SELECT 'Metegol', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Metegol');
+
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Ajedrez', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Ajedrez');
+
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Patinaje', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Patinaje');
+
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Bowling', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Bowling');
+
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Pool', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Pool');
+
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Basketball', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Basketball');
+
+INSERT INTO disciplina (nombre, descripcion, fecha_hora_alta)
+SELECT 'Otro', NULL, NOW() WHERE NOT EXISTS (SELECT 1 FROM disciplina WHERE nombre='Otro');
 
 
 -- =========================
@@ -285,6 +312,7 @@ INSERT INTO permiso (nombre) SELECT 'VisionLogEspacios' WHERE NOT EXISTS (SELECT
 INSERT INTO permiso (nombre) SELECT 'VisionLogPagos' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='VisionLogPagos');
 INSERT INTO permiso (nombre) SELECT 'VisionLogParametros' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='VisionLogParametros');
 INSERT INTO permiso (nombre) SELECT 'CancelacionEventosAdmin' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='CancelacionEventosAdmin');
+INSERT INTO permiso (nombre) SELECT 'AdministracionDisciplinas' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='AdministracionDisciplinas');
 
 -- =========================
 -- Rol (fecha_hora_alta NOT NULL en tu entidad nueva)

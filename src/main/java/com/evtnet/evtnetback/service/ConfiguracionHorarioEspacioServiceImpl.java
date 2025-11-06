@@ -66,11 +66,11 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
 
 
     @Override
-    public DTOCronogramasEspacio obtenerCronogramasEspacio(Long idEspacio)throws Exception{
-        Espacio espacio = espacioRepository.findById(idEspacio).get();
-        List<ConfiguracionHorarioEspacio> cronogramasEspacio =configuracionHorarioEspacioRepository.findAllByEspacio(idEspacio);
+    public DTOCronogramasEspacio obtenerCronogramasEspacio(Long idSubEspacio)throws Exception{
+        SubEspacio subEspacio = subEspacioRepository.findById(idSubEspacio).orElseThrow(() -> new Exception("No se encontró el subespacio"));
+        List<ConfiguracionHorarioEspacio> cronogramasEspacio = subEspacio.getConfiguracionesHorarioEspacio();
         DTOCronogramasEspacio cronogramaEspacio = DTOCronogramasEspacio.builder()
-                .nombre(espacio.getNombre())
+                .nombre(subEspacio.getNombre())
                 .build();
         List<DTOCronogramasEspacio.DTOCronograma> cronogramas=new ArrayList<>();
         for(ConfiguracionHorarioEspacio cronograma : cronogramasEspacio){
@@ -592,13 +592,17 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
     @Override
     public double getComisionOrganizacion(double valor)throws Exception{
         ComisionPorOrganizacion comisionOrganizacion = this.comisionPorOrganizacionRepository.findComisionByValor(valor);
-        return valor*(comisionOrganizacion.getPorcentaje().doubleValue()/100);
+        BigDecimal porcentaje = BigDecimal.ZERO;
+        if (comisionOrganizacion != null) porcentaje = comisionOrganizacion.getPorcentaje();
+        return valor*(porcentaje.doubleValue()/100);
     }
 
     @Override
     public double getComisionInscripcion(double valor)throws Exception{
         ComisionPorInscripcion comisionInscripcion = this.comisionPorInscripcionRepository.findComisionByValor(valor);
-        return valor*(comisionInscripcion.getPorcentaje().doubleValue()/100);
+        BigDecimal porcentaje = BigDecimal.ZERO;
+        if (comisionInscripcion != null) porcentaje = comisionInscripcion.getPorcentaje();
+        return valor*(porcentaje.doubleValue()/100);
     }
 
     private String diaSemana(LocalDate fecha) {

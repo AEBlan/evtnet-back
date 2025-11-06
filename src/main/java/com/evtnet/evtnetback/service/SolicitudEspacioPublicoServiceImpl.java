@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -211,6 +212,17 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
             String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
             solicitante.setContentType(contentType);
             solicitante.setUrlFotoPerfil(base64Data);
+        } else {
+            File file = new File(getClass().getResource("/default.png").getFile());
+            Path path = file.toPath();
+
+            String base64Image = encodeFileToBase64(path.toAbsolutePath().toString());
+            String[] parts = base64Image.split(",");
+            String base64Data = parts[1];
+            String mimeType = parts[0].split(";")[0].split(":")[1];
+            String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
+            solicitante.setContentType(contentType);
+            solicitante.setUrlFotoPerfil(base64Data);
         }
 
         dtoSolicitudCompleta.setSolicitante(solicitante);
@@ -226,6 +238,17 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
                     .build();
             if(sepEstado.getResponsable().getFotoPerfil()!=null){
                 String base64Image = encodeFileToBase64(sepEstado.getResponsable().getFotoPerfil());
+                String[] parts = base64Image.split(",");
+                String base64Data = parts[1];
+                String mimeType = parts[0].split(";")[0].split(":")[1];
+                String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
+                responsable.setContentType(contentType);
+                responsable.setUrlFotoPerfil(base64Data);
+            } else {
+                File file = new File(getClass().getResource("/default.png").getFile());
+                Path path = file.toPath();
+
+                String base64Image = encodeFileToBase64(path.toAbsolutePath().toString());
                 String[] parts = base64Image.split(",");
                 String base64Data = parts[1];
                 String mimeType = parts[0].split(";")[0].split(":")[1];
@@ -423,6 +446,17 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
 
         if(propietario.getFotoPerfil()!=null){
             String base64Image = encodeFileToBase64(propietario.getFotoPerfil());
+            String[] parts = base64Image.split(",");
+            String base64Data = parts[1];
+            String mimeType = parts[0].split(";")[0].split(":")[1];
+            String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
+            solicitante.setContentType(contentType);
+            solicitante.setUrlFotoPerfil(base64Data);
+        } else {
+            File file = new File(getClass().getResource("/default.png").getFile());
+            Path path = file.toPath();
+
+            String base64Image = encodeFileToBase64(path.toAbsolutePath().toString());
             String[] parts = base64Image.split(",");
             String base64Data = parts[1];
             String mimeType = parts[0].split(";")[0].split(":")[1];

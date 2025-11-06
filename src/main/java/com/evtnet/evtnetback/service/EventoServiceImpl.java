@@ -205,9 +205,9 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		for (int i = 0; i < keywords.size(); i++) {
 			jpqlEventos += " AND (" +
 			"LOWER (TRIM(e.nombre)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR " +
-			"LOWER (TRIM(e.descripcion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR" +
-			"LOWER (TRIM(esp.nombre)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR" +
-			"LOWER (TRIM(esp.descripcion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR" +
+			"LOWER (TRIM(e.descripcion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR " +
+			"LOWER (TRIM(esp.nombre)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR " +
+			"LOWER (TRIM(esp.descripcion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%')) OR " +
 			"LOWER (TRIM(esp.direccionUbicacion)) LIKE LOWER(CONCAT('%', TRIM(:kw" + i + "), '%'))" +
 			")";
 
@@ -726,7 +726,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		if (req.getNombre().length() < 1 || req.getNombre().length() > 50) {
 			throw new Exception("El nombre debe tener entre 1 y 50 caracteres");
 		}
-		if (req.getDescripcion().length() > 50) {
+		if (req.getDescripcion().length() > 500) {
 			throw new Exception("La descripción no debe superar los 500 caracteres");
 		}
 

@@ -118,10 +118,13 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
 
     @Override
     public void altaIconoCaracteristica(DTOIconoCaracteristica iconoCaracteristica) throws Exception {
-        this.save(IconoCaracteristica.builder()
-                .imagen(guardarImagenBase64(iconoCaracteristica.getUrl(), iconoCaracteristica.getId()))
+        IconoCaracteristica icono = this.save(IconoCaracteristica.builder()
+                .imagen("")
                 .fechaHoraAlta(LocalDateTime.now())
                 .build());
+
+        icono.setImagen(guardarImagenBase64(iconoCaracteristica.getUrl(), icono.getId()));
+        this.save(icono);
     }
 
     @Override
@@ -152,6 +155,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
             String mimeType = parts[0].split(";")[0].split(":")[1];
             String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
             caracteristicaSubEspacios.add(DTOCaracteristicaSubEspacio.builder()
+                            .id(caracteristica.getId())
                             .idEspacio(idEspacio)
                             .idIconoCaracteristica(caracteristica.getIconoCaracteristica().getId())
                             .nombre(caracteristica.getNombre())
