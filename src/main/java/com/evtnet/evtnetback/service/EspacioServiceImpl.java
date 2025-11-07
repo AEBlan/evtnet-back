@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -729,6 +730,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                     .disciplinas(disciplinas)
                     .estado(evento.getEstado())
                     .requiereAprobacion(this.espacioRepository.findById(dto.getIdEspacio()).get().getRequiereAprobarEventos())
+                    .subespacio(eventoRepository.findById(evento.getId()).get().getSubEspacio().getNombre())
                     .build());
         }
 
@@ -784,9 +786,21 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
                 dtoAdministrador.setContentType(contentType);
                 dtoAdministrador.setUrlFotoPerfil(base64Data);
+            } else {
+                File file = new File(getClass().getResource("/default.png").getFile());
+                Path path = file.toPath();
+
+                String base64Image = encodeFileToBase64(path.toAbsolutePath().toString());
+                String[] parts = base64Image.split(",");
+                String base64Data = parts[1];
+                String mimeType = parts[0].split(";")[0].split(":")[1];
+                String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
+                dtoAdministrador.setContentType(contentType);
+                dtoAdministrador.setUrlFotoPerfil(base64Data);
             }
 
             for (AdministradorEspacio administrador : usuario.getAdministradoresEspacio()){
+                if (administrador.getEspacio().getId().longValue() != idEspacio.longValue()) continue;
                 historicoDTO.add(DTOAdministradoresEspacio.DTOAdministradores.HistoricoDTO.builder()
                                 .fechaDesde(administrador.getFechaHoraAlta() == null ?
                                         null : administrador.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
@@ -1033,7 +1047,27 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         }
     }
 
+    @Override
+    public byte[] obtenerBasesYCondiciones(Long idEspacio) throws Exception {
+        var espacio = espacioRepository.findById(idEspacio)
+                .orElseThrow(() -> new Exception("Espacio no encontrado"));
 
+        if (espacio.getBasesYCondiciones() == null || espacio.getBasesYCondiciones().isEmpty()) {
+            throw new Exception("El espacio no tiene bases y condiciones");
+        }
+
+        if (!espacio.getBasesYCondiciones().toLowerCase().endsWith(".pdf")) {
+            throw new Exception("El archivo no es un PDF");
+        }
+
+        Path path = Paths.get(directorioBase, espacio.getBasesYCondiciones());
+
+        if (!Files.exists(path)) {
+            throw new Exception("Archivo de bases y condiciones no encontrado");
+        }
+
+        return Files.readAllBytes(path);
+    }
 
     //Región de métodos auxiliares
     private void validarDatosCreacion (DTOCrearEspacio dtoEspacio, List<MultipartFile> documentacion) throws Exception {
@@ -1044,8 +1078,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             throw new Exception("El nombre no debe superar 50 caracteres");
         if (dtoEspacio.getDireccion() == null || dtoEspacio.getDireccion().isBlank())
             throw new Exception("La dirección es obligatoria");
-        if (dtoEspacio.getDireccion().length() > 50)
-            throw new Exception("La dirección no debe superar 50 caracteres");
+        if (dtoEspacio.getDireccion().length() > 150)
+            throw new Exception("La dirección no debe superar 150 caracteres");
         if (dtoEspacio.getDescripcion() != null && dtoEspacio.getDescripcion().length() > 500)
             throw new Exception("La descripción no debe superar 500 caracteres");
         if (dtoEspacio.getLatitud() == 0 || dtoEspacio.getLongitud() == 0)
@@ -1089,8 +1123,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             throw new Exception("El nombre no debe superar 50 caracteres");
         if (dtoEspacio.getDireccion() == null || dtoEspacio.getDireccion().isBlank())
             throw new Exception("La dirección es obligatoria");
-        if (dtoEspacio.getDireccion().length() > 50)
-            throw new Exception("La dirección no debe superar 50 caracteres");
+        if (dtoEspacio.getDireccion().length() > 150)
+            throw new Exception("La dirección no debe superar 150 caracteres");
         if (dtoEspacio.getDescripcion() != null && dtoEspacio.getDescripcion().length() > 500)
             throw new Exception("La descripción no debe superar 500 caracteres");
         if (dtoEspacio.getLatitud() == 0 || dtoEspacio.getLongitud() == 0)
@@ -1133,8 +1167,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             throw new Exception("El nombre no debe superar 50 caracteres");
         if (dtoEspacio.getDireccion() == null || dtoEspacio.getDireccion().isBlank())
             throw new Exception("La dirección es obligatoria");
-        if (dtoEspacio.getDireccion().length() > 50)
-            throw new Exception("La dirección no debe superar 50 caracteres");
+        if (dtoEspacio.getDireccion().length() > 150)
+            throw new Exception("La dirección no debe superar 150 caracteres");
         if (dtoEspacio.getDescripcion() != null && dtoEspacio.getDescripcion().length() > 500)
             throw new Exception("La descripción no debe superar 500 caracteres");
         if (dtoEspacio.getLatitud() == 0 || dtoEspacio.getLongitud() == 0)

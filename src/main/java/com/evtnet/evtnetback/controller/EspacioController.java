@@ -342,5 +342,14 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
+
+    @GetMapping("/obtenerBasesYCondiciones")
+    public ResponseEntity<byte[]> obtenerBasesYCondiciones(@RequestParam Long idEspacio) throws Exception {
+        byte[] pdfBytes = espacioService.obtenerBasesYCondiciones(idEspacio);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+    }
 }
 

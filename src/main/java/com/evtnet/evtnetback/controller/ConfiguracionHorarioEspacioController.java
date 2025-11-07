@@ -230,7 +230,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se verificar obtener el valor de comisión - "+e.getMessage()
+                    "No se pudo obtener el valor de comisión - "+e.getMessage()
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -243,7 +243,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se verificar obtener el valor de comisión - "+e.getMessage()
+                    "No se pudo obtener el valor de comisión - "+e.getMessage()
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
