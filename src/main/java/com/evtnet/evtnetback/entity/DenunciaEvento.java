@@ -2,6 +2,8 @@ package com.evtnet.evtnetback.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -18,6 +20,9 @@ public class DenunciaEvento extends Base {
 
     @Column(name = "descripcion", length = 2000)
     private String descripcion;
+
+    @Column(name = "fecha_hora_alta")
+    private LocalDateTime fechaHoraAlta;
 
     // -------- Relaciones --------
 

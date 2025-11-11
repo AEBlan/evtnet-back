@@ -8,6 +8,9 @@ import org.springframework.data.domain.*;
 import com.evtnet.evtnetback.entity.DenunciaEvento;
 import com.evtnet.evtnetback.dto.usuarios.DTODenunciaUsuario;
 
+import java.util.List;
+import java.time.LocalDateTime;
+
 @Repository
 public interface DenunciaEventoRepository extends BaseRepository <DenunciaEvento, Long> {
    @Query("""
@@ -28,4 +31,42 @@ public interface DenunciaEventoRepository extends BaseRepository <DenunciaEvento
         ORDER BY COALESCE(ult.fechaHoraDesde, ev.fechaHoraInicio) DESC
         """)
     Page<DTODenunciaUsuario> pageDenunciasUsuario(@Param("username") String username, Pageable pageable);
+
+    @Query("SELECT DISTINCT d FROM DenunciaEvento d " +
+            "LEFT JOIN d.estados e ON e.fechaHoraHasta IS NULL " +
+            "LEFT JOIN d.estados e2 " +
+            "WHERE (" +
+            "   :texto IS NULL " +
+            "   OR LOWER(d.descripcion) LIKE LOWER(CONCAT('%', :texto, '%')) " +
+            "   OR LOWER(d.titulo) LIKE LOWER(CONCAT('%', :texto, '%'))" +
+            "   OR LOWER(d.denunciante.nombre) LIKE LOWER(CONCAT('%', :texto, '%'))" +
+            "   OR LOWER(d.denunciante.apellido) LIKE LOWER(CONCAT('%', :texto, '%'))" +
+            "   OR LOWER(d.denunciante.username) LIKE LOWER(CONCAT('%', :texto, '%'))" +
+            "   OR LOWER(d.denunciante.mail) LIKE LOWER(CONCAT('%', :texto, '%'))" +
+            "   OR LOWER(d.denunciante.dni) LIKE LOWER(CONCAT('%', :texto, '%'))" +
+            "   OR LOWER(d.evento.nombre) LIKE LOWER(CONCAT('%', :texto, '%'))" +
+            "   OR LOWER(d.evento.descripcion) LIKE LOWER(CONCAT('%', :texto, '%'))" +
+            ") " +
+            "AND (:estados IS NULL OR e2.estadoDenunciaEvento.id IN :estados AND e2.fechaHoraHasta IS NULL) " +
+            "AND (:fechaIngresoDesde IS NULL OR d.fechaHoraAlta >= :fechaIngresoDesde) " +
+            "AND (:fechaIngresoHasta IS NULL OR d.fechaHoraAlta <= :fechaIngresoHasta) " +
+            "AND (:fechaCambioEstadoDesde IS NULL OR e.fechaHoraDesde >= :fechaCambioEstadoDesde) " +
+            "AND (:fechaCambioEstadoHasta IS NULL OR e.fechaHoraDesde <= :fechaCambioEstadoHasta) " +
+            "ORDER BY " +
+            "CASE WHEN :orden = 'FECHA_CAMBIO_ESTADO_ASC' THEN e.fechaHoraDesde END ASC, " +
+            "CASE WHEN :orden = 'FECHA_CAMBIO_ESTADO_DESC' THEN e.fechaHoraDesde END DESC, " +
+            "CASE WHEN :orden = 'FECHA_DENUNCIA_ASC' THEN d.fechaHoraAlta END ASC, " +
+            "CASE WHEN :orden = 'FECHA_DENUNCIA_DESC' THEN d.fechaHoraAlta END DESC, " +
+            "d.id ASC")
+    Page<DenunciaEvento> buscarDenuncias(
+            @Param("texto") String texto,
+            @Param("estados") List<Long> estados,
+            @Param("fechaIngresoDesde") LocalDateTime fechaIngresoDesde,
+            @Param("fechaIngresoHasta") LocalDateTime fechaIngresoHasta,
+            @Param("fechaCambioEstadoDesde") LocalDateTime fechaCambioEstadoDesde,
+            @Param("fechaCambioEstadoHasta") LocalDateTime fechaCambioEstadoHasta,
+            @Param("orden") String orden,
+            Pageable pageable
+    );
+
 }

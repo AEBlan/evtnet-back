@@ -3,6 +3,7 @@ package com.evtnet.evtnetback.controller;
 
 import com.evtnet.evtnetback.dto.comunes.CantidadResponse;
 import com.evtnet.evtnetback.dto.comunes.IdResponse;
+import com.evtnet.evtnetback.dto.estadoDenunciaEvento.DTOEstadoDenunciaEvento;
 import com.evtnet.evtnetback.dto.eventos.*;
 import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
 import com.evtnet.evtnetback.dto.usuarios.DTOPreferenciaPago;
@@ -195,9 +196,14 @@ public class EventoController {
     // --- DENUNCIAS ---
 
     @PostMapping("/denunciar")
-    public ResponseEntity<Void> denunciarEvento(@RequestBody DTODenunciaEvento dto, Authentication auth) {
-        service.denunciarEvento(dto, auth.getName());
+    public ResponseEntity<Void> denunciarEvento(@RequestBody DTODenunciaEvento dto) throws Exception {
+        service.denunciarEvento(dto);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/obtenerEstadosDenuncias")
+    public ResponseEntity<List<DTOEstadoDenunciaEventoCheck>> obtenerEstadosDenuncias() {
+        return ResponseEntity.ok(service.obtenerEstadosDenuncias());
     }
 
     @PutMapping("/buscarDenuncias")
@@ -209,7 +215,7 @@ public class EventoController {
     }
 
 
-    @GetMapping("/obtenerDenunciaCompleta")
+    @GetMapping("/obtenerDenuncia")
     public ResponseEntity<DTODenunciaEventoCompleta> obtenerDenunciaCompleta(@RequestParam long idDenuncia) throws Exception {
         return ResponseEntity.ok(service.obtenerDenunciaCompleta(idDenuncia));
     }
@@ -219,16 +225,17 @@ public class EventoController {
         return ResponseEntity.ok(service.obtenerDatosParaCambioEstado(idDenuncia));
     }
 
+
     @PostMapping("/cambiarEstadoDenuncia")
-    public ResponseEntity<Void> cambiarEstadoDenuncia(@RequestBody DTOCambioEstadoDenuncia dto, Authentication auth) {
-        service.cambiarEstadoDenuncia(dto, auth.getName());
+    public ResponseEntity<Void> cambiarEstadoDenuncia(@RequestBody DTOCambioEstadoDenuncia dto) throws Exception {
+        service.cambiarEstadoDenuncia(dto);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/getDatosParaDenunciar")
     public ResponseEntity<DTODatosParaDenunciarEvento> getDatosParaDenunciar(
-            @RequestParam long idEvento, Authentication auth) {
-        return ResponseEntity.ok(service.obtenerDatosParaDenunciar(idEvento, auth.getName()));
+            @RequestParam long idEvento) throws Exception {
+        return ResponseEntity.ok(service.obtenerDatosParaDenunciar(idEvento));
     }
 
     @PutMapping("/aprobarRechazarEvento")

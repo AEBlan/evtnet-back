@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface EstadoDenunciaEventoRepository extends BaseRepository <EstadoDenunciaEvento, Long> {
@@ -21,4 +22,15 @@ public interface EstadoDenunciaEventoRepository extends BaseRepository <EstadoDe
     @Transactional
     @Query("UPDATE EstadoDenunciaEvento ede SET ede.fechaHoraBaja = :fecha WHERE ede.id = :id")
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
+
+    @Query("""
+            SELECT eDestino
+            FROM EstadoDenunciaEvento eOrigen
+                JOIN eOrigen.transicionesOrigen t
+                JOIN t.estadoDestino eDestino
+            WHERE eOrigen.id = :idEstado
+                AND t.fechaHoraBaja IS NULL
+                AND eDestino.fechaHoraBaja IS NULL
+            """)
+    List<EstadoDenunciaEvento> obtenerPosiblesTransiciones(Long idEstado);
 }

@@ -26,6 +26,8 @@ public interface ComisionPorOrganizacionRepository extends BaseRepository <Comis
     SELECT c
     FROM ComisionPorOrganizacion c
     WHERE c.montoLimite <= :valor
+    AND c.fechaDesde <= CURRENT_TIMESTAMP AND (c.fechaHasta IS NULL OR c.fechaHasta > CURRENT_TIMESTAMP)
+    ORDER BY c.montoLimite DESC
     """)
     ComisionPorOrganizacion findComisionByValor(@Param("valor") double valor);
 }

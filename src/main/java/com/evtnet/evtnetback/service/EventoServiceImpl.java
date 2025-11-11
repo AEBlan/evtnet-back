@@ -72,6 +72,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final EventoEstadoRepository eventoEstadoRepo;
     private final ParametroSistemaService parametroSistemaService;
     private final ComisionPorInscripcionService comisionPorInscripcionService;
+	private final ComisionPorInscripcionRepository comisionPorInscripcionRepo;
+	private final ComisionPorOrganizacionRepository comisionPorOrganizacionRepo;
 	private final HorarioEspacioRepository horarioRepo;
 	private final ChatRepository chatRepo;
 	private final PorcentajeReintegroCancelacionInscripcionRepository porcentajeReintegroCancelacionInscripcionRepo;
@@ -111,6 +113,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	    EventoEstadoRepository eventoEstadoRepo,
 	    ParametroSistemaService parametroSistemaService,
 	    ComisionPorInscripcionService comisionPorInscripcionService,
+		ComisionPorInscripcionRepository comisionPorInscripcionRepo,
+		ComisionPorOrganizacionRepository comisionPorOrganizacionRepo,
 		HorarioEspacioRepository horarioRepo,
 		ChatRepository chatRepo,
 		PorcentajeReintegroCancelacionInscripcionRepository porcentajeReintegroCancelacionInscripcionRepo,
@@ -143,6 +147,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	this.eventoEstadoRepo = eventoEstadoRepo;
 	this.parametroSistemaService = parametroSistemaService;
 	this.comisionPorInscripcionService = comisionPorInscripcionService;
+	this.comisionPorInscripcionRepo = comisionPorInscripcionRepo;
+	this.comisionPorOrganizacionRepo = comisionPorOrganizacionRepo;
 	this.horarioRepo = horarioRepo;
 	this.chatRepo = chatRepo;
 	this.registroSingleton = registroSingleton;
@@ -161,7 +167,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		double c_p = parametroSistemaService.getDecimal("c_p", new BigDecimal("0.25")).doubleValue();
 		BigDecimal max_p = parametroSistemaService.getDecimal("max_p", new BigDecimal("20000"));
 		BigDecimal max_d = parametroSistemaService.getDecimal("max_d", new BigDecimal("1000"));
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 		Integer ventana_de_eventos = parametroSistemaService.getInt("ventana_de_eventos", 20);
 
 		if (filtro.ubicacion() != null && filtro.ubicacion().rango() != null) {
@@ -258,7 +264,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		}
 
 		if (filtro.precioLimite() != null) {
-			jpqlEventos += " AND (e.precioInscripcion + e.adicionalPorInscripcion) * (1.0 + :comisionInscripcion) <= :precioLimite";
+			jpqlEventos += " AND (e.precioInscripcion + e.adicionalPorInscripcion) * (1.0 + COALESCE((SELECT c.porcentaje / 100.0 FROM ComisionPorInscripcion c WHERE c.montoLimite = (SELECT MAX(c2.montoLimite) FROM ComisionPorInscripcion c2 WHERE c2.montoLimite <= e.precioInscripcion + e.adicionalPorInscripcion AND c2.fechaDesde <= CURRENT_TIMESTAMP AND (c2.fechaHasta IS NULL OR c2.fechaHasta > CURRENT_TIMESTAMP)) AND c.fechaDesde <= CURRENT_TIMESTAMP AND (c.fechaHasta IS NULL OR c.fechaHasta > CURRENT_TIMESTAMP)), 0)) <= :precioLimite";
 		}
 
 
@@ -297,7 +303,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		if (filtro.precioLimite() != null) {
 			queryEventos.setParameter("precioLimite", filtro.precioLimite());
-			queryEventos.setParameter("comisionInscripcion", comision_inscripcion);
+			//queryEventos.setParameter("comisionInscripcion", comision_inscripcion);
 		}
 
 		List<Evento> eventos = new ArrayList<>();
@@ -418,7 +424,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				precioLimite = max_p.doubleValue();
 			}
 
-			double precio = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion()).multiply(comision_inscripcion.add(new BigDecimal(1.0))).doubleValue();
+			BigDecimal precioTmp = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion());
+			double precio = precioTmp.multiply(getComisionInscripcion(precioTmp).add(new BigDecimal(1.0))).doubleValue();
 
 			double p = Math.max((precioLimite - precio)/precioLimite, 0);
 
@@ -583,8 +590,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", BigDecimal.valueOf(0.1));
 
-		double precioBase = e.getPrecioInscripcion().doubleValue() + e.getAdicionalPorInscripcion().doubleValue();
-		double precioTotal = precioBase * (1 + comision_inscripcion.doubleValue());
+		BigDecimal precioBase = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion());
+		double precioTotal = precioBase.multiply(getComisionInscripcion(precioBase).add(BigDecimal.valueOf(1.0))).doubleValue();
 
 		DTOEventoDetalle.Espacio espacio = null;
 		DTOEventoDetalle.Subespacio subespacio = null;
@@ -644,7 +651,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			e.getDescripcion(),
 			TimeUtil.toMillis(e.getFechaHoraInicio()),
 			TimeUtil.toMillis(e.getFechaHoraFin()),
-			precioBase,
+			precioBase.doubleValue(),
 			precioTotal,
 			disciplinas,
 			espacio,
@@ -672,7 +679,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		Espacio espacio = espacioRepo.findById(idEspacio)
 			.orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado"));
 		
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
 		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
 
@@ -715,7 +722,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				);
 			}).toList(),
 			espacio.getRequiereAprobarEventos(),
-			comision_inscripcion.doubleValue(),
+			comisionPorInscripcionRepo.findAll().stream().filter(c -> c.getFechaDesde().isBefore(LocalDateTime.now()) && (c.getFechaHasta() == null || c.getFechaHasta().isAfter(LocalDateTime.now()))).map(c -> new DTODatosCreacionEvento.Comision(c.getMontoLimite().doubleValue(), c.getPorcentaje().doubleValue()/100f)).toList(),
 			espacio.getTipoEspacio().getNombre().equalsIgnoreCase("Público"),
 			administrador,
 			espacio.getBasesYCondiciones() != null && !espacio.getBasesYCondiciones().isEmpty()
@@ -857,7 +864,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			throw new Exception("No debe pagar porque no está utilizando un cronograma");
 		}
 
-		BigDecimal comision_organizacion = parametroSistemaService.getDecimal("comision_organizacion", new BigDecimal("0.15"));
+		//BigDecimal comision_organizacion = parametroSistemaService.getDecimal("comision_organizacion", new BigDecimal("0.15"));
 
 		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
 		List<String> admins = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null).map(a -> a.getUsuario().getUsername()).toList();
@@ -871,6 +878,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		if (h.getPrecioOrganizacion().doubleValue() == 0f) {
 			throw new HttpErrorException(900, "No es necesario realizar un pago");
 		}
+
+		BigDecimal comision_organizacion = getComisionOrganizacion(h.getPrecioOrganizacion());
 
 		DTOPreferenciaPago pref = mercadoPagoSingleton.createPreference("Organización de evento '" + req.getNombre() + "'", h.getPrecioOrganizacion().multiply(comision_organizacion.add(BigDecimal.valueOf(1))), comision_organizacion, propietario, "/CrearEvento/" + subespacio.getEspacio().getId());
 
@@ -1024,10 +1033,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			.descripcion(e.getSubEspacio().getEspacio().getDescripcion())
 			.build();
 
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
-		BigDecimal precio = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion())
-				.multiply(comision_inscripcion.add(BigDecimal.valueOf(1)));
+		BigDecimal precioBase = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion());
+		BigDecimal precio = precioBase.multiply(getComisionInscripcion(precioBase).add(BigDecimal.valueOf(1.0)));
 
 		int cuposDisponibles = e.getCantidadMaximaParticipantes() - e.getInscripciones().stream().filter(i -> i.getFechaHoraBaja() == null).mapToInt(i -> 1 + i.getInvitados().size()).sum();
 
@@ -1055,7 +1064,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		verificarDatosPrePagoBool(dto);
 
 		ArrayList<DTOPreferenciaPago> prefs = new ArrayList<>();
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
 		Evento e = eventoRepo.findById(dto.getIdEvento())
 			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
@@ -1077,11 +1086,14 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			}
 		}
 
-		if (e.getPrecioInscripcion().compareTo(BigDecimal.ZERO) != 0)
-			prefs.add(mercadoPagoSingleton.createPreference("Inscripción a evento " + e.getNombre(), e.getPrecioInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size())), comision_inscripcion, organizador, url));
+		if (e.getPrecioInscripcion().compareTo(BigDecimal.ZERO) != 0) {
+			BigDecimal precioBase = e.getPrecioInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size()));
+			prefs.add(mercadoPagoSingleton.createPreference("Inscripción a evento " + e.getNombre(), precioBase, getComisionInscripcion(precioBase), organizador, url));
+		}
 
 		if (!publico && e.getAdicionalPorInscripcion().compareTo(BigDecimal.ZERO) != 0) {
-			prefs.add(mercadoPagoSingleton.createPreference("Adicional a espacio por inscripción a evento " + e.getNombre(), e.getAdicionalPorInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size())), comision_inscripcion, propietario, url));
+			BigDecimal precioBase = e.getAdicionalPorInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size()));
+			prefs.add(mercadoPagoSingleton.createPreference("Adicional a espacio por inscripción a evento " + e.getNombre(), precioBase, getComisionInscripcion(precioBase), propietario, url));
 		}
 
 
@@ -1165,7 +1177,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		Usuario u = usuarioRepo.findByUsername(username)
 			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
 		mercadoPagoSingleton.verifyPayments(dto.getDatosPago());
 		for (DTOPago datosPago : dto.getDatosPago()) {
@@ -1180,10 +1192,11 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		ins.setFechaHoraAlta(LocalDateTime.now(ZONA_ARG));
 
+		BigDecimal precioBase = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion())
+				.multiply(BigDecimal.valueOf(1 + dto.getInvitados().size()));
+
 		ins.setPrecioInscripcion(
-				e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion())
-						.multiply(BigDecimal.valueOf(1 + dto.getInvitados().size()))
-						.multiply(comision_inscripcion.add(BigDecimal.valueOf(1)))
+				precioBase.multiply(getComisionInscripcion(precioBase).add(BigDecimal.valueOf(1)))
 		);
 
 		ins.setPermitirDevolucionCompleta(false);
@@ -2175,49 +2188,96 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 	@Override
 	@Transactional
-	public void denunciarEvento(DTODenunciaEvento dto, String username) {
-	Usuario denunciante = usuarioRepo.findByUsername(username)
-		.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+	public void denunciarEvento(DTODenunciaEvento dto) throws Exception{
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión"));
 
-	Evento evento = eventoRepo.findById(dto.getIdEvento())
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+		Usuario denunciante = usuarioRepo.findByUsername(username)
+			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-	DenunciaEvento d = DenunciaEvento.builder()
-		.titulo(dto.getTitulo())
-		.descripcion(dto.getDescripcion())
-		.denunciante(denunciante)
-		.evento(evento)
-		.build();
+		Evento evento = eventoRepo.findById(dto.getIdEvento())
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-	denunciaEventoRepo.save(d);
+		boolean inscripto = inscripcionRepo.countByEventoIdAndUsuarioUsernameAndFechaHoraBajaIsNull(evento.getId(), username) > 0;
 
-	// Estado inicial
-	EstadoDenunciaEvento estadoInicial = estadoDenunciaRepo.findAll().stream()
-		.filter(e -> e.getNombre().equalsIgnoreCase("Ingresado"))
-		.findFirst()
-		.orElseThrow(() -> new HttpErrorException(400, "Estado inicial no configurado"));
+		if (!inscripto) {
+			throw new Exception("No está inscripto a este evento; debe estarlo para poder denunciarlo");
+		}
 
-	DenunciaEventoEstado dee = DenunciaEventoEstado.builder()
-		.denunciaEvento(d)
-		.estadoDenunciaEvento(estadoInicial)
-		.fechaHoraDesde(LocalDateTime.now())
-		.build();
-	denunciaEventoEstadoRepo.save(dee);
+		boolean hayDenunciaPrevia = !denunciaEventoRepo.findAll().stream()
+				.filter(d -> d.getEvento().getId().equals(evento.getId()) && d.getDenunciante().getUsername().equals(username))
+				.toList().isEmpty();
+
+		if (hayDenunciaPrevia) {
+			throw new Exception("Ya ha denunciado a este evento");
+		}
+
+		if (dto.getTitulo().isEmpty() || dto.getTitulo().length() > 50) {
+			throw new Exception("El título debe tener entre 1 y 50 caracteres");
+		}
+
+		if (dto.getDescripcion().length() > 1000) {
+			throw new Exception("La descripción no puede superar los 1000 caracteres");
+		}
+
+		DenunciaEvento d = DenunciaEvento.builder()
+			.titulo(dto.getTitulo())
+			.descripcion(dto.getDescripcion())
+			.denunciante(denunciante)
+			.evento(evento)
+			.fechaHoraAlta(LocalDateTime.now())
+			.build();
+
+		// Estado inicial
+		EstadoDenunciaEvento estadoInicial = estadoDenunciaRepo.findAll().stream()
+			.filter(e -> e.getNombre().equalsIgnoreCase("Ingresado"))
+			.findFirst()
+			.orElseThrow(() -> new HttpErrorException(400, "Estado inicial no configurado"));
+
+		d = denunciaEventoRepo.save(d);
+
+		DenunciaEventoEstado dee = DenunciaEventoEstado.builder()
+			.denunciaEvento(d)
+			.estadoDenunciaEvento(estadoInicial)
+			.fechaHoraDesde(LocalDateTime.now())
+			.responsable(denunciante)
+			.build();
+
+		denunciaEventoEstadoRepo.save(dee);
+
+		registroSingleton.write("Eventos", "denuncia", "creacion", "Evento de ID " + evento.getId() + " nombre '" + evento.getNombre() + "' denunciado");
+	}
+
+	@Override
+	@Transactional
+	public List<DTOEstadoDenunciaEventoCheck> obtenerEstadosDenuncias() {
+		return estadoDenunciaRepo.findAll().stream()
+			.filter(e -> e.getFechaHoraBaja() == null)
+			.map(e -> DTOEstadoDenunciaEventoCheck.builder()
+					.id(e.getId())
+					.nombre(e.getNombre())
+					.checked(!e.getNombre().equalsIgnoreCase("Finalizado"))
+					.build()
+		).toList();
 	}
 
 	@Override
 	@Transactional
 	public Page<DTODenunciaEventoSimple> buscarDenuncias(DTOBusquedaDenunciasEventos filtro, int page) throws Exception {
-		// TO-DO: Traer el pageSize de un parámetro del sistema
-			
-			Pageable pageable = PageRequest.of(page, 20, switch (filtro.getOrden()) {
-		case FECHA_DENUNCIA_ASC -> Sort.by("fechaHoraAlta").ascending();
-		case FECHA_DENUNCIA_DESC -> Sort.by("fechaHoraAlta").descending();
-		case FECHA_CAMBIO_ESTADO_ASC -> Sort.by("estados.fechaHoraDesde").ascending();
-		case FECHA_CAMBIO_ESTADO_DESC -> Sort.by("estados.fechaHoraDesde").descending();
-		});
+		Integer longitudPagina = parametroSistemaService.getInt("longitudPagina", 20);
 
-		return denunciaEventoRepo.findAll(DenunciaEventoSpecs.byFiltro(filtro), pageable)
+		Pageable pageable = PageRequest.of(page, longitudPagina);
+		Page<DenunciaEvento> results = denunciaEventoRepo.buscarDenuncias(
+				filtro.getTexto(),
+				filtro.getEstados(),
+				filtro.getFechaIngresoDesde(),
+				filtro.getFechaIngresoHasta(),
+				filtro.getFechaCambioEstadoDesde(),
+				filtro.getFechaCambioEstadoHasta(),
+				filtro.getOrden().name(),
+				pageable
+		);
+
+		return results
 		.map(d -> {
 					String organizador = "";
 
@@ -2238,11 +2298,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 							: d.getEstados().get(d.getEstados().size() - 1).getEstadoDenunciaEvento().getNombre())
 					.fechaHoraUltimoCambio(d.getEstados().isEmpty()
 							? null
-							: d.getEstados().get(d.getEstados().size() - 1).getFechaHoraDesde())
-					// ✅ Usamos la fecha del primer estado como "ingreso" de la denuncia
+							: d.getEstados().stream().filter(e -> e.getFechaHoraHasta() == null).toList().get(0).getFechaHoraDesde())
 					.fechaHoraIngreso(d.getEstados().isEmpty()
 							? null
-							: d.getEstados().get(0).getFechaHoraDesde())
+							: d.getEstados().stream().filter(e -> e.getEstadoDenunciaEvento().getNombre().equalsIgnoreCase("Ingresado")).toList().get(0).getFechaHoraDesde())
 					.build();
 				});
 	}
@@ -2269,7 +2328,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			DTODenunciaEventoCompleta.HistoricoDTO.builder()
 				.nombre(e.getEstadoDenunciaEvento().getNombre())
 				.fechaHoraDesde(e.getFechaHoraDesde())
-				.descripcion(e.getDescripcion())
+				.descripcion(e.getDescripcion() != null ? e.getDescripcion() : "")
 				.responsable(e.getResponsable() != null ?
 					DTODenunciaEventoCompleta.ResponsableDTO.builder()
 						.nombre(e.getResponsable().getNombre())
@@ -2312,70 +2371,90 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	@Override
 	@Transactional
 	public DTODatosParaCambioEstadoDenuncia obtenerDatosParaCambioEstado(long idDenuncia) {
-	DenunciaEvento d = denunciaEventoRepo.findById(idDenuncia)
-		.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
+		DenunciaEvento d = denunciaEventoRepo.findById(idDenuncia)
+			.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
 
-		var estados = estadoDenunciaRepo.findAll().stream()
-		.map(e -> DTODatosParaCambioEstadoDenuncia.EstadoDTO.builder()
-			.id(e.getId())
-			.nombre(e.getNombre())
-			.build())
-		.toList();
+		EstadoDenunciaEvento e = d.getEstados().stream().filter(ed -> ed.getFechaHoraHasta() == null).toList().getFirst().getEstadoDenunciaEvento();
+
+		var estados = estadoDenunciaRepo.obtenerPosiblesTransiciones(e.getId()).stream()
+			.map(ee -> DTODatosParaCambioEstadoDenuncia.EstadoDTO.builder()
+				.id(ee.getId())
+				.nombre(ee.getNombre())
+				.build())
+			.toList();
 	
 
-	return DTODatosParaCambioEstadoDenuncia.builder()
-		.titulo(d.getTitulo())
-		.estados(estados)
-		.build();
+		return DTODatosParaCambioEstadoDenuncia.builder()
+			.titulo(d.getTitulo())
+			.estados(estados)
+			.build();
 	}
 
 	@Override
 	@Transactional
-	public void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto, String username) {
-	DenunciaEvento d = denunciaEventoRepo.findById(dto.getIdDenuncia())
-		.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
+	public void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto) throws Exception {
+		DenunciaEvento d = denunciaEventoRepo.findById(dto.getIdDenuncia())
+			.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
 
-	Usuario responsable = usuarioRepo.findByUsername(username)
-		.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión"));
 
-	EstadoDenunciaEvento nuevoEstado = estadoDenunciaRepo.findById(dto.getEstado())
-		.orElseThrow(() -> new HttpErrorException(404, "Estado no encontrado"));
+		Usuario responsable = usuarioRepo.findByUsername(username)
+			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-	// cerrar último estado
-	d.getEstados().stream().filter(e -> e.getFechaHoraHasta() == null).forEach(e -> {
-		e.setFechaHoraHasta(LocalDateTime.now());
-		denunciaEventoEstadoRepo.save(e);
-	});
+		EstadoDenunciaEvento nuevoEstado = estadoDenunciaRepo.findById(dto.getEstado())
+			.orElseThrow(() -> new HttpErrorException(404, "Estado no encontrado"));
 
-	// agregar nuevo
-	DenunciaEventoEstado dee = DenunciaEventoEstado.builder()
-		.denunciaEvento(d)
-		.estadoDenunciaEvento(nuevoEstado)
-		.descripcion(dto.getDescripcion())
-		.responsable(responsable)
-		.fechaHoraDesde(LocalDateTime.now())
-		.build();
+		DenunciaEventoEstado estadoActualVinculo = d.getEstados().stream().filter(ed -> ed.getFechaHoraHasta() == null).toList().getFirst();
 
-	denunciaEventoEstadoRepo.save(dee);
+		EstadoDenunciaEvento estadoActual = estadoActualVinculo.getEstadoDenunciaEvento();
+
+		boolean esPosible = estadoDenunciaRepo.obtenerPosiblesTransiciones(estadoActual.getId()).stream().map(e -> e.getId()).toList().contains(nuevoEstado.getId());
+
+		if (!esPosible) {
+			throw new Exception("No es posible realizar esta transición");
+		}
+
+		if (dto.getDescripcion().isEmpty() || dto.getDescripcion().length() > 1000) {
+			throw new Exception("La descripción debe tener entre 1 y 1000 caracteres");
+		}
+
+		// cerrar último estado
+		estadoActualVinculo.setFechaHoraHasta(LocalDateTime.now());
+		denunciaEventoEstadoRepo.save(estadoActualVinculo);
+
+		// agregar nuevo
+		DenunciaEventoEstado dee = DenunciaEventoEstado.builder()
+			.denunciaEvento(d)
+			.estadoDenunciaEvento(nuevoEstado)
+			.descripcion(dto.getDescripcion())
+			.responsable(responsable)
+			.fechaHoraDesde(LocalDateTime.now())
+			.build();
+
+		denunciaEventoEstadoRepo.save(dee);
+
+		registroSingleton.write("Eventos", "denuncia", "modificacion", "Cambio de estado a denuncia a evento de ID " + d.getEvento().getId() + " nombre '" + d.getEvento().getNombre() + "' de denunciante @" + d.getDenunciante().getUsername() + " al estado '" + nuevoEstado.getNombre() + "'");
 	}
 
 	@Override
 	@Transactional
-	public DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento, String username) {
-	Evento e = eventoRepo.findById(idEvento)
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+	public DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento) throws Exception {
+		Evento e = eventoRepo.findById(idEvento)
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-	boolean inscripto = inscripcionRepo.countByEventoIdAndUsuarioUsername(idEvento, username) > 0;
-	boolean hayDenunciaPrevia = !denunciaEventoRepo.findAll().stream()
-		.filter(d -> d.getEvento().getId().equals(idEvento) && d.getDenunciante().getUsername().equals(username))
-		.toList().isEmpty();
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión"));
 
-	return DTODatosParaDenunciarEvento.builder()
-		.nombre(e.getNombre())
-		.inscripto(inscripto)
-		.fechaDesde(e.getFechaHoraInicio())
-		.hayDenunciaPrevia(hayDenunciaPrevia)
-		.build();
+		boolean inscripto = inscripcionRepo.countByEventoIdAndUsuarioUsernameAndFechaHoraBajaIsNull(idEvento, username) > 0;
+		boolean hayDenunciaPrevia = !denunciaEventoRepo.findAll().stream()
+			.filter(d -> d.getEvento().getId().equals(idEvento) && d.getDenunciante().getUsername().equals(username))
+			.toList().isEmpty();
+
+		return DTODatosParaDenunciarEvento.builder()
+			.nombre(e.getNombre())
+			.inscripto(inscripto)
+			.fechaDesde(e.getFechaHoraInicio())
+			.hayDenunciaPrevia(hayDenunciaPrevia)
+			.build();
 	}
 
 	@Override
@@ -2410,12 +2489,12 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 
     private static int[] splitMinutes(Integer minutos) {
-	int total = (minutos != null) ? Math.max(0, minutos) : 0;
-	int dias = Math.floorDiv(total, 1440);
-	int rem = total - dias * 1440;
-	int horas = Math.floorDiv(rem, 60);
-	int mins = rem - horas * 60;
-	return new int[]{dias, horas, mins};
+		int total = (minutos != null) ? Math.max(0, minutos) : 0;
+		int dias = Math.floorDiv(total, 1440);
+		int rem = total - dias * 1440;
+		int horas = Math.floorDiv(rem, 60);
+		int mins = rem - horas * 60;
+		return new int[]{dias, horas, mins};
     }
 
 
@@ -2440,5 +2519,18 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			default:
 				throw new Exception("Día no válido en el horario");
 		}
+	}
+
+	private BigDecimal getComisionInscripcion(BigDecimal valor)throws Exception{
+		ComisionPorInscripcion comisionInscripcion = this.comisionPorInscripcionRepo.findComisionByValor(valor.doubleValue());
+		BigDecimal porcentaje = BigDecimal.ZERO;
+		if (comisionInscripcion != null) porcentaje = comisionInscripcion.getPorcentaje();
+		return porcentaje.divide(BigDecimal.valueOf(100f));
+	}
+	private BigDecimal getComisionOrganizacion(BigDecimal valor)throws Exception{
+		ComisionPorOrganizacion comisionOrganizacion = this.comisionPorOrganizacionRepo.findComisionByValor(valor.doubleValue());
+		BigDecimal porcentaje = BigDecimal.ZERO;
+		if (comisionOrganizacion != null) porcentaje = comisionOrganizacion.getPorcentaje();
+		return porcentaje.divide(BigDecimal.valueOf(100f));
 	}
 }

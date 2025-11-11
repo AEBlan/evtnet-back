@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface InscripcionRepository extends BaseRepository<Inscripcion, Long> {
     int countByEventoId(Long eventoId);
-    int countByEventoIdAndUsuarioUsername(Long eventoId, String username);
+    int countByEventoIdAndUsuarioUsernameAndFechaHoraBajaIsNull(Long eventoId, String username);
     Optional<Inscripcion> findByEventoIdAndUsuarioUsername(Long eventoId, String username);
 
     @Query("""

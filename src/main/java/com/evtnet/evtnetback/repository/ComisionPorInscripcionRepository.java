@@ -26,6 +26,8 @@ public interface ComisionPorInscripcionRepository extends BaseRepository <Comisi
     SELECT c
     FROM ComisionPorInscripcion c
     WHERE c.montoLimite <= :valor
+    AND c.fechaDesde <= CURRENT_TIMESTAMP AND (c.fechaHasta IS NULL OR c.fechaHasta > CURRENT_TIMESTAMP)
+    ORDER BY c.montoLimite DESC
     """)
     ComisionPorInscripcion findComisionByValor(@Param("valor") double valor);
 }
