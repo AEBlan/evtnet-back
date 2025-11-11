@@ -215,7 +215,7 @@ public class EventoController {
     }
 
 
-    @GetMapping("/obtenerDenunciaCompleta")
+    @GetMapping("/obtenerDenuncia")
     public ResponseEntity<DTODenunciaEventoCompleta> obtenerDenunciaCompleta(@RequestParam long idDenuncia) throws Exception {
         return ResponseEntity.ok(service.obtenerDenunciaCompleta(idDenuncia));
     }
@@ -227,8 +227,8 @@ public class EventoController {
 
 
     @PostMapping("/cambiarEstadoDenuncia")
-    public ResponseEntity<Void> cambiarEstadoDenuncia(@RequestBody DTOCambioEstadoDenuncia dto, Authentication auth) {
-        service.cambiarEstadoDenuncia(dto, auth.getName());
+    public ResponseEntity<Void> cambiarEstadoDenuncia(@RequestBody DTOCambioEstadoDenuncia dto) throws Exception {
+        service.cambiarEstadoDenuncia(dto);
         return ResponseEntity.ok().build();
     }
 

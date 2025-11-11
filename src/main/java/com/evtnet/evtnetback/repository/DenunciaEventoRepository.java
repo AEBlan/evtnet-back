@@ -47,7 +47,7 @@ public interface DenunciaEventoRepository extends BaseRepository <DenunciaEvento
             "   OR LOWER(d.evento.nombre) LIKE LOWER(CONCAT('%', :texto, '%'))" +
             "   OR LOWER(d.evento.descripcion) LIKE LOWER(CONCAT('%', :texto, '%'))" +
             ") " +
-            "AND (:estados IS NULL OR e2.estadoDenunciaEvento.id IN :estados) " +
+            "AND (:estados IS NULL OR e2.estadoDenunciaEvento.id IN :estados AND e2.fechaHoraHasta IS NULL) " +
             "AND (:fechaIngresoDesde IS NULL OR d.fechaHoraAlta >= :fechaIngresoDesde) " +
             "AND (:fechaIngresoHasta IS NULL OR d.fechaHoraAlta <= :fechaIngresoHasta) " +
             "AND (:fechaCambioEstadoDesde IS NULL OR e.fechaHoraDesde >= :fechaCambioEstadoDesde) " +
@@ -68,4 +68,5 @@ public interface DenunciaEventoRepository extends BaseRepository <DenunciaEvento
             @Param("orden") String orden,
             Pageable pageable
     );
+
 }

@@ -2239,9 +2239,12 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			.denunciaEvento(d)
 			.estadoDenunciaEvento(estadoInicial)
 			.fechaHoraDesde(LocalDateTime.now())
+			.responsable(denunciante)
 			.build();
 
 		denunciaEventoEstadoRepo.save(dee);
+
+		registroSingleton.write("Eventos", "denuncia", "creacion", "Evento de ID " + evento.getId() + " nombre '" + evento.getNombre() + "' denunciado");
 	}
 
 	@Override
@@ -2325,7 +2328,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			DTODenunciaEventoCompleta.HistoricoDTO.builder()
 				.nombre(e.getEstadoDenunciaEvento().getNombre())
 				.fechaHoraDesde(e.getFechaHoraDesde())
-				.descripcion(e.getDescripcion())
+				.descripcion(e.getDescripcion() != null ? e.getDescripcion() : "")
 				.responsable(e.getResponsable() != null ?
 					DTODenunciaEventoCompleta.ResponsableDTO.builder()
 						.nombre(e.getResponsable().getNombre())
@@ -2368,51 +2371,69 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	@Override
 	@Transactional
 	public DTODatosParaCambioEstadoDenuncia obtenerDatosParaCambioEstado(long idDenuncia) {
-	DenunciaEvento d = denunciaEventoRepo.findById(idDenuncia)
-		.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
+		DenunciaEvento d = denunciaEventoRepo.findById(idDenuncia)
+			.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
 
-		var estados = estadoDenunciaRepo.findAll().stream()
-		.map(e -> DTODatosParaCambioEstadoDenuncia.EstadoDTO.builder()
-			.id(e.getId())
-			.nombre(e.getNombre())
-			.build())
-		.toList();
+		EstadoDenunciaEvento e = d.getEstados().stream().filter(ed -> ed.getFechaHoraHasta() == null).toList().getFirst().getEstadoDenunciaEvento();
+
+		var estados = estadoDenunciaRepo.obtenerPosiblesTransiciones(e.getId()).stream()
+			.map(ee -> DTODatosParaCambioEstadoDenuncia.EstadoDTO.builder()
+				.id(ee.getId())
+				.nombre(ee.getNombre())
+				.build())
+			.toList();
 	
 
-	return DTODatosParaCambioEstadoDenuncia.builder()
-		.titulo(d.getTitulo())
-		.estados(estados)
-		.build();
+		return DTODatosParaCambioEstadoDenuncia.builder()
+			.titulo(d.getTitulo())
+			.estados(estados)
+			.build();
 	}
 
 	@Override
 	@Transactional
-	public void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto, String username) {
-	DenunciaEvento d = denunciaEventoRepo.findById(dto.getIdDenuncia())
-		.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
+	public void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto) throws Exception {
+		DenunciaEvento d = denunciaEventoRepo.findById(dto.getIdDenuncia())
+			.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
 
-	Usuario responsable = usuarioRepo.findByUsername(username)
-		.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión"));
 
-	EstadoDenunciaEvento nuevoEstado = estadoDenunciaRepo.findById(dto.getEstado())
-		.orElseThrow(() -> new HttpErrorException(404, "Estado no encontrado"));
+		Usuario responsable = usuarioRepo.findByUsername(username)
+			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-	// cerrar último estado
-	d.getEstados().stream().filter(e -> e.getFechaHoraHasta() == null).forEach(e -> {
-		e.setFechaHoraHasta(LocalDateTime.now());
-		denunciaEventoEstadoRepo.save(e);
-	});
+		EstadoDenunciaEvento nuevoEstado = estadoDenunciaRepo.findById(dto.getEstado())
+			.orElseThrow(() -> new HttpErrorException(404, "Estado no encontrado"));
 
-	// agregar nuevo
-	DenunciaEventoEstado dee = DenunciaEventoEstado.builder()
-		.denunciaEvento(d)
-		.estadoDenunciaEvento(nuevoEstado)
-		.descripcion(dto.getDescripcion())
-		.responsable(responsable)
-		.fechaHoraDesde(LocalDateTime.now())
-		.build();
+		DenunciaEventoEstado estadoActualVinculo = d.getEstados().stream().filter(ed -> ed.getFechaHoraHasta() == null).toList().getFirst();
 
-	denunciaEventoEstadoRepo.save(dee);
+		EstadoDenunciaEvento estadoActual = estadoActualVinculo.getEstadoDenunciaEvento();
+
+		boolean esPosible = estadoDenunciaRepo.obtenerPosiblesTransiciones(estadoActual.getId()).stream().map(e -> e.getId()).toList().contains(nuevoEstado.getId());
+
+		if (!esPosible) {
+			throw new Exception("No es posible realizar esta transición");
+		}
+
+		if (dto.getDescripcion().isEmpty() || dto.getDescripcion().length() > 1000) {
+			throw new Exception("La descripción debe tener entre 1 y 1000 caracteres");
+		}
+
+		// cerrar último estado
+		estadoActualVinculo.setFechaHoraHasta(LocalDateTime.now());
+		denunciaEventoEstadoRepo.save(estadoActualVinculo);
+
+		// agregar nuevo
+		DenunciaEventoEstado dee = DenunciaEventoEstado.builder()
+			.denunciaEvento(d)
+			.estadoDenunciaEvento(nuevoEstado)
+			.descripcion(dto.getDescripcion())
+			.responsable(responsable)
+			.fechaHoraDesde(LocalDateTime.now())
+			.build();
+
+		denunciaEventoEstadoRepo.save(dee);
+
+		registroSingleton.write("Eventos", "denuncia", "modificacion", "Cambio de estado a denuncia a evento de ID " + d.getEvento().getId() + " nombre '" + d.getEvento().getNombre() + "' de denunciante @" + d.getDenunciante().getUsername() + " al estado '" + nuevoEstado.getNombre() + "'");
 	}
 
 	@Override

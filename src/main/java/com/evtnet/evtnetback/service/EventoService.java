@@ -44,7 +44,7 @@ public interface EventoService extends BaseService<Evento, Long> {
     Page<DTODenunciaEventoSimple> buscarDenuncias(DTOBusquedaDenunciasEventos filtro, int page) throws Exception;
     DTODenunciaEventoCompleta obtenerDenunciaCompleta(long idDenuncia) throws Exception;
     DTODatosParaCambioEstadoDenuncia obtenerDatosParaCambioEstado(long idDenuncia);
-    void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto, String username);
+    void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto) throws Exception;
     DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento) throws Exception;
     void aprobarRechazarEvento(Long idEvento, String estado);
     void cancelarEventoEspacio(Long idEvento);
