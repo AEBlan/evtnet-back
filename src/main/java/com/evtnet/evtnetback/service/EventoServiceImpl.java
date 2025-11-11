@@ -72,6 +72,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
     private final EventoEstadoRepository eventoEstadoRepo;
     private final ParametroSistemaService parametroSistemaService;
     private final ComisionPorInscripcionService comisionPorInscripcionService;
+	private final ComisionPorInscripcionRepository comisionPorInscripcionRepo;
+	private final ComisionPorOrganizacionRepository comisionPorOrganizacionRepo;
 	private final HorarioEspacioRepository horarioRepo;
 	private final ChatRepository chatRepo;
 	private final PorcentajeReintegroCancelacionInscripcionRepository porcentajeReintegroCancelacionInscripcionRepo;
@@ -111,6 +113,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	    EventoEstadoRepository eventoEstadoRepo,
 	    ParametroSistemaService parametroSistemaService,
 	    ComisionPorInscripcionService comisionPorInscripcionService,
+		ComisionPorInscripcionRepository comisionPorInscripcionRepo,
+		ComisionPorOrganizacionRepository comisionPorOrganizacionRepo,
 		HorarioEspacioRepository horarioRepo,
 		ChatRepository chatRepo,
 		PorcentajeReintegroCancelacionInscripcionRepository porcentajeReintegroCancelacionInscripcionRepo,
@@ -143,6 +147,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	this.eventoEstadoRepo = eventoEstadoRepo;
 	this.parametroSistemaService = parametroSistemaService;
 	this.comisionPorInscripcionService = comisionPorInscripcionService;
+	this.comisionPorInscripcionRepo = comisionPorInscripcionRepo;
+	this.comisionPorOrganizacionRepo = comisionPorOrganizacionRepo;
 	this.horarioRepo = horarioRepo;
 	this.chatRepo = chatRepo;
 	this.registroSingleton = registroSingleton;
@@ -161,7 +167,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		double c_p = parametroSistemaService.getDecimal("c_p", new BigDecimal("0.25")).doubleValue();
 		BigDecimal max_p = parametroSistemaService.getDecimal("max_p", new BigDecimal("20000"));
 		BigDecimal max_d = parametroSistemaService.getDecimal("max_d", new BigDecimal("1000"));
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 		Integer ventana_de_eventos = parametroSistemaService.getInt("ventana_de_eventos", 20);
 
 		if (filtro.ubicacion() != null && filtro.ubicacion().rango() != null) {
@@ -258,7 +264,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		}
 
 		if (filtro.precioLimite() != null) {
-			jpqlEventos += " AND (e.precioInscripcion + e.adicionalPorInscripcion) * (1.0 + :comisionInscripcion) <= :precioLimite";
+			jpqlEventos += " AND (e.precioInscripcion + e.adicionalPorInscripcion) * (1.0 + COALESCE((SELECT c.porcentaje / 100.0 FROM ComisionPorInscripcion c WHERE c.montoLimite = (SELECT MAX(c2.montoLimite) FROM ComisionPorInscripcion c2 WHERE c2.montoLimite <= e.precioInscripcion + e.adicionalPorInscripcion AND c2.fechaDesde <= CURRENT_TIMESTAMP AND (c2.fechaHasta IS NULL OR c2.fechaHasta > CURRENT_TIMESTAMP)) AND c.fechaDesde <= CURRENT_TIMESTAMP AND (c.fechaHasta IS NULL OR c.fechaHasta > CURRENT_TIMESTAMP)), 0)) <= :precioLimite";
 		}
 
 
@@ -297,7 +303,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		if (filtro.precioLimite() != null) {
 			queryEventos.setParameter("precioLimite", filtro.precioLimite());
-			queryEventos.setParameter("comisionInscripcion", comision_inscripcion);
+			//queryEventos.setParameter("comisionInscripcion", comision_inscripcion);
 		}
 
 		List<Evento> eventos = new ArrayList<>();
@@ -418,7 +424,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				precioLimite = max_p.doubleValue();
 			}
 
-			double precio = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion()).multiply(comision_inscripcion.add(new BigDecimal(1.0))).doubleValue();
+			BigDecimal precioTmp = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion());
+			double precio = precioTmp.multiply(getComisionInscripcion(precioTmp).add(new BigDecimal(1.0))).doubleValue();
 
 			double p = Math.max((precioLimite - precio)/precioLimite, 0);
 
@@ -583,8 +590,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", BigDecimal.valueOf(0.1));
 
-		double precioBase = e.getPrecioInscripcion().doubleValue() + e.getAdicionalPorInscripcion().doubleValue();
-		double precioTotal = precioBase * (1 + comision_inscripcion.doubleValue());
+		BigDecimal precioBase = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion());
+		double precioTotal = precioBase.multiply(getComisionInscripcion(precioBase).add(BigDecimal.valueOf(1.0))).doubleValue();
 
 		DTOEventoDetalle.Espacio espacio = null;
 		DTOEventoDetalle.Subespacio subespacio = null;
@@ -644,7 +651,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			e.getDescripcion(),
 			TimeUtil.toMillis(e.getFechaHoraInicio()),
 			TimeUtil.toMillis(e.getFechaHoraFin()),
-			precioBase,
+			precioBase.doubleValue(),
 			precioTotal,
 			disciplinas,
 			espacio,
@@ -672,7 +679,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		Espacio espacio = espacioRepo.findById(idEspacio)
 			.orElseThrow(() -> new HttpErrorException(404, "Espacio no encontrado"));
 		
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
 		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
 
@@ -715,7 +722,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				);
 			}).toList(),
 			espacio.getRequiereAprobarEventos(),
-			comision_inscripcion.doubleValue(),
+			comisionPorInscripcionRepo.findAll().stream().filter(c -> c.getFechaDesde().isBefore(LocalDateTime.now()) && (c.getFechaHasta() == null || c.getFechaHasta().isAfter(LocalDateTime.now()))).map(c -> new DTODatosCreacionEvento.Comision(c.getMontoLimite().doubleValue(), c.getPorcentaje().doubleValue()/100f)).toList(),
 			espacio.getTipoEspacio().getNombre().equalsIgnoreCase("Público"),
 			administrador,
 			espacio.getBasesYCondiciones() != null && !espacio.getBasesYCondiciones().isEmpty()
@@ -857,7 +864,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			throw new Exception("No debe pagar porque no está utilizando un cronograma");
 		}
 
-		BigDecimal comision_organizacion = parametroSistemaService.getDecimal("comision_organizacion", new BigDecimal("0.15"));
+		//BigDecimal comision_organizacion = parametroSistemaService.getDecimal("comision_organizacion", new BigDecimal("0.15"));
 
 		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
 		List<String> admins = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null).map(a -> a.getUsuario().getUsername()).toList();
@@ -871,6 +878,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		if (h.getPrecioOrganizacion().doubleValue() == 0f) {
 			throw new HttpErrorException(900, "No es necesario realizar un pago");
 		}
+
+		BigDecimal comision_organizacion = getComisionOrganizacion(h.getPrecioOrganizacion());
 
 		DTOPreferenciaPago pref = mercadoPagoSingleton.createPreference("Organización de evento '" + req.getNombre() + "'", h.getPrecioOrganizacion().multiply(comision_organizacion.add(BigDecimal.valueOf(1))), comision_organizacion, propietario, "/CrearEvento/" + subespacio.getEspacio().getId());
 
@@ -1024,10 +1033,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			.descripcion(e.getSubEspacio().getEspacio().getDescripcion())
 			.build();
 
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
-		BigDecimal precio = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion())
-				.multiply(comision_inscripcion.add(BigDecimal.valueOf(1)));
+		BigDecimal precioBase = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion());
+		BigDecimal precio = precioBase.multiply(getComisionInscripcion(precioBase).add(BigDecimal.valueOf(1.0)));
 
 		int cuposDisponibles = e.getCantidadMaximaParticipantes() - e.getInscripciones().stream().filter(i -> i.getFechaHoraBaja() == null).mapToInt(i -> 1 + i.getInvitados().size()).sum();
 
@@ -1055,7 +1064,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		verificarDatosPrePagoBool(dto);
 
 		ArrayList<DTOPreferenciaPago> prefs = new ArrayList<>();
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
 		Evento e = eventoRepo.findById(dto.getIdEvento())
 			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
@@ -1077,11 +1086,14 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			}
 		}
 
-		if (e.getPrecioInscripcion().compareTo(BigDecimal.ZERO) != 0)
-			prefs.add(mercadoPagoSingleton.createPreference("Inscripción a evento " + e.getNombre(), e.getPrecioInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size())), comision_inscripcion, organizador, url));
+		if (e.getPrecioInscripcion().compareTo(BigDecimal.ZERO) != 0) {
+			BigDecimal precioBase = e.getPrecioInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size()));
+			prefs.add(mercadoPagoSingleton.createPreference("Inscripción a evento " + e.getNombre(), precioBase, getComisionInscripcion(precioBase), organizador, url));
+		}
 
 		if (!publico && e.getAdicionalPorInscripcion().compareTo(BigDecimal.ZERO) != 0) {
-			prefs.add(mercadoPagoSingleton.createPreference("Adicional a espacio por inscripción a evento " + e.getNombre(), e.getAdicionalPorInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size())), comision_inscripcion, propietario, url));
+			BigDecimal precioBase = e.getAdicionalPorInscripcion().multiply(new BigDecimal(1 + dto.getInvitados().size()));
+			prefs.add(mercadoPagoSingleton.createPreference("Adicional a espacio por inscripción a evento " + e.getNombre(), precioBase, getComisionInscripcion(precioBase), propietario, url));
 		}
 
 
@@ -1165,7 +1177,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		Usuario u = usuarioRepo.findByUsername(username)
 			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-		BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
+		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
 		mercadoPagoSingleton.verifyPayments(dto.getDatosPago());
 		for (DTOPago datosPago : dto.getDatosPago()) {
@@ -1180,10 +1192,11 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		ins.setFechaHoraAlta(LocalDateTime.now(ZONA_ARG));
 
+		BigDecimal precioBase = e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion())
+				.multiply(BigDecimal.valueOf(1 + dto.getInvitados().size()));
+
 		ins.setPrecioInscripcion(
-				e.getPrecioInscripcion().add(e.getAdicionalPorInscripcion())
-						.multiply(BigDecimal.valueOf(1 + dto.getInvitados().size()))
-						.multiply(comision_inscripcion.add(BigDecimal.valueOf(1)))
+				precioBase.multiply(getComisionInscripcion(precioBase).add(BigDecimal.valueOf(1)))
 		);
 
 		ins.setPermitirDevolucionCompleta(false);
@@ -2440,5 +2453,18 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 			default:
 				throw new Exception("Día no válido en el horario");
 		}
+	}
+
+	private BigDecimal getComisionInscripcion(BigDecimal valor)throws Exception{
+		ComisionPorInscripcion comisionInscripcion = this.comisionPorInscripcionRepo.findComisionByValor(valor.doubleValue());
+		BigDecimal porcentaje = BigDecimal.ZERO;
+		if (comisionInscripcion != null) porcentaje = comisionInscripcion.getPorcentaje();
+		return porcentaje.divide(BigDecimal.valueOf(100f));
+	}
+	private BigDecimal getComisionOrganizacion(BigDecimal valor)throws Exception{
+		ComisionPorOrganizacion comisionOrganizacion = this.comisionPorOrganizacionRepo.findComisionByValor(valor.doubleValue());
+		BigDecimal porcentaje = BigDecimal.ZERO;
+		if (comisionOrganizacion != null) porcentaje = comisionOrganizacion.getPorcentaje();
+		return porcentaje.divide(BigDecimal.valueOf(100f));
 	}
 }

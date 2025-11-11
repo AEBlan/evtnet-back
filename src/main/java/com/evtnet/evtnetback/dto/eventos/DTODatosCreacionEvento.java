@@ -9,7 +9,7 @@ public record DTODatosCreacionEvento(
 
     Boolean requiereAprobarEventos,
 
-    double comisionInscripcion,
+    List<Comision> comisionInscripcion,
 
 
     Boolean espacioPublico,
@@ -23,6 +23,11 @@ public record DTODatosCreacionEvento(
         String nombre,
         Long diasHaciaAdelante,
         int capacidadMaxima
+    ) {}
+
+    public record Comision(
+        double montoLimite,
+        double porcentaje
     ) {}
 }
 
