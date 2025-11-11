@@ -2188,49 +2188,93 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 	@Override
 	@Transactional
-	public void denunciarEvento(DTODenunciaEvento dto, String username) {
-	Usuario denunciante = usuarioRepo.findByUsername(username)
-		.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+	public void denunciarEvento(DTODenunciaEvento dto) throws Exception{
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión"));
 
-	Evento evento = eventoRepo.findById(dto.getIdEvento())
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+		Usuario denunciante = usuarioRepo.findByUsername(username)
+			.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
 
-	DenunciaEvento d = DenunciaEvento.builder()
-		.titulo(dto.getTitulo())
-		.descripcion(dto.getDescripcion())
-		.denunciante(denunciante)
-		.evento(evento)
-		.build();
+		Evento evento = eventoRepo.findById(dto.getIdEvento())
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-	denunciaEventoRepo.save(d);
+		boolean inscripto = inscripcionRepo.countByEventoIdAndUsuarioUsernameAndFechaHoraBajaIsNull(evento.getId(), username) > 0;
 
-	// Estado inicial
-	EstadoDenunciaEvento estadoInicial = estadoDenunciaRepo.findAll().stream()
-		.filter(e -> e.getNombre().equalsIgnoreCase("Ingresado"))
-		.findFirst()
-		.orElseThrow(() -> new HttpErrorException(400, "Estado inicial no configurado"));
+		if (!inscripto) {
+			throw new Exception("No está inscripto a este evento; debe estarlo para poder denunciarlo");
+		}
 
-	DenunciaEventoEstado dee = DenunciaEventoEstado.builder()
-		.denunciaEvento(d)
-		.estadoDenunciaEvento(estadoInicial)
-		.fechaHoraDesde(LocalDateTime.now())
-		.build();
-	denunciaEventoEstadoRepo.save(dee);
+		boolean hayDenunciaPrevia = !denunciaEventoRepo.findAll().stream()
+				.filter(d -> d.getEvento().getId().equals(evento.getId()) && d.getDenunciante().getUsername().equals(username))
+				.toList().isEmpty();
+
+		if (hayDenunciaPrevia) {
+			throw new Exception("Ya ha denunciado a este evento");
+		}
+
+		if (dto.getTitulo().isEmpty() || dto.getTitulo().length() > 50) {
+			throw new Exception("El título debe tener entre 1 y 50 caracteres");
+		}
+
+		if (dto.getDescripcion().length() > 1000) {
+			throw new Exception("La descripción no puede superar los 1000 caracteres");
+		}
+
+		DenunciaEvento d = DenunciaEvento.builder()
+			.titulo(dto.getTitulo())
+			.descripcion(dto.getDescripcion())
+			.denunciante(denunciante)
+			.evento(evento)
+			.fechaHoraAlta(LocalDateTime.now())
+			.build();
+
+		// Estado inicial
+		EstadoDenunciaEvento estadoInicial = estadoDenunciaRepo.findAll().stream()
+			.filter(e -> e.getNombre().equalsIgnoreCase("Ingresado"))
+			.findFirst()
+			.orElseThrow(() -> new HttpErrorException(400, "Estado inicial no configurado"));
+
+		d = denunciaEventoRepo.save(d);
+
+		DenunciaEventoEstado dee = DenunciaEventoEstado.builder()
+			.denunciaEvento(d)
+			.estadoDenunciaEvento(estadoInicial)
+			.fechaHoraDesde(LocalDateTime.now())
+			.build();
+
+		denunciaEventoEstadoRepo.save(dee);
+	}
+
+	@Override
+	@Transactional
+	public List<DTOEstadoDenunciaEventoCheck> obtenerEstadosDenuncias() {
+		return estadoDenunciaRepo.findAll().stream()
+			.filter(e -> e.getFechaHoraBaja() == null)
+			.map(e -> DTOEstadoDenunciaEventoCheck.builder()
+					.id(e.getId())
+					.nombre(e.getNombre())
+					.checked(!e.getNombre().equalsIgnoreCase("Finalizado"))
+					.build()
+		).toList();
 	}
 
 	@Override
 	@Transactional
 	public Page<DTODenunciaEventoSimple> buscarDenuncias(DTOBusquedaDenunciasEventos filtro, int page) throws Exception {
-		// TO-DO: Traer el pageSize de un parámetro del sistema
-			
-			Pageable pageable = PageRequest.of(page, 20, switch (filtro.getOrden()) {
-		case FECHA_DENUNCIA_ASC -> Sort.by("fechaHoraAlta").ascending();
-		case FECHA_DENUNCIA_DESC -> Sort.by("fechaHoraAlta").descending();
-		case FECHA_CAMBIO_ESTADO_ASC -> Sort.by("estados.fechaHoraDesde").ascending();
-		case FECHA_CAMBIO_ESTADO_DESC -> Sort.by("estados.fechaHoraDesde").descending();
-		});
+		Integer longitudPagina = parametroSistemaService.getInt("longitudPagina", 20);
 
-		return denunciaEventoRepo.findAll(DenunciaEventoSpecs.byFiltro(filtro), pageable)
+		Pageable pageable = PageRequest.of(page, longitudPagina);
+		Page<DenunciaEvento> results = denunciaEventoRepo.buscarDenuncias(
+				filtro.getTexto(),
+				filtro.getEstados(),
+				filtro.getFechaIngresoDesde(),
+				filtro.getFechaIngresoHasta(),
+				filtro.getFechaCambioEstadoDesde(),
+				filtro.getFechaCambioEstadoHasta(),
+				filtro.getOrden().name(),
+				pageable
+		);
+
+		return results
 		.map(d -> {
 					String organizador = "";
 
@@ -2251,11 +2295,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 							: d.getEstados().get(d.getEstados().size() - 1).getEstadoDenunciaEvento().getNombre())
 					.fechaHoraUltimoCambio(d.getEstados().isEmpty()
 							? null
-							: d.getEstados().get(d.getEstados().size() - 1).getFechaHoraDesde())
-					// ✅ Usamos la fecha del primer estado como "ingreso" de la denuncia
+							: d.getEstados().stream().filter(e -> e.getFechaHoraHasta() == null).toList().get(0).getFechaHoraDesde())
 					.fechaHoraIngreso(d.getEstados().isEmpty()
 							? null
-							: d.getEstados().get(0).getFechaHoraDesde())
+							: d.getEstados().stream().filter(e -> e.getEstadoDenunciaEvento().getNombre().equalsIgnoreCase("Ingresado")).toList().get(0).getFechaHoraDesde())
 					.build();
 				});
 	}
@@ -2374,21 +2417,23 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 	@Override
 	@Transactional
-	public DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento, String username) {
-	Evento e = eventoRepo.findById(idEvento)
-		.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+	public DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento) throws Exception {
+		Evento e = eventoRepo.findById(idEvento)
+			.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 
-	boolean inscripto = inscripcionRepo.countByEventoIdAndUsuarioUsername(idEvento, username) > 0;
-	boolean hayDenunciaPrevia = !denunciaEventoRepo.findAll().stream()
-		.filter(d -> d.getEvento().getId().equals(idEvento) && d.getDenunciante().getUsername().equals(username))
-		.toList().isEmpty();
+		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión"));
 
-	return DTODatosParaDenunciarEvento.builder()
-		.nombre(e.getNombre())
-		.inscripto(inscripto)
-		.fechaDesde(e.getFechaHoraInicio())
-		.hayDenunciaPrevia(hayDenunciaPrevia)
-		.build();
+		boolean inscripto = inscripcionRepo.countByEventoIdAndUsuarioUsernameAndFechaHoraBajaIsNull(idEvento, username) > 0;
+		boolean hayDenunciaPrevia = !denunciaEventoRepo.findAll().stream()
+			.filter(d -> d.getEvento().getId().equals(idEvento) && d.getDenunciante().getUsername().equals(username))
+			.toList().isEmpty();
+
+		return DTODatosParaDenunciarEvento.builder()
+			.nombre(e.getNombre())
+			.inscripto(inscripto)
+			.fechaDesde(e.getFechaHoraInicio())
+			.hayDenunciaPrevia(hayDenunciaPrevia)
+			.build();
 	}
 
 	@Override
@@ -2423,12 +2468,12 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 
     private static int[] splitMinutes(Integer minutos) {
-	int total = (minutos != null) ? Math.max(0, minutos) : 0;
-	int dias = Math.floorDiv(total, 1440);
-	int rem = total - dias * 1440;
-	int horas = Math.floorDiv(rem, 60);
-	int mins = rem - horas * 60;
-	return new int[]{dias, horas, mins};
+		int total = (minutos != null) ? Math.max(0, minutos) : 0;
+		int dias = Math.floorDiv(total, 1440);
+		int rem = total - dias * 1440;
+		int horas = Math.floorDiv(rem, 60);
+		int mins = rem - horas * 60;
+		return new int[]{dias, horas, mins};
     }
 
 

@@ -39,12 +39,15 @@ public interface EventoService extends BaseService<Evento, Long> {
     void quitarAdministrador(long idEvento, String username) throws Exception;
     void entregarOrganizador(long idEvento, String nuevoOrganizador) throws Exception;
     void cancelarEvento(long idEvento, String motivo) throws Exception;
-    void denunciarEvento(DTODenunciaEvento dto, String username);
+    void denunciarEvento(DTODenunciaEvento dto) throws Exception;
+    List<DTOEstadoDenunciaEventoCheck> obtenerEstadosDenuncias();
     Page<DTODenunciaEventoSimple> buscarDenuncias(DTOBusquedaDenunciasEventos filtro, int page) throws Exception;
     DTODenunciaEventoCompleta obtenerDenunciaCompleta(long idDenuncia) throws Exception;
     DTODatosParaCambioEstadoDenuncia obtenerDatosParaCambioEstado(long idDenuncia);
     void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto, String username);
-    DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento, String username);
+    DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento) throws Exception;
     void aprobarRechazarEvento(Long idEvento, String estado);
     void cancelarEventoEspacio(Long idEvento);
+
+
 }
