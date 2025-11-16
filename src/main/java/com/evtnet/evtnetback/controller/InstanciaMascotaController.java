@@ -1,9 +1,6 @@
 package com.evtnet.evtnetback.controller;
 
-import com.evtnet.evtnetback.dto.mascota.DTOEventoMascota;
-import com.evtnet.evtnetback.dto.mascota.DTOInstanciaMascota;
-import com.evtnet.evtnetback.dto.mascota.DTOAltaInstanciaMascota;
-import com.evtnet.evtnetback.dto.mascota.DTOModificarInstanciaMascota;
+import com.evtnet.evtnetback.dto.mascota.*;
 import com.evtnet.evtnetback.entity.InstanciaMascota;
 import com.evtnet.evtnetback.service.InstanciaMascotaService;
 import com.evtnet.evtnetback.service.InstanciaMascotaServiceImpl;
@@ -54,5 +51,17 @@ public class InstanciaMascotaController extends BaseControllerImpl<InstanciaMasc
     @GetMapping("/obtenerEventosMascota")
     public ResponseEntity<List<DTOEventoMascota>> obtenerEventosMascota() throws Exception {
         return ResponseEntity.ok(instanciaMascotaService.obtenerEventosMascota());
+    }
+
+    @GetMapping("/obtenerInstanciasParaPagina")
+    public ResponseEntity<List<DTOInstanciaMascotaPagina>> obtenerInstanciasParaPagina(
+            @RequestParam(name = "url", required = true) String url) throws Exception {
+        return ResponseEntity.ok(instanciaMascotaService.obtenerInstanciasParaPagina(url));
+    }
+
+    @PostMapping("/registrarVisualizacion")
+    public ResponseEntity<Void> registrarVisualizacion(@RequestParam(name = "id", required = true) Long id) {
+        instanciaMascotaService.registrarVisualizacion(id);
+        return ResponseEntity.ok().build();
     }
 }

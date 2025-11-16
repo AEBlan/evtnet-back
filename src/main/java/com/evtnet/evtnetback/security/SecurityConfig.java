@@ -92,6 +92,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             .requestMatchers(HttpMethod.POST, "/imagenes-espacio/espacios/*/upload").permitAll()
             .requestMatchers(HttpMethod.POST, "/iconos-caracteristica/caracteristicas/*/upload").permitAll()
 
+            // Instancias de mascota públicas
+            .requestMatchers(HttpMethod.GET, "/instanciasMascota/obtenerInstanciasParaPagina").permitAll()
+            .requestMatchers(HttpMethod.POST, "/instanciasMascota/registrarVisualizacion").permitAll()
             // Todo lo demás, autenticado
             .anyRequest().authenticated()
         )

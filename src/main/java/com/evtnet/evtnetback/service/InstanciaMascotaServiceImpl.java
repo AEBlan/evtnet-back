@@ -3,6 +3,7 @@ package com.evtnet.evtnetback.service;
 import com.evtnet.evtnetback.dto.mascota.*;
 import com.evtnet.evtnetback.entity.*;
 import com.evtnet.evtnetback.repository.*;
+import com.evtnet.evtnetback.util.CurrentUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +12,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -27,13 +31,17 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
     private final ParametroSistemaService parametroSistemaService;
 
     private final EventoMascotaRepository eventoMascotaRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final UsuarioInstanciaMascotaRepository usuarioInstanciaMascotaRepository;
 
     public InstanciaMascotaServiceImpl(InstanciaMascotaRepository instanciaMascotaRepository,
                                        InstanciaMascotaSecuenciaRepository instanciaMascotaSecuenciaRepository,
                                        ImagenMascotaRepository imagenMascotaRepository,
                                        ParametroSistemaRepository parametroSistemaRepository,
                                        ParametroSistemaService parametroSistemaService,
-                                       EventoMascotaRepository eventoMascotaRepository) {
+                                       EventoMascotaRepository eventoMascotaRepository,
+                                       UsuarioRepository usuarioRepository,
+                                       UsuarioInstanciaMascotaRepository usuarioInstanciaMascotaRepository) {
         super(instanciaMascotaRepository);
         this.instanciaMascotaRepository = instanciaMascotaRepository;
         this.instanciaMascotaSecuenciaRepository = instanciaMascotaSecuenciaRepository;
@@ -41,6 +49,8 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
         this.parametroSistemaRepository = parametroSistemaRepository;
         this.parametroSistemaService = parametroSistemaService;
         this.eventoMascotaRepository = eventoMascotaRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.usuarioInstanciaMascotaRepository = usuarioInstanciaMascotaRepository;
     }
 
     @Override
@@ -197,6 +207,99 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
                 .build()).toList();
     }
 
+
+    @Override
+    public List<DTOInstanciaMascotaPagina> obtenerInstanciasParaPagina(String url) throws Exception {
+        List<InstanciaMascota> instancias = instanciaMascotaRepository.findAll().stream().filter(i -> i.getFechaHoraBaja() == null).toList();
+        List<DTOInstanciaMascotaPagina> resultado = new ArrayList<>();
+
+        for (InstanciaMascota instancia : instancias) {
+            if (urlMatchesPageSelector(url, instancia.getPageSelector())) {
+                // Get eventos valores
+                List<String> eventosValores = instancia.getEventos().stream()
+                        .map(EventoMascota::getValor)
+                        .collect(Collectors.toList());
+
+                // Get secuencia
+                List<InstanciaMascotaSecuencia> secuencias = instanciaMascotaSecuenciaRepository
+                        .findByInstanciaMascotaAndFechaHoraBajaIsNullOrderByOrdenAsc(instancia);
+
+                List<DTOInstanciaMascotaPagina.SecuenciaItem> secuenciaItems = new ArrayList<>();
+                for (InstanciaMascotaSecuencia sec : secuencias) {
+                    String imagenUrl = null;
+                    if (sec.getImagenMascota() != null) {
+                        String base64Image = encodeFileToBase64(sec.getImagenMascota().getImagen());
+                        String[] parts = base64Image.split(",");
+                        imagenUrl = parts[1];
+                    }
+
+                    secuenciaItems.add(DTOInstanciaMascotaPagina.SecuenciaItem.builder()
+                            .texto(sec.getTexto())
+                            .url(imagenUrl)
+                            .build());
+                }
+
+                Optional<String> optUsername = CurrentUser.getUsername();
+
+                boolean visualizado = false;
+
+                if (optUsername.isPresent()) {
+                    visualizado = instancia.getUsuarioInstanciaMascotas().stream().filter(u -> u.getUsuario().getUsername().equals(optUsername.get())).count() >= 1;
+                }
+
+                resultado.add(DTOInstanciaMascotaPagina.builder()
+                        .id(instancia.getId())
+                        .nombre(instancia.getNombre())
+                        .selector(instancia.getSelector())
+                        .eventos(eventosValores)
+                        .secuencia(secuenciaItems)
+                        .visualizado(visualizado)
+                        .build());
+            }
+        }
+
+        return resultado;
+    }
+
+    @Override
+    @Transactional
+    public void registrarVisualizacion(Long idInstancia) {
+        try {
+            Optional<String> usernameOpt = CurrentUser.getUsername();
+            if (usernameOpt.isEmpty()) {
+                return;
+            }
+
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(usernameOpt.get());
+            if (usuarioOpt.isEmpty()) {
+                return;
+            }
+
+            Optional<InstanciaMascota> instanciaOpt = instanciaMascotaRepository.findById(idInstancia);
+            if (instanciaOpt.isEmpty()) {
+                return;
+            }
+
+            Usuario usuario = usuarioOpt.get();
+            InstanciaMascota instancia = instanciaOpt.get();
+
+            // Check if already exists
+            if (usuarioInstanciaMascotaRepository.existsByUsuarioAndInstanciaMascota(usuario, instancia)) {
+                return;
+            }
+
+            UsuarioInstanciaMascota registro = UsuarioInstanciaMascota.builder()
+                    .usuario(usuario)
+                    .instanciaMascota(instancia)
+                    .fechaHora(LocalDateTime.now())
+                    .build();
+
+            usuarioInstanciaMascotaRepository.save(registro);
+        } catch (Exception e) {
+            // Silently fail
+        }
+    }
+
     private void validarDatos(String nombre, String descripcion, String pageSelector,
                               String selector, Long idExcluir) throws Exception {
         // Validar nombre
@@ -335,6 +438,25 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
             return false;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    private String encodeFileToBase64(String fileName) {
+        try {
+            Path filePath = Paths.get(fileName).toAbsolutePath().normalize();
+            byte[] fileContent = Files.readAllBytes(filePath);
+
+            String contentType;
+            if (filePath.toString().endsWith(".svg")) {
+                contentType = "image/svg+xml";
+            } else {
+                contentType = "image/png";
+            }
+
+            String base64 = Base64.getEncoder().encodeToString(fileContent);
+            return "data:" + contentType + ";base64," + base64;
+        } catch (Exception e) {
+            throw new RuntimeException("Error leyendo archivo de imagen: " + fileName, e);
         }
     }
 }

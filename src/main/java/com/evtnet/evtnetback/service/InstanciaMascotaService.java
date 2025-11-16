@@ -1,9 +1,6 @@
 package com.evtnet.evtnetback.service;
 
-import com.evtnet.evtnetback.dto.mascota.DTOEventoMascota;
-import com.evtnet.evtnetback.dto.mascota.DTOInstanciaMascota;
-import com.evtnet.evtnetback.dto.mascota.DTOAltaInstanciaMascota;
-import com.evtnet.evtnetback.dto.mascota.DTOModificarInstanciaMascota;
+import com.evtnet.evtnetback.dto.mascota.*;
 import com.evtnet.evtnetback.entity.InstanciaMascota;
 import org.springframework.data.domain.Page;
 
@@ -16,4 +13,7 @@ public interface InstanciaMascotaService extends BaseService<InstanciaMascota, L
     void modificarInstanciaMascota(DTOModificarInstanciaMascota instanciaMascota) throws Exception;
     void bajaInstanciaMascota(Long id) throws Exception;
     List<DTOEventoMascota> obtenerEventosMascota() throws Exception;
+    List<DTOInstanciaMascotaPagina> obtenerInstanciasParaPagina(String url) throws Exception;
+    void registrarVisualizacion(Long idInstancia);
+
 }
