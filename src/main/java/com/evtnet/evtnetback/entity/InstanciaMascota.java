@@ -19,11 +19,19 @@ public class InstanciaMascota extends Base {
     @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(name = "page_regex")
-    private String page_regex;
+    @Column(name = "page_selector")
+    private String pageSelector;
 
-    @Column(name = "events")
-    private String events;
+    //@Column(name = "events")
+    //private String events;
+
+    @ManyToMany
+    @JoinTable(
+            name = "instancia_evento_mascota",
+            joinColumns = @JoinColumn(name = "instancia_mascota_id"),
+            inverseJoinColumns = @JoinColumn(name = "evento_mascota_id")
+    )
+    private List<EventoMascota> eventos;
 
     @Column(name = "selector")
     private String selector;
