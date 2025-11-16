@@ -1,17 +1,8 @@
 package com.evtnet.evtnetback.service;
 
-import com.evtnet.evtnetback.dto.mascota.DTOInstanciaMascota;
-import com.evtnet.evtnetback.dto.mascota.DTOAltaInstanciaMascota;
-import com.evtnet.evtnetback.dto.mascota.DTOModificarInstanciaMascota;
-import com.evtnet.evtnetback.dto.mascota.DTOInstanciaMascotaSecuencia;
-import com.evtnet.evtnetback.entity.InstanciaMascota;
-import com.evtnet.evtnetback.entity.InstanciaMascotaSecuencia;
-import com.evtnet.evtnetback.entity.ImagenMascota;
-import com.evtnet.evtnetback.entity.ParametroSistema;
-import com.evtnet.evtnetback.repository.InstanciaMascotaRepository;
-import com.evtnet.evtnetback.repository.InstanciaMascotaSecuenciaRepository;
-import com.evtnet.evtnetback.repository.ImagenMascotaRepository;
-import com.evtnet.evtnetback.repository.ParametroSistemaRepository;
+import com.evtnet.evtnetback.dto.mascota.*;
+import com.evtnet.evtnetback.entity.*;
+import com.evtnet.evtnetback.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -35,17 +26,21 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
     private final ParametroSistemaRepository parametroSistemaRepository;
     private final ParametroSistemaService parametroSistemaService;
 
+    private final EventoMascotaRepository eventoMascotaRepository;
+
     public InstanciaMascotaServiceImpl(InstanciaMascotaRepository instanciaMascotaRepository,
                                        InstanciaMascotaSecuenciaRepository instanciaMascotaSecuenciaRepository,
                                        ImagenMascotaRepository imagenMascotaRepository,
                                        ParametroSistemaRepository parametroSistemaRepository,
-                                       ParametroSistemaService parametroSistemaService) {
+                                       ParametroSistemaService parametroSistemaService,
+                                       EventoMascotaRepository eventoMascotaRepository) {
         super(instanciaMascotaRepository);
         this.instanciaMascotaRepository = instanciaMascotaRepository;
         this.instanciaMascotaSecuenciaRepository = instanciaMascotaSecuenciaRepository;
         this.imagenMascotaRepository = imagenMascotaRepository;
         this.parametroSistemaRepository = parametroSistemaRepository;
         this.parametroSistemaService = parametroSistemaService;
+        this.eventoMascotaRepository = eventoMascotaRepository;
     }
 
     @Override
@@ -72,9 +67,13 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
                 .id(im.getId())
                 .nombre(im.getNombre())
                 .descripcion(im.getDescripcion())
-                .pageRegex(im.getPage_regex())
+                .pageSelector(im.getPageSelector())
                 .selector(im.getSelector())
-                .events(im.getEvents())
+                .eventos(im.getEventos().stream().map(e -> DTOEventoMascota.builder()
+                        .id(e.getId())
+                        .nombre(e.getNombre())
+                        .valor(e.getValor())
+                        .build()).toList())
                 .longitud(im.getInstanciaMascotaSecuencias().stream().filter(i -> i.getFechaHoraBaja() == null).toList().size())
                 .fechaAlta(im.getFechaHoraAlta() == null ? null
                         : im.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
@@ -103,9 +102,13 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
                 .id(instancia.getId())
                 .nombre(instancia.getNombre())
                 .descripcion(instancia.getDescripcion())
-                .pageRegex(instancia.getPage_regex())
+                .pageSelector(instancia.getPageSelector())
                 .selector(instancia.getSelector())
-                .events(instancia.getEvents())
+                .eventos(instancia.getEventos().stream().map(e -> DTOEventoMascota.builder()
+                        .id(e.getId())
+                        .nombre(e.getNombre())
+                        .valor(e.getValor())
+                        .build()).toList())
                 .longitud(secuencias.size())
                 .fechaAlta(instancia.getFechaHoraAlta() == null ? null
                         : instancia.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
@@ -118,15 +121,21 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
     @Override
     @Transactional
     public void altaInstanciaMascota(DTOAltaInstanciaMascota dto) throws Exception {
-        validarDatos(dto.getNombre(), dto.getDescripcion(), dto.getPageRegex(),
-                dto.getSelector(), dto.getEvents(), null);
+        validarDatos(dto.getNombre(), dto.getDescripcion(), dto.getPageSelector(),
+                dto.getSelector(), null);
+
+        ArrayList<EventoMascota> eventosMascota = new ArrayList<>();
+
+        for (Long eventoId : dto.getEventos()) {
+            eventosMascota.add(eventoMascotaRepository.findById(eventoId).orElseThrow(() -> new Exception("No se encontró un evento")));
+        }
 
         InstanciaMascota instancia = this.save(InstanciaMascota.builder()
                 .nombre(dto.getNombre())
                 .descripcion(dto.getDescripcion())
-                .page_regex(dto.getPageRegex())
+                .pageSelector(dto.getPageSelector())
                 .selector(dto.getSelector())
-                .events(dto.getEvents())
+                .eventos(eventosMascota)
                 .fechaHoraAlta(LocalDateTime.now())
                 .build());
 
@@ -139,14 +148,20 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
         InstanciaMascota instancia = instanciaMascotaRepository.findById(dto.getId())
                 .orElseThrow(() -> new Exception("Instancia no encontrada"));
 
-        validarDatos(dto.getNombre(), dto.getDescripcion(), dto.getPageRegex(),
-                dto.getSelector(), dto.getEvents(), dto.getId());
+        validarDatos(dto.getNombre(), dto.getDescripcion(), dto.getPageSelector(),
+                dto.getSelector(), dto.getId());
+
+        ArrayList<EventoMascota> eventosMascota = new ArrayList<>();
+
+        for (Long eventoId : dto.getEventos()) {
+            eventosMascota.add(eventoMascotaRepository.findById(eventoId).orElseThrow(() -> new Exception("No se encontró un evento")));
+        }
 
         instancia.setNombre(dto.getNombre());
         instancia.setDescripcion(dto.getDescripcion());
-        instancia.setPage_regex(dto.getPageRegex());
+        instancia.setPageSelector(dto.getPageSelector());
         instancia.setSelector(dto.getSelector());
-        instancia.setEvents(dto.getEvents());
+        instancia.setEventos(eventosMascota);
         this.save(instancia);
 
         // Check if secuencia changed
@@ -173,8 +188,17 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
         instanciaMascotaRepository.save(instanciaMascota);
     }
 
-    private void validarDatos(String nombre, String descripcion, String pageRegex,
-                              String selector, String events, Long idExcluir) throws Exception {
+    @Override
+    public List<DTOEventoMascota> obtenerEventosMascota() throws Exception {
+        return eventoMascotaRepository.findAll().stream().filter(e -> e.getFechaHoraBaja() == null).map(e -> DTOEventoMascota.builder()
+                .id(e.getId())
+                .nombre(e.getNombre())
+                .valor(e.getValor())
+                .build()).toList();
+    }
+
+    private void validarDatos(String nombre, String descripcion, String pageSelector,
+                              String selector, Long idExcluir) throws Exception {
         // Validar nombre
         if (nombre == null || nombre.trim().isEmpty()) {
             throw new Exception("El nombre es obligatorio");
@@ -194,13 +218,8 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
             throw new Exception("La descripción no puede exceder 1000 caracteres");
         }
 
-        // Validar pageRegex
-        if (pageRegex == null || pageRegex.trim().isEmpty()) {
-            throw new Exception("La expresión regular es obligatoria");
-        }
-        if (pageRegex.length() > 1000) {
-            throw new Exception("La expresión regular no puede exceder 1000 caracteres");
-        }
+        // Validar pageSelector
+        validarPageSelector(pageSelector);
 
         // Validar selector
         if (selector == null || selector.trim().isEmpty()) {
@@ -208,33 +227,6 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
         }
         if (selector.length() > 1000) {
             throw new Exception("El selector no puede exceder 1000 caracteres");
-        }
-
-        // Validar events
-        if (events == null || events.trim().isEmpty()) {
-            throw new Exception("Los eventos son obligatorios");
-        }
-        if (events.length() > 1000) {
-            throw new Exception("Los eventos no pueden exceder 1000 caracteres");
-        }
-
-        // Validar eventos contra parámetro del sistema
-        Optional<ParametroSistema> parametroOpt = parametroSistemaRepository.findByIdentificador("eventsMascota");
-        if (parametroOpt.isEmpty()) {
-            throw new Exception("No se encontró el parámetro de eventos permitidos");
-        }
-
-        String[] eventosPermitidos = parametroOpt.get().getValor().split(",");
-        Set<String> eventosPermitidosSet = Arrays.stream(eventosPermitidos)
-                .map(String::trim)
-                .collect(Collectors.toSet());
-
-        String[] eventosIngresados = events.split(",");
-        for (String evento : eventosIngresados) {
-            String eventoTrim = evento.trim();
-            if (!eventosPermitidosSet.contains(eventoTrim)) {
-                throw new Exception("El evento '" + eventoTrim + "' no es válido");
-            }
         }
     }
 
@@ -303,5 +295,46 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
         }
 
         return false;
+    }
+
+    private void validarPageSelector(String pageSelector) throws Exception {
+        if (pageSelector == null || pageSelector.trim().isEmpty()) {
+            throw new Exception("El selector de páginas es obligatorio");
+        }
+        if (pageSelector.length() > 1000) {
+            throw new Exception("El selector de páginas no puede exceder 1000 caracteres");
+        }
+
+        // Validate each pattern
+        String[] patterns = pageSelector.split(",");
+        for (String pattern : patterns) {
+            String trimmed = pattern.trim().replaceAll("^/|/$", "");
+            if (trimmed.isEmpty()) {
+                throw new Exception("El selector contiene patrones vacíos");
+            }
+        }
+    }
+
+    private boolean urlMatchesPageSelector(String url, String pageSelector) {
+        try {
+            // Extract path from URL
+            String path = url.trim();
+            path = path.replaceFirst("^https?://[^/]+", ""); // Remove protocol and domain
+            path = path.split("\\?")[0]; // Remove query params
+            path = path.replaceAll("^/|/$", ""); // Remove leading/trailing slashes
+
+            // Check against each pattern
+            String[] patterns = pageSelector.split(",");
+            for (String pattern : patterns) {
+                String trimmed = pattern.trim().replaceAll("^/|/$", "");
+                String regexPattern = "^" + trimmed.replace("*", ".*") + "$";
+                if (path.matches(regexPattern)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

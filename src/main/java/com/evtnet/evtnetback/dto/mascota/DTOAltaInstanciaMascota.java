@@ -14,9 +14,9 @@ import java.util.List;
 public class DTOAltaInstanciaMascota {
     private String nombre;
     private String descripcion;
-    private String pageRegex;
+    private String pageSelector;
     private String selector;
-    private String events;
+    private List<Long> eventos;
     private List<SecuenciaItem> imagenes;
 
     @Data

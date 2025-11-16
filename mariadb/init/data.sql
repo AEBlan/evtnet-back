@@ -6,8 +6,6 @@ USE `evtnet_db`;
 INSERT INTO parametro_sistema (identificador, nombre, valor)
   SELECT 'longitudPagina', 'longitudPagina', '20' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='longitudPagina');
 INSERT INTO parametro_sistema (identificador, nombre, valor)
-  SELECT 'eventsMascota', 'eventsMascota', 'load,click,focus,blur' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='eventsMascota');
-INSERT INTO parametro_sistema (identificador, nombre, valor)
   SELECT 'c_u', 'c_u', '0.4' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_u');
 INSERT INTO parametro_sistema (identificador, nombre, valor)
   SELECT 'c_d', 'c_d', '0.35' WHERE NOT EXISTS (SELECT 1 FROM parametro_sistema WHERE identificador='c_d');
@@ -243,6 +241,19 @@ WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='Rechazado');
 INSERT INTO estado_evento (nombre, descripcion)
 SELECT 'Cancelado', 'Evento cancelado por el organizador o administrador'
 WHERE NOT EXISTS (SELECT 1 FROM estado_evento WHERE nombre='Cancelado');
+
+
+-- =========================
+-- EventoMascota
+-- =========================
+INSERT INTO evento_mascota (nombre, valor)
+  SELECT 'Click', 'click' WHERE NOT EXISTS (SELECT 1 FROM evento_mascota WHERE valor='click');
+INSERT INTO evento_mascota (nombre, valor)
+  SELECT 'Foco', 'focus' WHERE NOT EXISTS (SELECT 1 FROM evento_mascota WHERE valor='focus');
+INSERT INTO evento_mascota (nombre, valor)
+  SELECT 'Pérdida de foco', 'blur' WHERE NOT EXISTS (SELECT 1 FROM evento_mascota WHERE valor='blur');
+INSERT INTO evento_mascota (nombre, valor)
+  SELECT 'Carga de página', 'load' WHERE NOT EXISTS (SELECT 1 FROM evento_mascota WHERE valor='load');
 
 
 -- =========================

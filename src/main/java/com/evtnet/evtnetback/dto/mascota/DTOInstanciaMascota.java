@@ -15,9 +15,9 @@ public class DTOInstanciaMascota {
     private Long id;
     private String nombre;
     private String descripcion;
-    private String pageRegex;
+    private String pageSelector;
     private String selector;
-    private String events;
+    private List<DTOEventoMascota> eventos;
     private Integer longitud;
     private Long fechaAlta;
     private Long fechaBaja;

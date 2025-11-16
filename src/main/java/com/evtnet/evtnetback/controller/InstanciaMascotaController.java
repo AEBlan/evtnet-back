@@ -1,5 +1,6 @@
 package com.evtnet.evtnetback.controller;
 
+import com.evtnet.evtnetback.dto.mascota.DTOEventoMascota;
 import com.evtnet.evtnetback.dto.mascota.DTOInstanciaMascota;
 import com.evtnet.evtnetback.dto.mascota.DTOAltaInstanciaMascota;
 import com.evtnet.evtnetback.dto.mascota.DTOModificarInstanciaMascota;
@@ -10,6 +11,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/instanciasMascota")
@@ -46,5 +49,10 @@ public class InstanciaMascotaController extends BaseControllerImpl<InstanciaMasc
     public ResponseEntity<Void> bajaInstanciaMascota(@RequestParam(name = "id", required = true) Long id) throws Exception {
         instanciaMascotaService.bajaInstanciaMascota(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/obtenerEventosMascota")
+    public ResponseEntity<List<DTOEventoMascota>> obtenerEventosMascota() throws Exception {
+        return ResponseEntity.ok(instanciaMascotaService.obtenerEventosMascota());
     }
 }
