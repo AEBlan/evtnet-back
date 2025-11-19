@@ -8,6 +8,7 @@ import com.evtnet.evtnetback.entity.ImagenMascota;
 import com.evtnet.evtnetback.entity.InstanciaMascota;
 import com.evtnet.evtnetback.error.HttpErrorException;
 import com.evtnet.evtnetback.repository.ImagenMascotaRepository;
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,11 +37,13 @@ public class ImagenMascotaServiceImpl extends BaseServiceImpl<ImagenMascota, Lon
     private final ImagenMascotaRepository imagenMascotaRepository;
 
     private final ParametroSistemaService parametroSistemaService;
+    private final RegistroSingleton registroSingleton;
 
-    public ImagenMascotaServiceImpl(ImagenMascotaRepository imagenMascotaRepository, ParametroSistemaService parametroSistemaService) {
+    public ImagenMascotaServiceImpl(ImagenMascotaRepository imagenMascotaRepository, ParametroSistemaService parametroSistemaService, RegistroSingleton registroSingleton) {
         super(imagenMascotaRepository);
         this.imagenMascotaRepository = imagenMascotaRepository;
         this.parametroSistemaService = parametroSistemaService;
+        this.registroSingleton = registroSingleton;
     }
 
     @Override
@@ -95,6 +98,8 @@ public class ImagenMascotaServiceImpl extends BaseServiceImpl<ImagenMascota, Lon
 
         imagen.setImagen(guardarImagenBase64(imagenMascota.getUrl(), imagen.getId()));
         this.save(imagen);
+
+        registroSingleton.write("Parametros", "imagen_mascota", "creacion", "Imagen de ID " + imagen.getId() + " nombre '" + imagen.getNombre() + "'");
     }
 
     @Override
@@ -108,6 +113,8 @@ public class ImagenMascotaServiceImpl extends BaseServiceImpl<ImagenMascota, Lon
         }
 
         this.save(imagen);
+
+        registroSingleton.write("Parametros", "imagen_mascota", "modificacion", "Imagen de ID " + imagen.getId() + " nombre '" + imagen.getNombre() + "'");
     }
 
     @Override
@@ -129,6 +136,8 @@ public class ImagenMascotaServiceImpl extends BaseServiceImpl<ImagenMascota, Lon
             throw new HttpErrorException(806, ins);
         }
         imagenMascotaRepository.delete(id, LocalDateTime.now());
+
+        registroSingleton.write("Parametros", "imagen_mascota", "eliminacion", "Imagen de ID " + imagenMascota.getId() + " nombre '" + imagenMascota.getNombre() + "'");
     }
 
     @Override

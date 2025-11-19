@@ -4,6 +4,7 @@ import com.evtnet.evtnetback.dto.mascota.*;
 import com.evtnet.evtnetback.entity.*;
 import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.util.CurrentUser;
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +34,7 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
     private final EventoMascotaRepository eventoMascotaRepository;
     private final UsuarioRepository usuarioRepository;
     private final UsuarioInstanciaMascotaRepository usuarioInstanciaMascotaRepository;
+    private final RegistroSingleton registroSingleton;
 
     public InstanciaMascotaServiceImpl(InstanciaMascotaRepository instanciaMascotaRepository,
                                        InstanciaMascotaSecuenciaRepository instanciaMascotaSecuenciaRepository,
@@ -41,7 +43,8 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
                                        ParametroSistemaService parametroSistemaService,
                                        EventoMascotaRepository eventoMascotaRepository,
                                        UsuarioRepository usuarioRepository,
-                                       UsuarioInstanciaMascotaRepository usuarioInstanciaMascotaRepository) {
+                                       UsuarioInstanciaMascotaRepository usuarioInstanciaMascotaRepository,
+                                       RegistroSingleton registroSingleton) {
         super(instanciaMascotaRepository);
         this.instanciaMascotaRepository = instanciaMascotaRepository;
         this.instanciaMascotaSecuenciaRepository = instanciaMascotaSecuenciaRepository;
@@ -51,6 +54,7 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
         this.eventoMascotaRepository = eventoMascotaRepository;
         this.usuarioRepository = usuarioRepository;
         this.usuarioInstanciaMascotaRepository = usuarioInstanciaMascotaRepository;
+        this.registroSingleton = registroSingleton;
     }
 
     @Override
@@ -73,23 +77,41 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
 
 
         Page<InstanciaMascota> instancias = instanciaMascotaRepository.findAll(spec, pageable);
-        return instancias.map(im -> DTOInstanciaMascota.builder()
-                .id(im.getId())
-                .nombre(im.getNombre())
-                .descripcion(im.getDescripcion())
-                .pageSelector(im.getPageSelector())
-                .selector(im.getSelector())
-                .eventos(im.getEventos().stream().map(e -> DTOEventoMascota.builder()
-                        .id(e.getId())
-                        .nombre(e.getNombre())
-                        .valor(e.getValor())
-                        .build()).toList())
-                .longitud(im.getInstanciaMascotaSecuencias().stream().filter(i -> i.getFechaHoraBaja() == null).toList().size())
-                .fechaAlta(im.getFechaHoraAlta() == null ? null
-                        : im.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                .fechaBaja(im.getFechaHoraBaja() == null ? null
-                        : im.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                .build());
+        return instancias.map(im -> {
+            List<DTOInstanciaMascota.SecuenciaItem> secuenciaItems = new ArrayList<>();
+            for (InstanciaMascotaSecuencia sec : im.getInstanciaMascotaSecuencias().stream().filter(i -> i.getFechaHoraBaja() == null).toList()) {
+                String imagenUrl = null;
+                if (sec.getImagenMascota() != null) {
+                    String base64Image = encodeFileToBase64(sec.getImagenMascota().getImagen());
+                    String[] parts = base64Image.split(",");
+                    imagenUrl = parts[1];
+                }
+
+                secuenciaItems.add(DTOInstanciaMascota.SecuenciaItem.builder()
+                        .texto(sec.getTexto())
+                        .url(imagenUrl)
+                        .build());
+            }
+
+            return DTOInstanciaMascota.builder()
+                    .id(im.getId())
+                    .nombre(im.getNombre())
+                    .descripcion(im.getDescripcion())
+                    .pageSelector(im.getPageSelector())
+                    .selector(im.getSelector())
+                    .eventos(im.getEventos().stream().map(e -> DTOEventoMascota.builder()
+                            .id(e.getId())
+                            .nombre(e.getNombre())
+                            .valor(e.getValor())
+                            .build()).toList())
+                    .longitud(im.getInstanciaMascotaSecuencias().stream().filter(i -> i.getFechaHoraBaja() == null).toList().size())
+                    .fechaAlta(im.getFechaHoraAlta() == null ? null
+                            : im.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                    .fechaBaja(im.getFechaHoraBaja() == null ? null
+                            : im.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                    .secuenciaMuestra(secuenciaItems)
+                    .build();
+        });
     }
 
     @Override
@@ -150,6 +172,8 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
                 .build());
 
         crearSecuencias(instancia, dto.getImagenes());
+
+        registroSingleton.write("Parametros", "instancia_mascota", "creacion", "Instancia de ID " + instancia.getId() + " nombre '" + instancia.getNombre() + "'");
     }
 
     @Override
@@ -189,6 +213,8 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
             // Crear nuevas secuencias
             crearSecuencias(instancia, dto.getImagenes());
         }
+
+        registroSingleton.write("Parametros", "instancia_mascota", "modificacion", "Instancia de ID " + instancia.getId() + " nombre '" + instancia.getNombre() + "'");
     }
 
     @Override
@@ -196,6 +222,8 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
         InstanciaMascota instanciaMascota = instanciaMascotaRepository.findById(id).orElseThrow(() -> new Exception("Instancia no encontrada"));
         instanciaMascota.setFechaHoraBaja(LocalDateTime.now());
         instanciaMascotaRepository.save(instanciaMascota);
+
+        registroSingleton.write("Parametros", "instancia_mascota", "eliminacion", "Instancia de ID " + instanciaMascota.getId() + " nombre '" + instanciaMascota.getNombre() + "'");
     }
 
     @Override
