@@ -22,4 +22,15 @@ public class DTOInstanciaMascota {
     private Long fechaAlta;
     private Long fechaBaja;
     private List<DTOInstanciaMascotaSecuencia> secuencia;
+    private List<SecuenciaItem> secuenciaMuestra;
+
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SecuenciaItem {
+        private String texto;
+        private String url;
+    }
 }

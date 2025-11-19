@@ -1,5 +1,6 @@
 package com.evtnet.evtnetback.entity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 public class InstanciaMascotaSecuencia extends Base {
 
     @Column(name = "texto")
+    @Size(max=2047, message = "{validation.name.size.too_long}")
     private String texto;
 
     @Column(name = "orden")
