@@ -13,6 +13,7 @@ public class DTOGrupo {
     private Long idChat;
     private List<Participante> participantes;
     private boolean esAdministrador;
+    private boolean invitado;
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Participante {
@@ -20,5 +21,6 @@ public class DTOGrupo {
         private String nombre;
         private String apellido;
         private LocalDateTime fechaHoraUnion; // primera vez que se unió
+        private Boolean aceptado;
     }
 }

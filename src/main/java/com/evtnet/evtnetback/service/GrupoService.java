@@ -16,6 +16,8 @@ public interface GrupoService extends BaseService<Grupo, Long> {
     List<DTOBusquedaUsuario> buscarUsuariosParaAgregar(Long idGrupo, String texto) throws Exception;
     DTORespuestaCrearGrupo crearGrupo(DTOCrearGrupo dto) throws Exception;
 
+    void toggleInvitacion(Long idGrupo, Boolean aceptar) throws Exception;
+
     List<DTOTipoUsuarioGrupo> obtenerTiposUsuarioGrupo();
 
     DTOModificarGrupo obtenerDatosModificarGrupo(Long idGrupo) throws Exception;

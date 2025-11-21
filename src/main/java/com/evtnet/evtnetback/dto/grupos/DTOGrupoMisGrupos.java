@@ -10,4 +10,5 @@ public class DTOGrupoMisGrupos {
     private Long id;
     private String nombre;
     private Long idChat;
+    private Boolean aceptado;
 }

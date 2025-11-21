@@ -1,5 +1,6 @@
 package com.evtnet.evtnetback.dto.usuarios;
 
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -8,13 +9,15 @@ import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class DTODenunciaUsuario {
     private LocalDateTime fecha;     // TS: Date
     private String descripcion;
     private Persona denunciado;      // organizador (denunciado)
     private Persona denunciante;     // quien denuncia
 
-    @Data @NoArgsConstructor @AllArgsConstructor
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Persona {
         private String nombre;
         private String apellido;
