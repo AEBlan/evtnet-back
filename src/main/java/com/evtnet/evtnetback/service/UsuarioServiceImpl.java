@@ -58,6 +58,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final ChatRepository chatRepository;
     private final DenunciaEventoRepository denunciaEventoRepository;
     private final RegistroSingleton registroSingleton;
+    private final ParametroSistemaService parametroSistemaService;
     
     //private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepository;
     //private final EstadoDenunciaEventoRepository estadoDenunciaEventoRepository;
@@ -98,7 +99,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             SuperEventoRepository superEventoRepository,
             ChatRepository chatRepository,
             DenunciaEventoRepository denunciaEventoRepository,
-            RegistroSingleton registroSingleton
+            RegistroSingleton registroSingleton,
+            ParametroSistemaService parametroSistemaService
             //DenunciaEventoEstadoRepository denunciaEventoEstadoRepository,
             //EstadoDenunciaEventoRepository estadoDenunciaEventoRepository
             
@@ -124,6 +126,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         this.chatRepository = chatRepository;
         this.denunciaEventoRepository = denunciaEventoRepository;
         this.registroSingleton = registroSingleton;
+        this.parametroSistemaService = parametroSistemaService;
         //this.denunciaEventoEstadoRepository = denunciaEventoEstadoRepository;
         //this.estadoDenunciaEventoRepository = estadoDenunciaEventoRepository;
 
@@ -416,7 +419,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         codigosRegistroPorMail.put(mail, code);
 
         // 3) Enviar el correo (igual estilo que recuperación)
-        String subject = "Código de verificación de cuenta";
+        String subject = "evtnet - Código de verificación de cuenta";
         String body = """
                 Hola,
 
@@ -593,7 +596,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
         // armamos siempre los 3 tipos; si total=0 → 0%
         List<DTOPerfil.ItemCalificacion> items = new ArrayList<>();
-        String[] tipos = { "Buena", "Media", "Mala" };
+
+        List<String> tipos = tipoCalificacionRepository.findAll().stream().filter(ct -> ct.getFechaHoraBaja() == null).map(ct -> ct.getNombre()).toList();
 
         for (String t : tipos) {
             long cnt = rows.stream()
@@ -612,14 +616,26 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         //     new DTOPerfil.ItemCalificacion("Mala", 0)
         // );
 
+        boolean mostrarPerfilCompleto = false;
+
+        String currUsername = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión para ver esto"));
+        Usuario currUsuario = usuarioRepository.findByUsername(currUsername).orElseThrow(() -> new Exception("Debe iniciar sesión para ver esto"));
+
+        if (Objects.equals(currUsername, username)) mostrarPerfilCompleto = true;
+
+        if (currUsuario.getPermisos().contains("VisionPerfilTerceroCompleta")) mostrarPerfilCompleto = true;
+
+        Chat chat = chatRepository.findDirectoBetween(currUsername, username).orElse(null);
+
         return DTOPerfil.builder()
                 .username(u.getUsername())
                 .nombre(u.getNombre())
                 .apellido(u.getApellido())
-                .mail(u.getMail())
-                .dni(u.getDni())
-                .fechaNacimiento(fnac)
-                .calificaciones(items)          // <- ahora sí
+                .mail(mostrarPerfilCompleto ? u.getMail() : "")
+                .dni(mostrarPerfilCompleto ? u.getDni() : "")
+                .fechaNacimiento(mostrarPerfilCompleto ? fnac : null)
+                .calificaciones(items)
+                .idChat(chat != null ? chat.getId() : null)
                 .build();
     }
 
@@ -776,7 +792,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
         // 1) No te podés calificar a vos mismo
         if (Objects.equals(autor.getId(), destino.getId())) {
-            return List.of();
+            throw new Exception("Solo se puede calificar a otra persona");
         }
 
         // 2) Traer tipos activos
@@ -843,15 +859,38 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
         var origenUsername = CurrentUser.getUsername()
                 .orElseThrow(() -> new Exception("No hay usuario autenticado"));
-        var origen = usuarioRepository.findByUsername(origenUsername)
+        Usuario origen = usuarioRepository.findByUsername(origenUsername)
                 .orElseThrow(() -> new Exception("Usuario origen no encontrado"));
 
         if (Objects.equals(origen.getId(), destino.getId()))
-            throw new IllegalArgumentException("No podés calificarte a vos mismo");
+            throw new IllegalArgumentException("Solo se puede calificar a otra persona");
 
         // 2) Tipo de calificación (rosa): "Calificacion Normal" | "Calificacion Denuncia"
         var califTipo = calificacionTipoRepository.findById(body.getCalificacionTipo())
                 .orElseThrow(() -> new Exception("Tipo de calificación inválido"));
+
+
+        String nombreTipo = (califTipo.getNombre() == null) ? "" : califTipo.getNombre().trim().toLowerCase();
+
+        // Normalizamos para evitar problemas con tildes
+        nombreTipo = nombreTipo.replace("á", "a");
+
+        boolean esDenuncia = nombreTipo.equalsIgnoreCase("Denuncia");
+
+        // Si es una calificación normal, verificar que ha pasado el timeout necesario para calificar
+        if (!esDenuncia) {
+            Calificacion previa = origen.getCalificacionesAutores().stream().filter(c -> Objects.equals(c.getCalificado().getUsername(), body.getUsuarioCalificado())).max(Comparator.comparing(Calificacion::getFechaHora)).orElse(null);
+
+            if (previa != null) {
+                Integer calif_timeout = parametroSistemaService.getInt("calif_timeout", 72);
+
+                LocalDateTime threshold = LocalDateTime.now().minusHours(calif_timeout);
+                if (previa.getFechaHora().isAfter(threshold)) {
+                    throw new Exception("Ya ha calificado recientemente a este usuario");
+                }
+            }
+
+        }
 
         // 3) Crear la calificación base (siempre)
         var cal = new Calificacion();
@@ -863,12 +902,6 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         cal = calificacionRepository.save(cal);
 
         // 4) Bifurcación: si es "Denuncia" → terminamos SIN motivos
-        String nombreTipo = (califTipo.getNombre() == null) ? "" : califTipo.getNombre().trim().toLowerCase();
-
-        // Normalizamos para evitar problemas con tildes
-        nombreTipo = nombreTipo.replace("á", "a");
-
-        boolean esDenuncia = nombreTipo.equalsIgnoreCase("Denuncia");
 
         if (esDenuncia) {
             // Nada más que hacer: no hay motivos ni tipo verde
@@ -1644,9 +1677,26 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
     // --- Denuncias ---
     @Override
-    public Page<DTODenunciaUsuario> obtenerDenunciasUsuario(String username, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return denunciaEventoRepository.pageDenunciasUsuario(username, pageable);
+    public Page<DTODenunciaUsuario> obtenerDenunciasUsuario(int page) {
+        Integer longitudPagina = parametroSistemaService.getInt("longitudPagina", 20);
+        Pageable pageable = PageRequest.of(page, longitudPagina);
+        return calificacionRepository.obtenerDenuncias(pageable)
+            .map(c -> DTODenunciaUsuario.builder()
+                .fecha(c.getFechaHora())
+                    .descripcion(c.getDescripcion())
+                    .denunciante(DTODenunciaUsuario.Persona.builder()
+                            .username(c.getAutor().getUsername())
+                            .nombre(c.getAutor().getNombre())
+                            .apellido(c.getAutor().getApellido())
+                            .mail(c.getAutor().getMail())
+                        .build())
+                    .denunciado(DTODenunciaUsuario.Persona.builder()
+                            .username(c.getCalificado().getUsername())
+                            .nombre(c.getCalificado().getNombre())
+                            .apellido(c.getCalificado().getApellido())
+                            .mail(c.getCalificado().getMail())
+                            .build())
+                .build());
     }
 
 

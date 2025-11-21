@@ -17,6 +17,8 @@ public class UsuarioGrupo extends Base {
     private LocalDateTime fechaHoraAlta;
     private LocalDateTime fechaHoraBaja;
 
+    private Boolean aceptado;
+
     // n..1: muchos registros -> un usuario
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", nullable = false)

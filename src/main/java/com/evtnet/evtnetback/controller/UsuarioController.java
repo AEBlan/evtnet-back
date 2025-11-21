@@ -316,17 +316,8 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     // --- Denuncias ---
     @GetMapping("/obtenerDenunciasUsuario")
     public ResponseEntity<Page<DTODenunciaUsuario>> obtenerDenunciasUsuario(
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "10") int size
+            @RequestParam(name = "page", defaultValue = "0") int page
     ) {
-        String username = currentUsername();
-        return ResponseEntity.ok(service.obtenerDenunciasUsuario(username, page, size));
-    }
-
-    private String currentUsername() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        return (auth != null && auth.getName() != null && !auth.getName().isBlank())
-                ? auth.getName()
-                : "luly"; // fallback para dev
+        return ResponseEntity.ok(service.obtenerDenunciasUsuario(page));
     }
 }

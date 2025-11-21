@@ -12,6 +12,7 @@ public class DTOPerfil {
     private String dni;                     // puede ser null
     private Long fechaNacimiento;         // epoch millis o null (front lo trata como Date)
     private List<ItemCalificacion> calificaciones; // null o lista
+    private Long idChat;
 
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ItemCalificacion {

@@ -98,7 +98,7 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
     DTOInteraccionesUsuario adminObtenerInteraccionesUsuario(String username);
 
     //Denuncias
-    Page<DTODenunciaUsuario> obtenerDenunciasUsuario(String username, int page, int size);
+    Page<DTODenunciaUsuario> obtenerDenunciasUsuario(int page);
 
 
 }

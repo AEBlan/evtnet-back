@@ -9,15 +9,11 @@ import com.evtnet.evtnetback.entity.Usuario;
 import com.evtnet.evtnetback.entity.UsuarioGrupo;
 import com.evtnet.evtnetback.repository.*;
 
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -34,15 +30,19 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
     private final UsuarioGrupoRepository usuarioGrupoRepository;
     private final ChatRepository chatRepository;
     private final TipoUsuarioGrupoRepository tipoUsuarioGrupoRepository;
+    private final MailService mailService;
+    private final RegistroSingleton registroSingleton;
 
 
-    public GrupoServiceImpl(BaseRepository<Grupo, Long> baseRepository,GrupoRepository grupoRepo, UsuarioRepository usuarioRepository, UsuarioGrupoRepository usuarioGrupoRepository, ChatRepository chatRepository, TipoUsuarioGrupoRepository tipoUsuarioGrupoRepository) {
+    public GrupoServiceImpl(BaseRepository<Grupo, Long> baseRepository,GrupoRepository grupoRepo, UsuarioRepository usuarioRepository, UsuarioGrupoRepository usuarioGrupoRepository, ChatRepository chatRepository, TipoUsuarioGrupoRepository tipoUsuarioGrupoRepository, MailService mailService, RegistroSingleton registroSingleton) {
         super(baseRepository);
         this.grupoRepo = grupoRepo;
         this.usuarioRepository = usuarioRepository;
         this.usuarioGrupoRepository = usuarioGrupoRepository;
         this.chatRepository = chatRepository;
         this.tipoUsuarioGrupoRepository = tipoUsuarioGrupoRepository;
+        this.mailService = mailService;
+        this.registroSingleton = registroSingleton;
     }
 
     @Override
@@ -54,6 +54,7 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                 .id(g.getId())
                 .nombre(g.getNombre())
                 .descripcion(g.getDescripcion())
+                .fechaAlta(g.getFechaHoraAlta())
                 .fechaBaja(g.getFechaHoraBaja())
                 .creador(DTOGrupoSimple.CreadorDTO.builder()
                         .nombre(g.getUsuariosGrupo().isEmpty() ? "?" : g.getUsuariosGrupo().get(0).getUsuario().getNombre())
@@ -114,6 +115,7 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                         .id(g.getId())
                         .nombre(g.getNombre())
                         .idChat(g.getChat() != null ? g.getChat().getId() : null)
+                        .aceptado(g.getUsuariosGrupo().stream().filter(ug -> ug.getFechaHoraBaja() == null && ug.getUsuario().getUsername().equals(username)).max(Comparator.comparing(UsuarioGrupo::getId)).get().getAceptado())
                         .build())
                 .toList();
     }
@@ -128,13 +130,15 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                 .orElseThrow(() -> new Exception("Grupo no encontrado"));
 
         // Verificar que el usuario pertenezca (activo o histórico) si querés restringir:
-        usuarioGrupoRepository.findActivo(id, username)
+        UsuarioGrupo usuarioGrupo = usuarioGrupoRepository.findActivo(id, username)
                 .orElseThrow(() -> new Exception("No pertenece al grupo o está dado de baja"));
 
         boolean esAdmin = usuarioGrupoRepository.esAdmin(id, username);
 
         // Participantes activos (solo los que no tienen fechaHoraBaja)
         List<UsuarioGrupo> activos = usuarioGrupoRepository.miembrosActivos(id);
+
+        if (!esAdmin) activos = activos.stream().filter(ug -> ug.getAceptado() != null && ug.getAceptado()).toList();
 
         List<DTOGrupo.Participante> participantes = activos.stream().map(ug -> {
             LocalDateTime primera = usuarioGrupoRepository.primeraUnion(id, ug.getUsuario().getId());
@@ -143,6 +147,7 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                     .nombre(ug.getUsuario().getNombre())
                     .apellido(ug.getUsuario().getApellido())
                     .fechaHoraUnion(primera != null ? primera : ug.getFechaHoraAlta())
+                    .aceptado(ug.getAceptado())
                     .build();
         }).toList();
 
@@ -153,6 +158,8 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                 .idChat(g.getChat() != null ? g.getChat().getId() : null)
                 .participantes(participantes)
                 .esAdministrador(esAdmin)
+                .fechaAlta(g.getFechaHoraAlta())
+                .invitado(usuarioGrupo.getAceptado() == null || !usuarioGrupo.getAceptado())
                 .build();
     }
 
@@ -172,6 +179,8 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
 
         ug.setFechaHoraBaja(LocalDateTime.now());
         usuarioGrupoRepository.save(ug);
+
+        registroSingleton.write("UsuariosGrupos", "usuario_grupo", "eliminacion", "El usuario salió del grupo de ID " + ug.getGrupo().getId() + ", nombre'" + ug.getGrupo().getNombre() + "'");
     }
 
     @Override
@@ -203,7 +212,7 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
 
         // Crear Chat
         Chat chat = Chat.builder()
-                .tipo(Chat.Tipo.ESPACIO) // o DIRECTO/GRUPAL según tu enum
+                .tipo(Chat.Tipo.GRUPAL) // o DIRECTO/GRUPAL según tu enum
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
         chatRepository.save(chat);
@@ -213,8 +222,11 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                 .nombre(dto.getNombre())
                 .descripcion(dto.getDescripcion())
                 .chat(chat)
+                .fechaHoraAlta(LocalDateTime.now())
                 .build();
-        grupoRepo.save(grupo);
+        grupo = grupoRepo.save(grupo);
+        registroSingleton.write("UsuariosGrupos", "grupo", "creacion", "Grupo de ID " + grupo.getId() + ", nombre'" + grupo.getNombre() + "'");
+
 
         // Agregar participantes
         if (dto.getParticipantes() != null) {
@@ -228,11 +240,15 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                 UsuarioGrupo ug = UsuarioGrupo.builder()
                         .usuario(usuario)
                         .grupo(grupo)
+                        .aceptado(false)
                         .tipoUsuarioGrupo(tipo)
                         .fechaHoraAlta(LocalDateTime.now())
                         .build();
 
                 usuarioGrupoRepository.save(ug);
+                registroSingleton.write("UsuariosGrupos", "usuario_grupo", "creacion", "Usuario " + usuario.getUsername() + " invitado al grupo de ID " + ug.getGrupo().getId() + ", nombre'" + ug.getGrupo().getNombre() + "'");
+
+                invitarUsuario(usuario, grupo);
             }
         }
 
@@ -249,6 +265,7 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                     .grupo(grupo)
                     .tipoUsuarioGrupo(admin)
                     .fechaHoraAlta(LocalDateTime.now())
+                    .aceptado(true)
                     .build();
 
             usuarioGrupoRepository.save(ug);
@@ -257,6 +274,28 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
         return DTORespuestaCrearGrupo.builder()
                 .id(grupo.getId())
                 .build();
+    }
+
+
+    @Override
+    public void toggleInvitacion(Long idGrupo, Boolean aceptar) throws Exception {
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Inicie sesión para poder hacer esto"));
+        Usuario usuario = usuarioRepository.findByUsername(username).orElseThrow(() -> new Exception("Inicie sesión para poder hacer esto"));
+
+        Grupo grupo = grupoRepo.findById(idGrupo).orElseThrow(() -> new Exception("No se encontró el grupo"));
+
+        UsuarioGrupo usuarioGrupo = grupo.getUsuariosGrupo().stream().filter(ug -> ug.getUsuario().getUsername().equals(username) && (ug.getAceptado() == null || !ug.getAceptado()) && ug.getFechaHoraBaja() == null).max(Comparator.comparing(UsuarioGrupo::getId)).orElseThrow(() -> new Exception("No tiene una invitación pendiente para este grupo"));
+
+        if (aceptar) {
+            usuarioGrupo.setAceptado(true);
+            usuarioGrupo.setFechaHoraAlta(LocalDateTime.now());
+            registroSingleton.write("UsuariosGrupos", "usuario_grupo", "eliminacion", "El usuario aceptó la invitación al grupo de ID " + grupo.getId() + ", nombre'" + grupo.getNombre() + "'");
+        } else {
+            usuarioGrupo.setFechaHoraBaja(LocalDateTime.now());
+            registroSingleton.write("UsuariosGrupos", "usuario_grupo", "eliminacion", "El usuario rechazó la invitación al grupo de ID " + grupo.getId() + ", nombre'" + grupo.getNombre() + "'");
+        }
+
+        usuarioGrupoRepository.save(usuarioGrupo);
     }
 
     @Override
@@ -331,6 +370,8 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
         g.setDescripcion(dto.getDescripcion() == null ? null : dto.getDescripcion().trim());
         grupoRepo.save(g);
 
+        registroSingleton.write("UsuariosGrupos", "grupo", "modificacion", "Grupo de ID " + g.getId() + ", nombre'" + g.getNombre() + "' modificado");
+
         // -------- sincronización de miembros ----------
         // participantes deseados (no incluye al usuario logueado)
         List<DTOModificarGrupo.Participante> deseados =
@@ -375,6 +416,7 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
             if (!deseadosPorUsernameLower.containsKey(uLower)) {
                 ug.setFechaHoraBaja(ahora);
                 usuarioGrupoRepository.save(ug);
+                registroSingleton.write("UsuariosGrupos", "usuario_grupo", "eliminacion", "Usuario " + ug.getUsuario().getUsername() + " eliminado del grupo de ID " + ug.getGrupo().getId() + ", nombre'" + ug.getGrupo().getNombre() + "'");
             }
         }
 
@@ -402,8 +444,12 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                         .grupo(g)
                         .tipoUsuarioGrupo(tipo)
                         .fechaHoraAlta(ahora)
+                        .aceptado(false)
                         .build();
                 usuarioGrupoRepository.save(nuevo);
+                registroSingleton.write("UsuariosGrupos", "usuario_grupo", "creacion", "Usuario " + nuevo.getUsuario().getUsername() + " invitado al grupo de ID " + g.getId() + ", nombre'" + g.getNombre() + "'");
+
+                invitarUsuario(usuario, g);
             } else {
                 UsuarioGrupo existente = existenteOpt.get();
                 // si cambió el tipo -> cerrar vínculo y crear uno nuevo
@@ -416,12 +462,26 @@ public class GrupoServiceImpl extends BaseServiceImpl <Grupo, Long> implements G
                             .grupo(g)
                             .tipoUsuarioGrupo(tipo)
                             .fechaHoraAlta(ahora)
+                            .aceptado(existente.getAceptado())
                             .build();
                     usuarioGrupoRepository.save(nuevo);
+
+                    registroSingleton.write("UsuariosGrupos", "usuario_grupo", "modificacion", "Tipo del usuario " + usuario.getUsername() + " del grupo de ID " + g.getId() + ", nombre'" + g.getNombre() + "' modificado");
                 }
                 // si es el mismo tipo, no hacemos nada
             }
         }
+    }
+
+    private void invitarUsuario(Usuario usuario, Grupo grupo) {
+        String subject = "evtnet - Invitación a grupo";
+        String body = """
+            Has sido invitado a unirte al grupo %s en evtnet.
+            
+            Para aceptar o rechazar la invitación, iniciá sesión y dirigite a la página Mi Perfil &gt Ver Mis Grupos.
+        """.formatted(grupo.getNombre());
+
+        mailService.enviar(usuario.getMail(), subject, body);
     }
 
 }

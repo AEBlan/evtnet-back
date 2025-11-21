@@ -92,8 +92,8 @@ WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Clausurado');
 -- =========================
 INSERT INTO calificacion_tipo (id, nombre, fecha_hora_alta)
 VALUES
-(1, 'Calificacion Normal', NOW()),
-(2, 'Calificacion Denuncia', NOW())
+(1, 'Calificación', NOW()),
+(2, 'Denuncia', NOW())
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- =========================

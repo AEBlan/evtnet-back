@@ -50,13 +50,17 @@ public class GrupoController extends BaseControllerImpl <Grupo, GrupoServiceImpl
 
     @GetMapping("/buscarUsuariosParaAgregar")
     public ResponseEntity<List<DTOBusquedaUsuario>> buscarUsuariosParaAgregar(
-            @RequestParam Long idGrupo,
+            @RequestParam(required = false) Long idGrupo,
             @RequestParam String texto) throws Exception {
         return ResponseEntity.ok(service.buscarUsuariosParaAgregar(idGrupo, texto));}
 
     @PostMapping("/crearGrupo")
     public ResponseEntity<DTORespuestaCrearGrupo> crearGrupo(@RequestBody DTOCrearGrupo dto) throws Exception {
         return ResponseEntity.ok(service.crearGrupo(dto));
+    }
+    @PostMapping("/toggleInvitacion")
+    public void toggleInvitacion(@RequestParam Long idGrupo, @RequestParam Boolean aceptar) throws Exception {
+        service.toggleInvitacion(idGrupo, aceptar);
     }
     @GetMapping("/obtenerTiposUsuarioGrupo")
     public ResponseEntity<List<DTOTipoUsuarioGrupo>> obtenerTiposUsuarioGrupo() {

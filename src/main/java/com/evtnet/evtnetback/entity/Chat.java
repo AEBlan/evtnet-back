@@ -26,7 +26,7 @@ import java.util.List;
 @Builder
 public class Chat extends Base {
 
-  public enum Tipo { DIRECTO, EVENTO, SUPEREVENTO, ESPACIO }
+  public enum Tipo { DIRECTO, EVENTO, SUPEREVENTO, ESPACIO, GRUPAL }
 
   @Enumerated(EnumType.STRING)
   @Column(name = "tipo", nullable = false)
