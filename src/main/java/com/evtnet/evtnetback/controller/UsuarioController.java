@@ -320,4 +320,16 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
     ) {
         return ResponseEntity.ok(service.obtenerDenunciasUsuario(page));
     }
+
+
+    // --- Integración con Mercado Pago ---
+    @GetMapping("/obtenerLinkIntegrarMP")
+    public ResponseEntity<String> obtenerLinkIntegrarMP() throws Exception {
+        return ResponseEntity.ok(service.obtenerLinkIntegrarMP());
+    }
+
+    @GetMapping("/obtenerCredencialesMP")
+    public void obtenerCredencialesMP(String code, String state) throws Exception {
+        service.obtenerCredencialesMP(code, state);
+    }
 }
