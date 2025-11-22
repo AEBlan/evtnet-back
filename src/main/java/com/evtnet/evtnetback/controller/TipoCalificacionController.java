@@ -16,12 +16,12 @@ public class TipoCalificacionController extends BaseControllerImpl <TipoCalifica
     private final TipoCalificacionServiceImpl service;
 
     @GetMapping("/obtenerTiposCalificacion")
-    public ResponseEntity obtenerListaTiposCalificacion(@RequestParam(name = "page", defaultValue = "0") int page) {
+    public ResponseEntity obtenerListaTiposCalificacion(@RequestParam(name = "page", defaultValue = "0") int page,
+                                                        @RequestParam(name = "vigentes", defaultValue = "0") boolean vigentes,
+                                                        @RequestParam(name = "dadasDeBaja", defaultValue = "0") boolean dadasDeBaja
+    ) {
         try {
-            var pageable = org.springframework.data.domain.PageRequest.of(
-                    page, 10, org.springframework.data.domain.Sort.by("id").ascending()
-            );
-            return ResponseEntity.ok(service.obtenerListaTipoCalificacion(pageable));
+            return ResponseEntity.ok(service.obtenerListaTipoCalificacion(page, vigentes, dadasDeBaja));
         }
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
@@ -69,7 +69,7 @@ public class TipoCalificacionController extends BaseControllerImpl <TipoCalifica
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo dar de alta el tipo de calificación"
+                    "No se pudo dar de alta el tipo de calificación. "+e.getMessage()
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -84,7 +84,7 @@ public class TipoCalificacionController extends BaseControllerImpl <TipoCalifica
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo actualizar el tipo de calificación"
+                    "No se pudo actualizar el tipo de calificación. "+e.getMessage()
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -100,6 +100,21 @@ public class TipoCalificacionController extends BaseControllerImpl <TipoCalifica
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
                     "No se pudo dar de baja el tipo de calificación"
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @PutMapping("/restaurar")
+    public ResponseEntity restaurarTipoCalificacion(@RequestParam(name="id", required=true) Long id) {
+        try{
+            service.restaurarTipoCalificacion(id);
+            return ResponseEntity.ok().build();
+        }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo restaurar el tipo de calificación. "+e.getMessage()
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

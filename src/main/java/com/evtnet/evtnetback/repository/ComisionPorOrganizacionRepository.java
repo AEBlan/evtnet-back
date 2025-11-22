@@ -30,4 +30,21 @@ public interface ComisionPorOrganizacionRepository extends BaseRepository <Comis
     ORDER BY c.montoLimite DESC
     """)
     ComisionPorOrganizacion findComisionByValor(@Param("valor") double valor);
+
+    @Query("""
+       SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END
+       FROM ComisionPorOrganizacion c
+       WHERE c.montoLimite = :montoLimite
+         AND (c.fechaHasta IS NULL OR c.fechaHasta > :hoy)
+         AND c.fechaDesde < :hoy
+         AND (:id IS NULL OR c.id <> :id)
+       """)
+    boolean existsVigenteWithSameMonto(
+            @Param("montoLimite") BigDecimal montoLimite,
+            @Param("hoy") LocalDateTime hoy,
+            @Param("id") Long id
+    );
+
+
+
 }

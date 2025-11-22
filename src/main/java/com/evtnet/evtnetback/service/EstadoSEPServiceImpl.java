@@ -3,6 +3,7 @@ package com.evtnet.evtnetback.service;
 import com.evtnet.evtnetback.entity.EstadoSEP;
 import com.evtnet.evtnetback.repository.EstadoSEPRepository;
 import com.evtnet.evtnetback.dto.estadoSEP.DTOEstadoSEP;
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -45,10 +46,11 @@ public class EstadoSEPServiceImpl extends BaseServiceImpl <EstadoSEP, Long> impl
 
     @Override
     public void altaEstadoSEP(DTOEstadoSEP estadoSEP) throws Exception {
-        this.save(EstadoSEP.builder()
+        EstadoSEP estado=this.save(EstadoSEP.builder()
                 .nombre(estadoSEP.getNombre())
                 .descripcion(estadoSEP.getDescripcion())
                 .build());
+
     }
 
     @Override

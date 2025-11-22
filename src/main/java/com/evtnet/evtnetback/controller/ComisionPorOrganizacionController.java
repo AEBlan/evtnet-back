@@ -15,12 +15,11 @@ public class ComisionPorOrganizacionController  {
     
     private final ComisionPorOrganizacionService service;
     @GetMapping("/obtenerListaComisiones")
-    public ResponseEntity obtenerListaComisionPorOrganizacion(@RequestParam(name = "page", defaultValue = "0") int page) {
+    public ResponseEntity obtenerListaComisionPorOrganizacion(@RequestParam(name = "page", defaultValue = "0") int page,
+                                                              @RequestParam(name = "activas", defaultValue = "true") boolean activas,
+                                                              @RequestParam(name = "noActivas", defaultValue = "true") boolean noActivas) {
         try {
-            var pageable = org.springframework.data.domain.PageRequest.of(
-                    page, 10, org.springframework.data.domain.Sort.by("id").ascending()
-            );
-            return ResponseEntity.ok(service.obtenerListaComisionPorOrganizacion(pageable));
+            return ResponseEntity.ok(service.obtenerListaComisionPorOrganizacion(page, activas, noActivas));
         }
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
@@ -85,6 +84,21 @@ public class ComisionPorOrganizacionController  {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
                     "No se pudo dar de baja la comisión por organización"
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @PutMapping("/restaurar")
+    public ResponseEntity restaurarComisionPorOrganizacion(@RequestParam(name="id", required=true) Long id) {
+        try{
+            service.restaurarComisionPorOrganizacion(id);;
+            return ResponseEntity.ok().build();
+        }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo restaurar la comisión por organización"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

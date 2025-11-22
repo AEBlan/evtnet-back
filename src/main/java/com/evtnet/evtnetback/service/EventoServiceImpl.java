@@ -2458,7 +2458,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	}
 
 	@Override
-	public void aprobarRechazarEvento(Long idEvento, String estado){
+	public void aprobarRechazarEvento(Long idEvento, String estado)throws Exception{
 		Evento evento=this.eventoRepo.findById(idEvento).orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 		EventoEstado eventoEstado=this.eventoEstadoRepo.findUltimoByEvento(idEvento);
 		eventoEstado.setFechaHoraBaja(LocalDateTime.now());
@@ -2470,10 +2470,12 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				.evento(evento)
 				.build();
 		this.eventoEstadoRepo.save(eventoEstadoNuevo);
+
+		registroSingleton.write("Eventos", "evento", "modificacion", "Evento de ID " + idEvento.toString());
 	}
 
 	@Override
-	public void cancelarEventoEspacio(Long idEvento){
+	public void cancelarEventoEspacio(Long idEvento)throws Exception{
 		Evento evento=this.eventoRepo.findById(idEvento).orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
 		EventoEstado eventoEstado=this.eventoEstadoRepo.findUltimoByEvento(idEvento);
 		eventoEstado.setFechaHoraBaja(LocalDateTime.now());
@@ -2485,6 +2487,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 				.evento(evento)
 				.build();
 		this.eventoEstadoRepo.save(eventoEstadoNuevo);
+		registroSingleton.write("Eventos", "evento", "eliminacion", "Evento de ID " + idEvento);
 	}
 
 

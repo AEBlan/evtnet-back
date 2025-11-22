@@ -5,6 +5,7 @@ import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.dto.cronogramas.*;
 import com.evtnet.evtnetback.dto.espacios.DTOVerificacionVigencia;
 import com.evtnet.evtnetback.util.CurrentUser;
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import com.evtnet.evtnetback.util.TimeUtil;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
     private final ComisionPorOrganizacionRepository comisionPorOrganizacionRepository;
     private final ComisionPorInscripcionRepository comisionPorInscripcionRepository;
     private final TipoExcepcionHorarioEspacioRepository tipoExcepcionHorarioEspacioRepository;
+    private final RegistroSingleton registroSingleton;
 
     public ConfiguracionHorarioEspacioServiceImpl(
             ConfiguracionHorarioEspacioRepository configuracionHorarioEspacioRepository,
@@ -37,7 +39,8 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
             SubEspacioRepository subEspacioRepository,
             ComisionPorOrganizacionRepository comisionPorOrganizacionRepository,
             ComisionPorInscripcionRepository comisionPorInscripcionRepository,
-            TipoExcepcionHorarioEspacioRepository tipoExcepcionHorarioEspacioRepository
+            TipoExcepcionHorarioEspacioRepository tipoExcepcionHorarioEspacioRepository,
+            RegistroSingleton registroSingleton
     ) {
         super(configuracionHorarioEspacioRepository);
         this.configuracionHorarioEspacioRepository=configuracionHorarioEspacioRepository;
@@ -49,6 +52,7 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
         this.comisionPorOrganizacionRepository=comisionPorOrganizacionRepository;
         this.comisionPorInscripcionRepository=comisionPorInscripcionRepository;
         this.tipoExcepcionHorarioEspacioRepository=tipoExcepcionHorarioEspacioRepository;
+        this.registroSingleton=registroSingleton;
     }
 
     private Map<Integer, String> diasSemana = Map.ofEntries(
@@ -145,6 +149,7 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
         }else{
             throw new Exception("No se puede eliminar el horario, ya hay eventos programados");
         }
+        registroSingleton.write("Espacios", "cronograma", "eliminacion", "Horario de ID " + idHorario + "'");
     }
 
     @Override
@@ -178,6 +183,8 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
     @Override
     public void eliminarExcepcionCronograma(Long idExcepcion)throws Exception{
         this.excepcionHorarioEspacioRepository.deleteById(idExcepcion);
+
+        registroSingleton.write("Espacios", "cronograma", "eliminacion", "Excepcion de ID " + idExcepcion + "'");
     }
 
     @Override
@@ -239,6 +246,7 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                     .subEspacio(subEspacio)
                     .build();
             configuracionHorarioEspacioNuevo=save(configuracionHorarioEspacioNuevo);
+            registroSingleton.write("Espacios", "cronograma", "creacion", "Cronograma de ID " + configuracionHorarioEspacioNuevo.getId() + "'");
             return configuracionHorarioEspacioNuevo.getId();
         }else{
             throw new Exception("Se superpone el cronograma con otro");
@@ -247,13 +255,12 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
 
     @Override
     public void modificarCronograma(DTOCronogramaEspacio dtoCronograma)throws Exception{
-        // Convertir fechas
+
         LocalDateTime nuevaFechaDesde = Instant.ofEpochMilli(dtoCronograma.getFechaDesde())
                 .atZone(ZoneId.systemDefault()).toLocalDateTime();
         LocalDateTime nuevaFechaHasta = Instant.ofEpochMilli(dtoCronograma.getFechaHasta())
                 .atZone(ZoneId.systemDefault()).toLocalDateTime();
 
-        // Obtener cronograma actual
         ConfiguracionHorarioEspacio cronogramaActual = configuracionHorarioEspacioRepository
                 .findById(dtoCronograma.getIdCronograma())
                 .orElseThrow(() -> new Exception("No se encontró el cronograma a modificar"));
@@ -261,11 +268,9 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
         LocalDateTime fechaDesdeAnterior = cronogramaActual.getFechaDesde();
         LocalDateTime fechaHastaAnterior = cronogramaActual.getFechaHasta();
 
-        // Verificar si se achicó el rango (por izquierda o por derecha)
         boolean achicaPorIzquierda = nuevaFechaDesde.isAfter(fechaDesdeAnterior);
         boolean achicaPorDerecha = nuevaFechaHasta.isBefore(fechaHastaAnterior);
 
-        // Si se achicó, buscar eventos afectados
         if (achicaPorIzquierda || achicaPorDerecha) {
             LocalDateTime rangoInicioEliminado = achicaPorIzquierda ? fechaDesdeAnterior : null;
             LocalDateTime rangoFinEliminado = achicaPorIzquierda ? nuevaFechaDesde : null;
@@ -273,7 +278,6 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
             LocalDateTime rangoInicioEliminado2 = achicaPorDerecha ? nuevaFechaHasta : null;
             LocalDateTime rangoFinEliminado2 = achicaPorDerecha ? fechaHastaAnterior : null;
 
-            // Consultar eventos que queden fuera del nuevo rango
             List<Evento> eventosAfectados = eventoRepository.findEventosFueraDeRango(
                     dtoCronograma.getIdSubEspacio(),
                     rangoInicioEliminado, rangoFinEliminado,
@@ -285,7 +289,6 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
             }
         }
 
-        // Verificar superposición con otros cronogramas
         List<ConfiguracionHorarioEspacio> superpuestos = configuracionHorarioEspacioRepository
                 .findSuperpuestos(dtoCronograma.getIdSubEspacio(), dtoCronograma.getIdCronograma(), nuevaFechaDesde, nuevaFechaHasta);
 
@@ -293,11 +296,11 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
             throw new Exception("Se superpone el cronograma con otro existente");
         }
 
-        // Actualizar el cronograma
         cronogramaActual.setFechaDesde(nuevaFechaDesde);
         cronogramaActual.setFechaHasta(nuevaFechaHasta);
         cronogramaActual.setDiasAntelacion(dtoCronograma.getDiasHaciaAdelante());
         save(cronogramaActual);
+        registroSingleton.write("Espacios", "cronograma", "modificacion", "Cronograma de ID " + cronogramaActual.getId() + "'");
     }
 
     @Override
@@ -333,7 +336,8 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                     .adicionalPorInscripcion(new BigDecimal(dtoCrearHorario.getAdicionalPorInscripcion()))
                     .configuracionHorarioEspacio(cronograma)
                     .build();
-            this.horarioEspacioRepository.save(horarioEspacio);
+            horarioEspacio=this.horarioEspacioRepository.save(horarioEspacio);
+            registroSingleton.write("Espacios", "cronograma", "creacion", "Horario de ID " + horarioEspacio.getId() + "'");
         }else{
             throw new Exception("Se superpone el horario con otro");
         }
@@ -380,7 +384,8 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                     .configuracionHorarioEspacio(cronograma)
                     .tipoExcepcionHorarioEspacio(tipoExcepcion)
                     .build();
-            this.excepcionHorarioEspacioRepository.save(excepcion);
+            excepcion=this.excepcionHorarioEspacioRepository.save(excepcion);
+            registroSingleton.write("Espacios", "cronograma", "creacion", "Excepcion de ID " + excepcion.getId() + "'");
         }else if(this.excepcionHorarioEspacioRepository.existeSuperpuesto(fechaDesde, fechaHasta, dtoCrearExcepcion.getIdCronograma())){
             throw new Exception("Se superpone la excepción con otro");
         }else{
@@ -449,7 +454,6 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
         LocalDateTime fechaInicio = LocalDateTime.now();
         LocalDateTime fechaFin = fechaInicio.plusDays(365);
 
-        // Agarrar cronogramas vigentes del próximo año
         List<ConfiguracionHorarioEspacio> cronogramas = new ArrayList<>(subespacio.getConfiguracionesHorarioEspacio().stream()
                 .filter(c ->
                         c.getFechaDesde().isAfter(fechaInicio) && c.getFechaDesde().isBefore(fechaFin)
@@ -457,7 +461,6 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                         || c.getFechaDesde().isBefore(fechaInicio) && c.getFechaHasta().isAfter(fechaFin)
                 ).toList());
 
-        // Ordenarlos
         cronogramas.sort((lhs, rhs) -> lhs.getFechaDesde().isBefore(rhs.getFechaDesde()) ? -1 : 1);
 
         ArrayList<DTOPeriodoDisponible> ret = new ArrayList<>();
@@ -470,7 +473,6 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                 continue;
             }
 
-            // Agregar periodos sin cronograma vigente
             ret.add(DTOPeriodoDisponible.builder()
                 .fechaHoraDesde(TimeUtil.toMillis(finPrevio))
                 .fechaHoraHasta(TimeUtil.toMillis(c.getFechaDesde()))
@@ -478,7 +480,6 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
 
             finPrevio = c.getFechaHasta();
 
-            // Agregar excepciones (solo la parte de adentro de su cronograma, y solo si son externas)
             ret.addAll(c.getExcepcionesHorarioEspacio().stream()
                 .filter(e -> e.getTipoExcepcionHorarioEspacio().getNombre().equalsIgnoreCase("Externa"))
                 .map(e -> DTOPeriodoDisponible.builder()
@@ -487,7 +488,6 @@ public class ConfiguracionHorarioEspacioServiceImpl extends BaseServiceImpl <Con
                     .build()).toList());
         }
 
-        // Por si no termina con un cronograma vigente, agregar el último periodo
         if (finPrevio.isBefore(fechaFin)) {
             ret.add(DTOPeriodoDisponible.builder()
                 .fechaHoraDesde(TimeUtil.toMillis(finPrevio))

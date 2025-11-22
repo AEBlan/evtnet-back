@@ -36,9 +36,9 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
     }
 
     @PutMapping("/buscarSolicitudesEspaciosPublicos")
-    public ResponseEntity buscarSolicitudesEspaciosPublicos(@RequestBody DTOBusquedaSEP dtoBusquedaSEP){
+    public ResponseEntity buscarSolicitudesEspaciosPublicos(@RequestBody DTOBusquedaSEP dtoBusquedaSEP, @RequestParam(name="page", defaultValue = "0")int page){
         try{
-                return ResponseEntity.status(HttpStatus.OK).body(solicitudEspacioPublicoService.buscarSolicitudesEspaciosPublicos(dtoBusquedaSEP));
+                return ResponseEntity.status(HttpStatus.OK).body(solicitudEspacioPublicoService.buscarSolicitudesEspaciosPublicos(dtoBusquedaSEP, page));
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
@@ -103,9 +103,9 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
     }
 
     @PutMapping("/buscarSolicitudesEspaciosPrivados")
-    public ResponseEntity buscarSolicitudesEspaciosPrivados(@RequestBody DTOBusquedaSEP dtoBusquedaSEP){
+    public ResponseEntity buscarSolicitudesEspaciosPrivados(@RequestBody DTOBusquedaSEP dtoBusquedaSEP, @RequestParam(name="page", defaultValue = "0")int page){
         try{
-            return ResponseEntity.status(HttpStatus.OK).body(solicitudEspacioPublicoService.buscarSolicitudesEspaciosPrivados(dtoBusquedaSEP));
+            return ResponseEntity.status(HttpStatus.OK).body(solicitudEspacioPublicoService.buscarSolicitudesEspaciosPrivados(dtoBusquedaSEP, page));
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),

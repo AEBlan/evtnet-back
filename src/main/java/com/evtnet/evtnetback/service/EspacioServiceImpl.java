@@ -7,6 +7,7 @@ import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinas;
 import com.evtnet.evtnetback.dto.espacios.*;
 import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +43,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
     private final EventoRepository eventoRepository;
     private final ResenaEspacioRepository resenaEspacioRepository;
     private final IconoCaracteristicaRepository iconoCaracteristicaRepository;
+    private final RegistroSingleton registroSingleton;
 
     @Value("${app.storage.documentacion:/app/storage/documentacion}")
     private String directorioBase;
@@ -64,7 +66,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             CaracteristicaRepository caracteristicaRepository,
             EventoRepository eventoRepository,
             ResenaEspacioRepository resenaEspacioRepository,
-            IconoCaracteristicaRepository iconoCaracteristicaRepository
+            IconoCaracteristicaRepository iconoCaracteristicaRepository,
+            RegistroSingleton registroSingleton
     ) {
         super(espacioRepository);
         this.espacioRepository = espacioRepository;
@@ -85,6 +88,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         this.eventoRepository  = eventoRepository;
         this.resenaEspacioRepository = resenaEspacioRepository;
         this.iconoCaracteristicaRepository = iconoCaracteristicaRepository;
+        this.registroSingleton = registroSingleton;
     }
 
     @Override
@@ -165,7 +169,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             }
 
         }
-
+        registroSingleton.write("Espacios", "espacio_privado", "creacion", "Espacio de ID " + espacio.getId() + " nombre" +espacio.getNombre()+ "'");
         return espacio.getId();
     }
 
@@ -231,7 +235,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             }
 
         }
-
+        registroSingleton.write("Espacios", "espacio_publico", "creacion", "Espacio de ID " + espacio.getId() + " nombre" +espacio.getNombre()+ "'");
         return espacio.getId();
     }
 
@@ -494,6 +498,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
 
             subEspacio.setDisciplinasSubespacio(disciplinasExistentes);
             this.subEspacioRepository.save(subEspacio);
+            registroSingleton.write("Espacios", "espacio_privado", "modificacion", "Espacio de ID " + espacio.getId() + " nombre" +espacio.getNombre()+ "'");
+
         }
 
 
@@ -504,6 +510,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         AdministradorEspacio administradorEspacio = this.administradorEspacioRepository.findByEspacioAndUser(id, username);
         administradorEspacio.setFechaHoraBaja(LocalDateTime.now());
         this.administradorEspacioRepository.save(administradorEspacio);
+        registroSingleton.write("Espacios", "administrador_espacio_privado", "eliminacion", "AdministradorEspacio de ID " + id + " username" +username+ "'");
+
     }
 
     @Override
@@ -827,6 +835,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         AdministradorEspacio administradorEspacio = this.administradorEspacioRepository.findByEspacioAndUser(idEspacio, username);
         administradorEspacio.setFechaHoraBaja(LocalDateTime.now());
         this.administradorEspacioRepository.save(administradorEspacio);
+        registroSingleton.write("Espacios", "administrador_espacio_privado", "eliminacion", "AdministradorEspacio de ID " + administradorEspacio.getId() + " username" +username+ "'");
     }
 
     @Override
@@ -840,7 +849,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 .tipoAdministradorEspacio(tipoAdministradorEspacio)
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
-        this.administradorEspacioRepository.save(administradorEspacio);
+        administradorEspacio=this.administradorEspacioRepository.save(administradorEspacio);
+        registroSingleton.write("Espacios", "administrador_espacio_privado", "creacion", "AdministradorEspacio de ID " + administradorEspacio.getId() + " username" +username+ "'");
     }
 
     @Override
@@ -866,7 +876,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                     .espacio(espacio)
                     .fechaHoraAlta(LocalDateTime.now())
                     .build();
-            this.administradorEspacioRepository.save(administradorEspacioNuevo);
+            administradorEspacioNuevo=this.administradorEspacioRepository.save(administradorEspacioNuevo);
 
             AdministradorEspacio administradorEspacioNuevo2=AdministradorEspacio.builder()
                     .usuario(usuarioPropietario)
@@ -874,7 +884,9 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                     .espacio(espacio)
                     .fechaHoraAlta(LocalDateTime.now())
                     .build();
-            this.administradorEspacioRepository.save(administradorEspacioNuevo2);
+            administradorEspacioNuevo2=this.administradorEspacioRepository.save(administradorEspacioNuevo2);
+            registroSingleton.write("Espacios", "administrador_espacio_privado", "eliminacion", "AdministradorEspacio de ID (propietario)" + administradorEspacioNuevo.getId() + " username" +usernamePropietario+ "'");
+            registroSingleton.write("Espacios", "administrador_espacio_privado", "creacion", "AdministradorEspacio de ID (nuevo propietario)" + administradorEspacioNuevo2.getId() + " username" +username+ "'");
         }
     }
 
@@ -884,6 +896,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         Usuario usuario = this.usuarioRepository.findByUsername(username).get();
         subEspacio.setEncargadoSubEspacio(usuario);
         this.subEspacioRepository.save(subEspacio);
+        registroSingleton.write("Espacios", "encargado_subespacio", "creacion", "Usuario de ID " + usuario.getId() + " username" +username+ "'");
     }
 
     @Override
@@ -973,7 +986,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 .espacio(espacio)
                 .usuario(usuario)
                 .build();
-        this.resenaEspacioRepository.save(resena);
+        resena=this.resenaEspacioRepository.save(resena);
+        registroSingleton.write("Espacios", "reseña", "creacion", "Espacio de ID " + dto.getIdEspacio() + " username" +username+ " Reseña de ID "+resena.getId()+ "'");
     }
 
     @Override
@@ -1043,7 +1057,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                         .build();
             }
 
-            this.caracteristicaRepository.save(caracteristica);
+            caracteristica=this.caracteristicaRepository.save(caracteristica);
+            registroSingleton.write("Espacios", "caracteristica", "modificacion", "Espacio de ID " + subEspacio.getId() + " SubEspacio de ID" +subEspacio.getId()+ "'");
         }
     }
 

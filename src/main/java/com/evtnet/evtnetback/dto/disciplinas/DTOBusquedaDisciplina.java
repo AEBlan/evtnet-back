@@ -13,4 +13,6 @@ public class DTOBusquedaDisciplina {
     private String texto;
     private Long fechaDesde;
     private Long fechaHasta;
+    private boolean vigentes;
+    private boolean dadasDeBaja;
 }

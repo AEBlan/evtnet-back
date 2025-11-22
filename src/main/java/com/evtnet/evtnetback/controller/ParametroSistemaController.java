@@ -17,10 +17,7 @@ public class ParametroSistemaController extends BaseControllerImpl <ParametroSis
     @GetMapping("/obtenerListaParametros")
     public ResponseEntity obtenerListaParametrosSistema(@RequestParam(name = "page", defaultValue = "0") int page) {
         try {
-            var pageable = org.springframework.data.domain.PageRequest.of(
-                    page, 10, org.springframework.data.domain.Sort.by("id").ascending()
-            );
-            return ResponseEntity.ok(service.obtenerListaParametroSistema(pageable));
+            return ResponseEntity.ok(service.obtenerListaParametroSistema(page));
         }
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
