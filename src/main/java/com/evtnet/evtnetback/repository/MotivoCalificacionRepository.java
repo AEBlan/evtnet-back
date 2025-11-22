@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface MotivoCalificacionRepository extends BaseRepository <MotivoCalificacion, Long> {
@@ -21,4 +22,9 @@ public interface MotivoCalificacionRepository extends BaseRepository <MotivoCali
     @Transactional
     @Query("UPDATE MotivoCalificacion mc SET mc.fechaHoraBaja = :fecha WHERE mc.id = :id")
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
+
+    List<MotivoCalificacion> findByTipoCalificacionId(Long tipoId);
+
+    boolean existsByNombreAndTipoCalificacionId(String nombre, Long tipoId);
+    List<MotivoCalificacion> findByTipoCalificacionIdAndFechaHoraBajaIsNull(Long tipoId);
 }

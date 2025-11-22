@@ -13,4 +13,6 @@ public class DTOParametroSistema {
     private Long id;
     private String nombre;
     private String valor;
+    private String descripcion;
+    private String identificador;
 }

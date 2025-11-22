@@ -240,13 +240,22 @@ public class EventoController {
 
     @PutMapping("/aprobarRechazarEvento")
     public ResponseEntity<Void> aprobarEvento(@RequestParam("idEvento") Long idEvento, @RequestParam("estado") String estado) {
-        service.aprobarRechazarEvento(idEvento, estado);
-        return ResponseEntity.ok().build();
+        try{
+            service.aprobarRechazarEvento(idEvento, estado);
+            return ResponseEntity.ok().build();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @DeleteMapping("/cancelarEventoEspacio")
     public ResponseEntity<Void> cancelarEventoEspacio(@RequestParam("idEvento") Long idEvento) {
-        service.cancelarEventoEspacio(idEvento);
-        return ResponseEntity.ok().build();
+        try{
+            service.cancelarEventoEspacio(idEvento);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

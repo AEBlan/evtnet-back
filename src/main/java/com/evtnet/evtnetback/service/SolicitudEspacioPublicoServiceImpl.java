@@ -5,7 +5,9 @@ import com.evtnet.evtnetback.dto.espacios.DTOEstadoEspacio;
 import com.evtnet.evtnetback.dto.solicitudesEspacio.*;
 import com.evtnet.evtnetback.entity.*;
 import com.evtnet.evtnetback.repository.*;
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -19,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -35,6 +38,8 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
     private final EspacioRepository espacioRepository;
     private final EspacioEstadoRepository espacioEstadoRepository;
     private final EstadoEspacioRepository estadoEspacioRepository;
+    private final RegistroSingleton registroSingleton;
+    private final ParametroSistemaService parametroSistemaService;
 
     public SolicitudEspacioPublicoServiceImpl(
             SolicitudEspacioPublicoRepository solicitudEspacioPublicoRepository,
@@ -43,7 +48,9 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
             EstadoSEPRepository estadoSEPRepository,
             EspacioRepository espacioRepository,
             EspacioEstadoRepository espacioEstadoRepository,
-            EstadoEspacioRepository estadoEspacioRepository
+            EstadoEspacioRepository estadoEspacioRepository,
+            RegistroSingleton registroSingleton,
+            ParametroSistemaService parametroSistemaService
     ) {
         super(solicitudEspacioPublicoRepository);
         this.solicitudEspacioPublicoRepository = solicitudEspacioPublicoRepository;
@@ -53,6 +60,8 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
         this.espacioRepository = espacioRepository;
         this.espacioEstadoRepository = espacioEstadoRepository;
         this.estadoEspacioRepository = estadoEspacioRepository;
+        this.registroSingleton = registroSingleton;
+        this.parametroSistemaService = parametroSistemaService;
     }
 
     @Override
@@ -83,11 +92,17 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
 
-        this.sepEstadoRepository.save(sepEstado);
+        sepEstado=this.sepEstadoRepository.save(sepEstado);
+        registroSingleton.write("Espacios", "solicitud_espacio_publico", "creacion", "SEP de ID " + solicitudEspacioPublico.getId());
+        registroSingleton.write("Espacios", "solicitud_espacio_publico", "creacion", "SEPEstado de ID " + sepEstado.getId());
     }
 
     @Override
-    public List<DTOResultadoBusquedaSEP> buscarSolicitudesEspaciosPublicos(DTOBusquedaSEP dtoBusquedaSEP)throws Exception{
+    public Page<DTOResultadoBusquedaSEP> buscarSolicitudesEspaciosPublicos(DTOBusquedaSEP dtoBusquedaSEP, int page) throws Exception {
+
+        Integer longitudPagina = parametroSistemaService.getInt("longitudPagina", 20);
+        Pageable pageable = PageRequest.of(page, longitudPagina);
+
         Set<SolicitudEspacioPublico> resultadoFinal = new HashSet<>();
         List<Set<SolicitudEspacioPublico>> setsPorFiltro = new ArrayList<>();
 
@@ -124,33 +139,43 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
         }
 
         if (dtoBusquedaSEP.getEspacios() != null && !dtoBusquedaSEP.getEspacios().isEmpty()) {
-            setsPorFiltro.add(new HashSet<>(this.solicitudEspacioPublicoRepository.findSolicitudesByEspacio(dtoBusquedaSEP.getEspacios())));
+            setsPorFiltro.add(new HashSet<>(
+                    this.solicitudEspacioPublicoRepository.findSolicitudesByEspacio(dtoBusquedaSEP.getEspacios())
+            ));
         }
 
         if (dtoBusquedaSEP.getEstados() != null && !dtoBusquedaSEP.getEstados().isEmpty()) {
-            setsPorFiltro.add(new HashSet<>(this.solicitudEspacioPublicoRepository.findSolicitudesByEstado(dtoBusquedaSEP.getEstados())));
+            setsPorFiltro.add(new HashSet<>(
+                    this.solicitudEspacioPublicoRepository.findSolicitudesByEstado(dtoBusquedaSEP.getEstados())
+            ));
         }
 
         if (dtoBusquedaSEP.getFechaIngresoDesde() != null || dtoBusquedaSEP.getFechaIngresoHasta() != null) {
             LocalDate fechaIngresoDesde = dtoBusquedaSEP.getFechaIngresoDesde() != null
                     ? Instant.ofEpochMilli(dtoBusquedaSEP.getFechaIngresoDesde()).atZone(ZoneId.systemDefault()).toLocalDate()
                     : LocalDate.MIN;
+
             LocalDate fechaIngresoHasta = dtoBusquedaSEP.getFechaIngresoHasta() != null
                     ? Instant.ofEpochMilli(dtoBusquedaSEP.getFechaIngresoHasta()).atZone(ZoneId.systemDefault()).toLocalDate()
                     : LocalDate.MAX;
 
-            setsPorFiltro.add(new HashSet<>(this.solicitudEspacioPublicoRepository.findSolicitudesByFechaIngreso(fechaIngresoDesde, fechaIngresoHasta)));
+            setsPorFiltro.add(new HashSet<>(
+                    this.solicitudEspacioPublicoRepository.findSolicitudesByFechaIngreso(fechaIngresoDesde, fechaIngresoHasta)
+            ));
         }
 
         if (dtoBusquedaSEP.getFechaUltimoCambioEstadoDesde() != null || dtoBusquedaSEP.getFechaUltimoCambioEstadoHasta() != null) {
             LocalDate fechaUltimoCambioEstadoDesde = dtoBusquedaSEP.getFechaUltimoCambioEstadoDesde() != null
                     ? Instant.ofEpochMilli(dtoBusquedaSEP.getFechaUltimoCambioEstadoDesde()).atZone(ZoneId.systemDefault()).toLocalDate()
                     : LocalDate.MIN;
+
             LocalDate fechaUltimoCambioEstadoHasta = dtoBusquedaSEP.getFechaUltimoCambioEstadoHasta() != null
                     ? Instant.ofEpochMilli(dtoBusquedaSEP.getFechaUltimoCambioEstadoHasta()).atZone(ZoneId.systemDefault()).toLocalDate()
                     : LocalDate.MAX;
 
-            setsPorFiltro.add(new HashSet<>(this.solicitudEspacioPublicoRepository.findSolicitudesByFechaCambioEstado(fechaUltimoCambioEstadoDesde, fechaUltimoCambioEstadoHasta)));
+            setsPorFiltro.add(new HashSet<>(
+                    this.solicitudEspacioPublicoRepository.findSolicitudesByFechaCambioEstado(fechaUltimoCambioEstadoDesde, fechaUltimoCambioEstadoHasta)
+            ));
         }
 
         if (setsPorFiltro.isEmpty()) {
@@ -163,23 +188,31 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
             }
         }
 
-        List<DTOResultadoBusquedaSEP> sepDto = new ArrayList<>();
-        for (SolicitudEspacioPublico solicitudEspacioPublico : resultadoFinal) {
-            SEPEstado sepEstado=solicitudEspacioPublico.getSepEstados().get(solicitudEspacioPublico.getSepEstados().size()-1);
-            sepDto.add(DTOResultadoBusquedaSEP.builder()
-                            .idSEP(solicitudEspacioPublico.getId())
-                            .nombreEspacio(solicitudEspacioPublico.getNombreEspacio())
+        List<DTOResultadoBusquedaSEP> sepDto = resultadoFinal.stream()
+                .map(solicitud -> {
+                    SEPEstado sepEstado = solicitud.getSepEstados().get(solicitud.getSepEstados().size() - 1);
+                    return DTOResultadoBusquedaSEP.builder()
+                            .idSEP(solicitud.getId())
+                            .nombreEspacio(solicitud.getNombreEspacio())
                             .estado(sepEstado.getEstadoSEP().getNombre())
-                            .fechaIngreso(solicitudEspacioPublico.getFechaHoraAlta() == null ? null
-                                    : solicitudEspacioPublico.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                            .fechaIngreso(solicitud.getFechaHoraAlta() == null ? null
+                                    : solicitud.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                             .fechaUltimoCambioEstado(sepEstado.getFechaHoraAlta() == null ? null
                                     : sepEstado.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                            .idEspacio(solicitudEspacioPublico.getEspacio()!=null ? solicitudEspacioPublico.getEspacio().getId() : null)
-                    .build());
-        }
+                            .idEspacio(solicitud.getEspacio() != null ? solicitud.getEspacio().getId() : null)
+                            .build();
+                })
+                .collect(Collectors.toList());
 
-        return sepDto;
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), sepDto.size());
+
+        List<DTOResultadoBusquedaSEP> pageContent =
+                start > sepDto.size() ? Collections.emptyList() : sepDto.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, sepDto.size());
     }
+
 
     @Override
     public DTOSolicitudCompleta obtenerDetalleSolcitudEP(Long idSEP)throws Exception{
@@ -287,7 +320,9 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
                 .responsable(usuario)
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
-        this.sepEstadoRepository.save(sepEstadoNuevo);
+        sepEstadoNuevo=this.sepEstadoRepository.save(sepEstadoNuevo);
+        registroSingleton.write("Espacios", "solicitud_espacio_publico", "modificacion", "SEPEstado de ID " + sepEstado.getId());
+        registroSingleton.write("Espacios", "solicitud_espacio_publico", "creacion", "SEPEstado de ID " + sepEstadoNuevo.getId());
     }
 
     @Override
@@ -310,10 +345,21 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
         SolicitudEspacioPublico solicitud=this.solicitudEspacioPublicoRepository.findById(idSEP).orElseThrow(() -> new Exception("Solicitud no encontrada"));
         solicitud.setEspacio(espacio);
         this.solicitudEspacioPublicoRepository.save(solicitud);
+        registroSingleton.write("Espacios", "solicitud_espacio_publico", "modificacion", "SEP de ID " + solicitud.getId());
     }
 
     @Override
-    public List<DTOResultadoBusquedaSEP> buscarSolicitudesEspaciosPrivados(DTOBusquedaSEP dtoBusquedaSEP)throws Exception{
+    public Page<DTOResultadoBusquedaSEP> buscarSolicitudesEspaciosPrivados(DTOBusquedaSEP dtoBusquedaSEP, int page) throws Exception {
+        Integer longitudPagina = parametroSistemaService.getInt("longitudPagina", 20);
+        Pageable pageable = PageRequest.of(
+                page,
+                longitudPagina,
+                Sort.by(
+                        Sort.Order.asc("fechaHoraBaja"),
+                        Sort.Order.asc("fechaHoraAlta")
+                )
+        );
+
         Set<Espacio> resultadoFinal = new HashSet<>();
         List<Set<Espacio>> setsPorFiltro = new ArrayList<>();
 
@@ -350,57 +396,74 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
         }
 
         if (dtoBusquedaSEP.getEstados() != null && !dtoBusquedaSEP.getEstados().isEmpty()) {
-            setsPorFiltro.add(new HashSet<>(this.espacioRepository.findEspaciosByEstado(dtoBusquedaSEP.getEstados())));
+            setsPorFiltro.add(new HashSet<>(
+                    this.espacioRepository.findEspaciosByEstado(dtoBusquedaSEP.getEstados())
+            ));
         }
 
         if (dtoBusquedaSEP.getFechaIngresoDesde() != null || dtoBusquedaSEP.getFechaIngresoHasta() != null) {
             LocalDate fechaIngresoDesde = dtoBusquedaSEP.getFechaIngresoDesde() != null
                     ? Instant.ofEpochMilli(dtoBusquedaSEP.getFechaIngresoDesde()).atZone(ZoneId.systemDefault()).toLocalDate()
                     : LocalDate.MIN;
+
             LocalDate fechaIngresoHasta = dtoBusquedaSEP.getFechaIngresoHasta() != null
                     ? Instant.ofEpochMilli(dtoBusquedaSEP.getFechaIngresoHasta()).atZone(ZoneId.systemDefault()).toLocalDate()
                     : LocalDate.MAX;
 
-            setsPorFiltro.add(new HashSet<>(this.espacioRepository.findEspaciosByFechaIngreso(fechaIngresoDesde, fechaIngresoHasta)));
+            setsPorFiltro.add(new HashSet<>(
+                    this.espacioRepository.findEspaciosByFechaIngreso(fechaIngresoDesde, fechaIngresoHasta)
+            ));
         }
 
         if (dtoBusquedaSEP.getFechaUltimoCambioEstadoDesde() != null || dtoBusquedaSEP.getFechaUltimoCambioEstadoHasta() != null) {
             LocalDate fechaUltimoCambioEstadoDesde = dtoBusquedaSEP.getFechaUltimoCambioEstadoDesde() != null
                     ? Instant.ofEpochMilli(dtoBusquedaSEP.getFechaUltimoCambioEstadoDesde()).atZone(ZoneId.systemDefault()).toLocalDate()
                     : LocalDate.MIN;
+
             LocalDate fechaUltimoCambioEstadoHasta = dtoBusquedaSEP.getFechaUltimoCambioEstadoHasta() != null
                     ? Instant.ofEpochMilli(dtoBusquedaSEP.getFechaUltimoCambioEstadoHasta()).atZone(ZoneId.systemDefault()).toLocalDate()
                     : LocalDate.MAX;
 
-            setsPorFiltro.add(new HashSet<>(this.espacioRepository.findEspaciosByFechaCambioEstado(fechaUltimoCambioEstadoDesde, fechaUltimoCambioEstadoHasta)));
+            setsPorFiltro.add(new HashSet<>(
+                    this.espacioRepository.findEspaciosByFechaCambioEstado(fechaUltimoCambioEstadoDesde, fechaUltimoCambioEstadoHasta)
+            ));
         }
 
         if (setsPorFiltro.isEmpty()) {
             resultadoFinal.addAll(this.espacioRepository.findAllPrivados());
         } else {
             resultadoFinal.addAll(setsPorFiltro.get(0));
-
             for (int i = 1; i < setsPorFiltro.size(); i++) {
                 resultadoFinal.retainAll(setsPorFiltro.get(i));
             }
         }
 
-        List<DTOResultadoBusquedaSEP> sepDto = new ArrayList<>();
-        for (Espacio espacio : resultadoFinal) {
-            EspacioEstado espacioEstado=espacio.getEspacioEstado().get(espacio.getEspacioEstado().size()-1);
-            sepDto.add(DTOResultadoBusquedaSEP.builder()
-                    .idSEP(espacio.getId())
-                    .nombreEspacio(espacio.getNombre())
-                    .estado(espacioEstado.getEstadoEspacio().getNombre())
-                    .fechaIngreso(espacio.getFechaHoraAlta() == null ? null
-                            : espacio.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                    .fechaUltimoCambioEstado(espacioEstado.getFechaHoraAlta() == null ? null
-                            : espacioEstado.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                    .build());
-        }
+        List<DTOResultadoBusquedaSEP> sepDto = resultadoFinal.stream()
+                .map(espacio -> {
+                    EspacioEstado espacioEstado = espacio.getEspacioEstado().get(espacio.getEspacioEstado().size() - 1);
+                    return DTOResultadoBusquedaSEP.builder()
+                            .idSEP(espacio.getId())
+                            .nombreEspacio(espacio.getNombre())
+                            .estado(espacioEstado.getEstadoEspacio().getNombre())
+                            .fechaIngreso(espacio.getFechaHoraAlta() == null ? null
+                                    : espacio.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                            .fechaUltimoCambioEstado(espacioEstado.getFechaHoraAlta() == null ? null
+                                    : espacioEstado.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                            .build();
+                })
+                .collect(Collectors.toList());
 
-        return sepDto;
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), sepDto.size());
+
+        List<DTOResultadoBusquedaSEP> pageContent =
+                start > sepDto.size()
+                        ? Collections.emptyList()
+                        : sepDto.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, sepDto.size());
     }
+
 
     @Override
     public DTOEspacioPrivadoCompleto obtenerDetalleSolcitudEPrivado(Long idEspacio)throws Exception{
@@ -532,7 +595,9 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
                 .fechaHoraAlta(LocalDateTime.now())
                 .descripcion(dtoCambioEstado.getDescripcion())
                 .build();
-        this.espacioEstadoRepository.save(espacioEstado);
+        espacioEstado=this.espacioEstadoRepository.save(espacioEstado);
+        registroSingleton.write("Espacios", "espacio_privado", "creacion", "SEPEstado de ID " + estadoEspacio.getId());
+        registroSingleton.write("Espacios", "espacio_privado", "eliminacion", "SEPEstado de ID " + espacioEstadoActual.getId());
     }
 
     //region de métodos auxiliares

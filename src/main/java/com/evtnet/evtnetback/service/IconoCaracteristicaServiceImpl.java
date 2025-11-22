@@ -1,14 +1,15 @@
 package com.evtnet.evtnetback.service;
 
 import com.evtnet.evtnetback.entity.Caracteristica;
+import com.evtnet.evtnetback.entity.Disciplina;
 import com.evtnet.evtnetback.entity.IconoCaracteristica;
 import com.evtnet.evtnetback.repository.IconoCaracteristicaRepository;
 import com.evtnet.evtnetback.repository.CaracteristicaRepository;
 import com.evtnet.evtnetback.dto.espacios.DTOCaracteristicaSubEspacio;
 import com.evtnet.evtnetback.dto.iconoCaracteristica.DTOIconoCaracteristica;
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -32,89 +33,110 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
     private final IconoCaracteristicaRepository iconoCaracteristicaRepository;
     private final CaracteristicaRepository caracteristicaRepository;
     private final UploadsService uploads;
+    private final ParametroSistemaService parametroSistemaService;
+    private final RegistroSingleton registroSingleton;
 
     public IconoCaracteristicaServiceImpl(IconoCaracteristicaRepository iconoCaracteristicaRepository,
                                           CaracteristicaRepository caracteristicaRepository,
-                                          UploadsService uploads) {
+                                          UploadsService uploads,
+                                          ParametroSistemaService parametroSistemaService,
+                                          RegistroSingleton registroSingleton) {
         super(iconoCaracteristicaRepository);
         this.iconoCaracteristicaRepository = iconoCaracteristicaRepository;
         this.caracteristicaRepository = caracteristicaRepository;
         this.uploads = uploads;
+        this.parametroSistemaService = parametroSistemaService;
+        this.registroSingleton = registroSingleton;
     }
-
-//    @Override
-//    @Transactional
-//    public DTOIconoCaracteristica subirIcono(Long caracteristicaId, MultipartFile file) {
-//        Caracteristica car = carRepo.findById(caracteristicaId)
-//                .orElseThrow(() -> new IllegalArgumentException("Característica inexistente"));
-//
-//        String url = uploads.savePngOrSvg(file, "iconos");
-//
-//        // si preferís sin Lombok.builder() para evitar dependencia:
-//        IconoCaracteristica icono = new IconoCaracteristica();
-//        icono.setImagen(url);
-//        icono.setFechaHoraAlta(LocalDateTime.now());
-//        icono = iconoRepo.save(icono);
-//
-//        car.setIconoCaracteristica(icono);
-//        carRepo.save(car);
-//
-//        return new DTOIconoCaracteristica(
-//        icono.getId(),
-//        icono.getImagen(),
-//        icono.getFechaHoraAlta().toString()
-//        );
-//    }
-//
-//    @Override
-//    @Transactional
-//    public void eliminarIcono(Long iconoId) {
-//        IconoCaracteristica ic = iconoRepo.findById(iconoId)
-//                .orElseThrow(() -> new IllegalArgumentException("Ícono no existe"));
-//
-//        uploads.deleteByPublicUrl(ic.getImagen());
-//        iconoRepo.delete(ic);
-//    }
 
     @Override
-    public Page<DTOIconoCaracteristica> obtenerListaIconoCaracteristica(Pageable pageable) throws Exception {
+    public Page<DTOIconoCaracteristica> obtenerListaIconoCaracteristica(int page, boolean vigentes, boolean dadasDeBaja) throws Exception {
+        Integer longitudPagina = parametroSistemaService.getInt("longitudPagina", 20);
+        Pageable pageable = PageRequest.of(
+                page,
+                longitudPagina,
+                Sort.by(
+                        Sort.Order.asc("fechaHoraBaja"),
+                        Sort.Order.asc("fechaHoraAlta")
+                )
+        );
+
         Specification<IconoCaracteristica> spec = Specification.where(null);
+        boolean vigentesFiltro = Boolean.TRUE.equals(vigentes);
+        boolean dadasDeBajaFiltro = Boolean.TRUE.equals(dadasDeBaja);
+
+        if (vigentesFiltro && !dadasDeBajaFiltro) {
+            spec = spec.and((root, cq, cb) -> cb.isNull(root.get("fechaHoraBaja")));
+        }
+
+        if (!vigentesFiltro && dadasDeBajaFiltro) {
+            spec = spec.and((root, cq, cb) -> cb.isNotNull(root.get("fechaHoraBaja")));
+        }
         Page<IconoCaracteristica> iconosCaracteristica = iconoCaracteristicaRepository.findAll(spec, pageable);
-        return iconosCaracteristica
-                .map(ic-> {
-                    String base64Image = encodeFileToBase64(ic.getImagen());
-                    String[] parts = base64Image.split(",");
-                    String base64Data = parts[1];
-                    String mimeType = parts[0].split(";")[0].split(":")[1];
-                    String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
-                    return DTOIconoCaracteristica.builder()
-                            .id(ic.getId())
-                            .url(base64Data)
-                            .fechaAlta(ic.getFechaHoraAlta() == null ? null
-                                    : ic.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                            .fechaBaja(ic.getFechaHoraBaja()==null ? null
-                                    :ic.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                            .contentType(contentType)
-                            .build();
-                });
+
+        List<IconoCaracteristica> filtrados = iconosCaracteristica
+                .stream()
+                .filter(ic -> ic.getImagen() != null && Files.exists(Paths.get(ic.getImagen())))
+                .toList();
+
+        List<DTOIconoCaracteristica> dtos = filtrados.stream().map(ic -> {
+            String base64Image = encodeFileToBase64(ic.getImagen());
+            String[] parts = base64Image.split(",");
+            String base64Data = parts[1];
+
+            String extension = "";
+            Path path = Paths.get(ic.getImagen());
+            String fileName = path.getFileName().toString();
+
+            int dotIndex = fileName.lastIndexOf('.');
+            if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
+                extension = fileName.substring(dotIndex + 1).toLowerCase();
+            }
+
+            String contentType = extension.equals("svg") ? "svg" : "png";
+
+            return DTOIconoCaracteristica.builder()
+                    .id(ic.getId())
+                    .url(base64Data)
+                    .fechaAlta(ic.getFechaHoraAlta() == null ? null :
+                            ic.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                    .fechaBaja(ic.getFechaHoraBaja() == null ? null :
+                            ic.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                    .contentType(contentType)
+                    .build();
+        }).toList();
+
+
+        return new PageImpl<>(dtos, pageable, dtos.size());
     }
+
 
     @Override
     public DTOIconoCaracteristica obtenerIconoCaracteristicaCompleto(Long id) throws Exception {
-        IconoCaracteristica iconoCaracteristica = iconoCaracteristicaRepository.findById(id).get();
-//        IconoCaracteristica iconoCaracteristica = iconoCaracteristicaRepository.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Icono no encontrado"));
+        IconoCaracteristica iconoCaracteristica = iconoCaracteristicaRepository.findById(id)
+                .orElseThrow(() -> new Exception("Icono no encontrado"));
+
         String base64Image = encodeFileToBase64(iconoCaracteristica.getImagen());
         String[] parts = base64Image.split(",");
         String base64Data = parts[1];
-        String mimeType = parts[0].split(";")[0].split(":")[1];
-        String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
+
+        String extension = "";
+        Path path = Paths.get(iconoCaracteristica.getImagen());
+        String fileName = path.getFileName().toString();
+
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
+            extension = fileName.substring(dotIndex + 1).toLowerCase();
+        }
+        String contentType = extension.equals("svg") ? "svg" : "png";
+
         return DTOIconoCaracteristica.builder()
                 .id(iconoCaracteristica.getId())
                 .url(base64Data)
                 .contentType(contentType)
                 .build();
     }
+
 
     @Override
     public void altaIconoCaracteristica(DTOIconoCaracteristica iconoCaracteristica) throws Exception {
@@ -124,17 +146,30 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
                 .build());
 
         icono.setImagen(guardarImagenBase64(iconoCaracteristica.getUrl(), icono.getId()));
-        this.save(icono);
+        icono=this.save(icono);
+        registroSingleton.write("Parametros", "icono_caracteristica", "creacion", "Icono de ID " + icono.getId());
     }
 
     @Override
     public void modificarIconoCaracteristica(DTOIconoCaracteristica iconoCaracteristica) throws Exception {
         iconoCaracteristicaRepository.update(iconoCaracteristica.getId(), guardarImagenBase64(iconoCaracteristica.getUrl(), iconoCaracteristica.getId()));
+        registroSingleton.write("Parametros", "icono_caracteristica", "modificacion", "Icono de ID " + iconoCaracteristica.getId());
     }
 
     @Override
     public void bajaIconoCaracteristica(Long id) throws Exception {
         iconoCaracteristicaRepository.delete(id, LocalDateTime.now());
+        registroSingleton.write("Parametros", "icono_caracteristica", "eliminacion", "Icono de ID " + id);
+    }
+
+    @Override
+    public void restaurarIconoCaracteristica(Long id) throws Exception{
+        IconoCaracteristica iconoCaracteristica = iconoCaracteristicaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ícono de característica no encontrado"));
+        iconoCaracteristica.setFechaHoraBaja(null);
+        iconoCaracteristica.setFechaHoraAlta(LocalDateTime.now());
+        this.save(iconoCaracteristica);
+        registroSingleton.write("Parametros", "icono_caracteristica", "restauracion", "Icono de ID " + id);
     }
 
     @Override

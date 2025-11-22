@@ -23,12 +23,14 @@ public class IconoCaracteristicaController extends BaseControllerImpl <IconoCara
     private final IconoCaracteristicaService iconoCaracteristicaService;
 
     @GetMapping("/obtenerIconosCaracteristicas")
-    public ResponseEntity obtenerListaiIconosCaracteristica(@RequestParam(name = "page", defaultValue = "0") int page) {
+    public ResponseEntity obtenerListaIconosCaracteristica(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "vigentes", defaultValue = "true") boolean vigentes,
+            @RequestParam(name = "dadasDeBaja", defaultValue = "true") boolean dadasDeBaja
+
+    ) {
         try {
-            var pageable = org.springframework.data.domain.PageRequest.of(
-                    page, 10, org.springframework.data.domain.Sort.by("id").ascending()
-            );
-            return ResponseEntity.ok(iconoCaracteristicaService.obtenerListaIconoCaracteristica(pageable));
+            return ResponseEntity.ok(iconoCaracteristicaService.obtenerListaIconoCaracteristica(page, vigentes, dadasDeBaja));
         }
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
@@ -93,6 +95,21 @@ public class IconoCaracteristicaController extends BaseControllerImpl <IconoCara
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
                     "No se pudo dar de baja el ícono de característica"
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @PutMapping("/restaurar")
+    public ResponseEntity restaurarIconoCaracteristica(@RequestParam(name="id", required=true) Long id) {
+        try{
+            iconoCaracteristicaService.restaurarIconoCaracteristica(id);
+            return ResponseEntity.ok().build();
+        }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo restaurar el ícono de característica"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
