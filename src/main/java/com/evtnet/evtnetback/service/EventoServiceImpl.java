@@ -1179,8 +1179,8 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
-		mercadoPagoSingleton.verifyPayments(dto.getDatosPago());
-		for (DTOPago datosPago : dto.getDatosPago()) {
+		mercadoPagoSingleton.verifyPayments(dto.getPagos());
+		for (DTOPago datosPago : dto.getPagos()) {
 			registroSingleton.write("Pagos", "pago", "ejecucion", "Por inscripción a evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'. ID de pago: " + datosPago.getPaymentId());
 		}
 

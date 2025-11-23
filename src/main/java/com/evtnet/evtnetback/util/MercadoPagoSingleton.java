@@ -37,7 +37,7 @@ public class MercadoPagoSingleton {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    private final boolean debug = true;
+    private final boolean debug = false;
 
     public MercadoPagoSingleton(
             @Value("${app.frontend.baseUrl}") String baseUrl,
@@ -248,7 +248,35 @@ public class MercadoPagoSingleton {
         if (debug) return;
 
         for (DTOPago pago : pagos) {
-            //TO-DO: Verificar que todos los pagos se hayan realizado correctamente
+            String url = "https://api.mercadopago.com/v1/payments/" + pago.getPaymentId();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + MercadoPagoConfig.getAccessToken());
+
+            HttpEntity<String> request = new HttpEntity<>(headers);
+
+            try {
+                ResponseEntity<PaymentResponse> response = restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        request,
+                        PaymentResponse.class
+                );
+
+                if (response.getStatusCode() == HttpStatus.OK) {
+                    PaymentResponse payment = response.getBody();
+
+                    if (!"approved".equals(payment.status)) {
+                        throw new Exception("Pago " + pago.getPaymentId() + " no está aprobado. Estado: " + payment.status);
+                    }
+
+                } else {
+                    throw new Exception("Error al verificar pago " + pago.getPaymentId() + ". Status: " + response.getStatusCode());
+                }
+
+            } catch (Exception e) {
+                throw new Exception("Error verificando pago " + pago.getPaymentId() + ": " + e.getMessage(), e);
+            }
         }
     }
 
@@ -259,7 +287,100 @@ public class MercadoPagoSingleton {
     public void refundPayment(ComprobantePago comprobante, int porcentaje) throws Exception {
         if (debug) return;
 
-        //TO-DO: Reembolsar pagos
+        if (porcentaje < 0 || porcentaje > 100) {
+            throw new IllegalArgumentException("El porcentaje debe estar entre 0 y 100");
+        }
+
+        String paymentId = comprobante.getNumero();
+
+        if (paymentId == null || paymentId.isEmpty()) {
+            throw new Exception("El comprobante no tiene un payment_id asociado");
+        }
+
+        // Get seller's access token from the first item (cobro)
+        if (comprobante.getItems() == null || comprobante.getItems().isEmpty()) {
+            throw new Exception("El comprobante no tiene items");
+        }
+
+        String sellerAccessToken = comprobante.getItems().get(0).getCobro().getMercadoPagoAccessToken();
+
+        if (sellerAccessToken == null || sellerAccessToken.isEmpty()) {
+            throw new Exception("No se puede reembolsar: el vendedor no tiene token de Mercado Pago");
+        }
+
+        String url = "https://api.mercadopago.com/v1/payments/" + paymentId + "/refunds";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + sellerAccessToken);
+
+        RefundRequest refundRequest = new RefundRequest();
+
+        if (porcentaje < 100) {
+            // Calculate total amount from items (gross + commission)
+            BigDecimal totalAmount = comprobante.getItems().stream()
+                    .map(item -> item.getMontoUnitario().multiply(new BigDecimal(item.getCantidad())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            refundRequest.amount = totalAmount.multiply(new BigDecimal(porcentaje)).divide(new BigDecimal(100));
+        }
+        // If porcentaje == 100, send empty/null amount for full refund
+
+        HttpEntity<RefundRequest> request = new HttpEntity<>(refundRequest, headers);
+
+        try {
+            ResponseEntity<RefundResponse> response = restTemplate.postForEntity(
+                    url,
+                    request,
+                    RefundResponse.class
+            );
+
+            if (response.getStatusCode() != HttpStatus.CREATED &&
+                    response.getStatusCode() != HttpStatus.OK) {
+                throw new Exception("Error al reembolsar pago " + paymentId + ". Status: " + response.getStatusCode());
+            }
+
+        } catch (Exception e) {
+            throw new Exception("Error reembolsando pago " + paymentId + ": " + e.getMessage(), e);
+        }
+    }
+
+// DTOs for Payment API
+
+    public static class PaymentResponse {
+        @JsonProperty("id")
+        public Long id;
+
+        @JsonProperty("status")
+        public String status;
+
+        @JsonProperty("status_detail")
+        public String statusDetail;
+
+        @JsonProperty("transaction_amount")
+        public BigDecimal transactionAmount;
+
+        @JsonProperty("metadata")
+        public java.util.Map<String, String> metadata;
+    }
+
+    public static class RefundRequest {
+        @JsonProperty("amount")
+        public BigDecimal amount;
+    }
+
+    public static class RefundResponse {
+        @JsonProperty("id")
+        public Long id;
+
+        @JsonProperty("payment_id")
+        public Long paymentId;
+
+        @JsonProperty("amount")
+        public BigDecimal amount;
+
+        @JsonProperty("status")
+        public String status;
     }
 
     // DTOs for OAuth
