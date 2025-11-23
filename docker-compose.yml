@@ -16,7 +16,8 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mariadb/init:/docker-entrypoint-initdb.d:ro
+      - ./mariadb/init:/docker-entrypoint-initdb.d:ro   # scripts SQL al iniciar
+      - ./storage/backups:/backups                      # backups accesibles por el host
     networks:
       - evtnet-net
 
@@ -31,22 +32,24 @@ services:
       - ./storage/perfiles:/app/storage/perfiles
       - ./storage/logs:/app/storage/logs
       - ./uploads:/app/uploads
+      - /var/run/docker.sock:/var/run/docker.sock      # backend puede hacer docker exec
+      - ./storage/backups:/backups                     # mismo volumen que mariadb para accesibilidad
     ports:
       - "8080:8080"
     environment:
-      # DB (dentro de la red el host es el nombre del service: mariadb)
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/evtnet_db
       SPRING_DATASOURCE_USERNAME: evtnet_user
       SPRING_DATASOURCE_PASSWORD: evtnet_pass
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
 
-      # JWT por ENV (sobrescribe lo del application.properties)
       APP_JWT_SECRET: "CLAVE_SECRETA_SUPER_SEGURA_2025_X"
       APP_JWT_EXPIRATION: "3600000"
 
-      # Ruta de storage
       APP_STORAGE_PERFILES: "/app/storage/perfiles"
-      APP_STORAGE_LOGS: "/app/storage/logs" 
+      APP_STORAGE_LOGS: "/app/storage/logs"
+
+      BACKUP_CONTAINER_NAME: "evtnet-mariadb"          # para el executor
+      BACKUP_BASE_PATH: "/backups"                     # donde se escriben los backups
 
     networks:
       - evtnet-net
