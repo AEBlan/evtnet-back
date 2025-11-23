@@ -30,4 +30,18 @@ public interface ComisionPorInscripcionRepository extends BaseRepository <Comisi
     ORDER BY c.montoLimite DESC
     """)
     ComisionPorInscripcion findComisionByValor(@Param("valor") double valor);
+
+    @Query("""
+        SELECT COUNT(c) > 0
+        FROM ComisionPorInscripcion c
+        WHERE c.montoLimite = :montoLimite
+          AND (c.fechaHasta IS NULL OR c.fechaHasta > :hoy)
+         AND c.fechaDesde < :hoy
+          AND (:id IS NULL OR c.id <> :id)
+    """)
+    boolean existsMontoLimiteVigente(
+            @Param("montoLimite") BigDecimal montoLimite,
+            @Param("id") Long id
+    );
+
 }

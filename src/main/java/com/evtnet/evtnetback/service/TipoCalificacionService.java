@@ -9,10 +9,11 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface TipoCalificacionService extends BaseService <TipoCalificacion, Long> {
-    Page<DTOTipoCalificacion> obtenerListaTipoCalificacion(Pageable pageable) throws Exception;
+    Page<DTOTipoCalificacion> obtenerListaTipoCalificacion(int page, boolean vigentes, boolean dadasDeBaja) throws Exception;
     List<DTOTipoCalificacionSelect> obtenerTiposCalificacionSelect()throws Exception;
     DTOTipoCalificacion obtenerTipoCalificacionCompleto(Long id) throws Exception;
     void altaTipoCalificacion(DTOTipoCalificacion tipoCalificacion) throws Exception;
     void modificarTipoCalificacion(DTOTipoCalificacion tipoCalificacion) throws Exception;
     void bajaTipoCalificacion(Long id) throws Exception;
+    void restaurarTipoCalificacion(Long id) throws Exception;
 }

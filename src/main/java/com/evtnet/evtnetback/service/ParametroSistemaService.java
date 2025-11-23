@@ -9,7 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface ParametroSistemaService extends BaseService <ParametroSistema, Long> {
-    Page<DTOParametroSistema> obtenerListaParametroSistema(Pageable pageable) throws Exception;
+    Page<DTOParametroSistema> obtenerListaParametroSistema(int page) throws Exception;
     DTOParametroSistema obtenerParametroSistemaCompleto(Long id) throws Exception;
     void altaParametroSistema(DTOParametroSistema parametroSistema) throws Exception;
     void modificarParametroSistema(DTOParametroSistema parametroSistema) throws Exception;

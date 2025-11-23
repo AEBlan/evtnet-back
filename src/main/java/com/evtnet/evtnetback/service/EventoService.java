@@ -46,8 +46,8 @@ public interface EventoService extends BaseService<Evento, Long> {
     DTODatosParaCambioEstadoDenuncia obtenerDatosParaCambioEstado(long idDenuncia);
     void cambiarEstadoDenuncia(DTOCambioEstadoDenuncia dto) throws Exception;
     DTODatosParaDenunciarEvento obtenerDatosParaDenunciar(long idEvento) throws Exception;
-    void aprobarRechazarEvento(Long idEvento, String estado);
-    void cancelarEventoEspacio(Long idEvento);
+    void aprobarRechazarEvento(Long idEvento, String estado)throws Exception;
+    void cancelarEventoEspacio(Long idEvento)throws Exception;
 
 
 }

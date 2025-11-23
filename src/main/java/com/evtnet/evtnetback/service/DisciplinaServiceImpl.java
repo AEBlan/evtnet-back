@@ -12,8 +12,11 @@ import com.evtnet.evtnetback.repository.SubEspacioRepository;
 import com.evtnet.evtnetback.entity.DisciplinaSubEspacio;
 import com.evtnet.evtnetback.entity.SubEspacio;
 
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -31,16 +34,22 @@ public class DisciplinaServiceImpl extends BaseServiceImpl<Disciplina, Long> imp
     private final DisciplinaRepository disciplinaRepository;
     private final DisciplinaSubEspacioRepository disciplinaSubEspacioRepository;
     private final SubEspacioRepository subEspacioRepository;
+    private final ParametroSistemaService parametroSistemaService;
+    private final RegistroSingleton registroSingleton;
 
     public DisciplinaServiceImpl(
             DisciplinaRepository disciplinaRepository,
             DisciplinaSubEspacioRepository disciplinaSubEspacioRepository,
-            SubEspacioRepository subEspacioRepository
+            SubEspacioRepository subEspacioRepository,
+            ParametroSistemaService parametroSistemaService,
+            RegistroSingleton registroSingleton
     ) {
         super(disciplinaRepository);
         this.disciplinaRepository = disciplinaRepository;
         this.disciplinaSubEspacioRepository = disciplinaSubEspacioRepository;
         this.subEspacioRepository = subEspacioRepository;
+        this.parametroSistemaService = parametroSistemaService;
+        this.registroSingleton = registroSingleton;
     }
 
     @Override
@@ -73,7 +82,16 @@ public class DisciplinaServiceImpl extends BaseServiceImpl<Disciplina, Long> imp
     }
 
     @Override
-    public Page<DTODisciplinas> buscarDisciplinas(Pageable pageable, DTOBusquedaDisciplina filtros) throws Exception {
+    public Page<DTODisciplinas> buscarDisciplinas(int page, DTOBusquedaDisciplina filtros) throws Exception {
+        Integer longitudPagina = parametroSistemaService.getInt("longitudPagina", 20);
+        Pageable pageable = PageRequest.of(
+                page,
+                longitudPagina,
+                Sort.by(
+                        Sort.Order.asc("fechaHoraBaja"),
+                        Sort.Order.asc("fechaHoraAlta")
+                )
+        );
         Specification<Disciplina> spec = Specification.where(null);
 
         if (filtros != null) {
@@ -95,6 +113,16 @@ public class DisciplinaServiceImpl extends BaseServiceImpl<Disciplina, Long> imp
                         .atZone(ZoneId.systemDefault()).toLocalDateTime();
                 spec = spec.and((root, cq, cb) ->
                         cb.lessThanOrEqualTo(root.get("fechaHoraAlta"), fechaHasta));
+            }
+            boolean vigentes = Boolean.TRUE.equals(filtros.isVigentes());
+            boolean dadasDeBaja = Boolean.TRUE.equals(filtros.isDadasDeBaja());
+
+            if (vigentes && !dadasDeBaja) {
+                spec = spec.and((root, cq, cb) -> cb.isNull(root.get("fechaHoraBaja")));
+            }
+
+            if (!vigentes && dadasDeBaja) {
+                spec = spec.and((root, cq, cb) -> cb.isNotNull(root.get("fechaHoraBaja")));
             }
         }
 
@@ -130,20 +158,36 @@ public class DisciplinaServiceImpl extends BaseServiceImpl<Disciplina, Long> imp
 
     @Override
     public void altaDisciplina(DTODisciplinas disciplina) throws Exception {
-        this.save(Disciplina.builder()
+        if(disciplinaRepository.existsByName(disciplina.getNombre())) throw new Exception("Ya hay una disciplina dada de alta con ese nombre");
+        Disciplina disciplinaNueva=this.save(Disciplina.builder()
                 .nombre(disciplina.getNombre())
                 .descripcion(disciplina.getDescripcion())
                 .fechaHoraAlta(LocalDateTime.now())
                 .build());
+        registroSingleton.write("Parametros", "disciplina", "creacion", "Disciplina de ID " + disciplinaNueva.getId() + " nombre" +disciplinaNueva.getNombre()+ "'");
     }
 
     @Override
     public void modificarDisciplina(DTODisciplinas disciplina) throws Exception {
+        if(disciplinaRepository.existsByName(disciplina.getNombre())) throw new Exception("Ya hay una disciplina dada de alta con ese nombre");
         disciplinaRepository.update(disciplina.getId(), disciplina.getNombre(), disciplina.getDescripcion());
+        registroSingleton.write("Parametros", "disciplina", "modificacion", "Disciplina de ID " + disciplina.getId() + " nombre" +disciplina.getNombre()+ "'");
     }
 
     @Override
     public void bajaDisciplina(Long id) throws Exception {
         disciplinaRepository.delete(id, LocalDateTime.now());
+        registroSingleton.write("Parametros", "disciplina", "eliminacion", "Disciplina de ID " + id+ "'");
+    }
+
+    @Override
+    public void restaurarDisciplina(Long id) throws Exception{
+        Disciplina disciplina = disciplinaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Disciplina no encontrada"));
+        if(disciplinaRepository.existsByName(disciplina.getNombre())) throw new Exception("Ya hay una disciplina dada de alta con ese nombre");
+        disciplina.setFechaHoraBaja(null);
+        disciplina.setFechaHoraAlta(LocalDateTime.now());
+        this.save(disciplina);
+        registroSingleton.write("Parametros", "disciplina", "restauracion", "Disciplina de ID " + id+ "'");
     }
 }

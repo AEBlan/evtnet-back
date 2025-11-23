@@ -25,4 +25,24 @@ public interface TipoCalificacionRepository extends BaseRepository <TipoCalifica
     @Query("UPDATE TipoCalificacion tc SET tc.fechaHoraBaja = :fecha WHERE tc.id = :id")
     void delete(@Param("id") Long id, @Param("fecha") LocalDateTime fecha);
 
+    @Query("""
+        SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
+        FROM TipoCalificacion t
+        WHERE LOWER(t.nombre) = LOWER(:nombre)
+          AND t.fechaHoraBaja IS NULL
+    """)
+    boolean existsByNombreVigente(@Param("nombre") String nombre);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
+        FROM TipoCalificacion t
+        WHERE LOWER(t.nombre) = LOWER(:nombre)
+          AND t.fechaHoraBaja IS NULL
+          AND t.id <> :id
+    """)
+    boolean existsByNombreVigenteExcludingId(
+            @Param("nombre") String nombre,
+            @Param("id") Long id
+    );
+
 }

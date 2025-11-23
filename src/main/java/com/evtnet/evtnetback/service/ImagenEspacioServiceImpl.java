@@ -7,6 +7,7 @@ import com.evtnet.evtnetback.repository.ImagenEspacioRepository;
 import com.evtnet.evtnetback.dto.imagenes.DTOActualizarImagenesEspacio;
 import com.evtnet.evtnetback.dto.imagenes.DTOImagenEspacio;
 import com.evtnet.evtnetback.dto.imagenes.DTOObtenerImagenEspacio;
+import com.evtnet.evtnetback.util.RegistroSingleton;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,20 +26,23 @@ import java.util.stream.Collectors;
 @Service
 public class ImagenEspacioServiceImpl extends BaseServiceImpl<ImagenEspacio, Long>implements ImagenEspacioService {
 
-    @Value("${app.storage.iconos:/app/storage/iconos}")
+    @Value("${app.storage.imagenesEspacio:/app/storage/imagenesEspacio}")
     private String iconosDirectorio;
 
     private final ImagenEspacioRepository imagenEspacioRepository;
     private final EspacioRepository espacioRepository;
     private final UploadsService uploads;
+    private final RegistroSingleton registroSingleton;
 
     public ImagenEspacioServiceImpl(ImagenEspacioRepository imagenEspacioRepository,
                                     EspacioRepository espacioRepository,
-                                    UploadsService uploads) {
+                                    UploadsService uploads,
+                                    RegistroSingleton registroSingleton) {
         super(imagenEspacioRepository);
         this.imagenEspacioRepository = imagenEspacioRepository;
         this.espacioRepository = espacioRepository;
         this.uploads = uploads;
+        this.registroSingleton = registroSingleton;
     }
 
     @Override
@@ -196,6 +200,7 @@ public class ImagenEspacioServiceImpl extends BaseServiceImpl<ImagenEspacio, Lon
         for (ImagenEspacio img : aEliminar) {
             img.setFechaHoraBaja(LocalDateTime.now());
             this.imagenEspacioRepository.save(img);
+            registroSingleton.write("Espacios", "imagen", "eliminacion", "ImagenEspacio de ID " + img.getId());
         }
 
         for (DTOActualizarImagenesEspacio.Imagen imagen : dtoImagenes.getImagenes()) {
@@ -206,14 +211,17 @@ public class ImagenEspacioServiceImpl extends BaseServiceImpl<ImagenEspacio, Lon
                         .orden(imagen.getOrden())
                         .imagen(guardarImagenBase64(imagen.getBlobUrl(), espacio.getId(),espacio.getNombre()))
                         .build();
-                this.imagenEspacioRepository.save(nueva);
+                nueva=this.imagenEspacioRepository.save(nueva);
+                registroSingleton.write("Espacios", "imagen", "creacion", "ImagenEspacio de ID " + nueva.getId());
             } else {
                 ImagenEspacio existente = this.imagenEspacioRepository.findById(imagen.getId())
                         .orElseThrow(() -> new Exception("No se encontró la imagen con ID " + imagen.getId()));
                 existente.setOrden(imagen.getOrden());
                 this.imagenEspacioRepository.save(existente);
+                registroSingleton.write("Espacios", "imagen", "modificacion", "ImagenEspacio de ID " + existente.getId());
             }
         }
+
     }
 
     private String guardarImagenBase64(String dataUrl, Long id, String nombreEspacio) throws IOException {

@@ -36,12 +36,12 @@ public class DisciplinaController {
 
 
     @PutMapping ("/buscarDisciplinas")
-    public ResponseEntity buscarDisciplinas(@RequestParam(name = "page", defaultValue = "0") int page, @RequestBody DTOBusquedaDisciplina filtros) {
+    public ResponseEntity buscarDisciplinas(@RequestParam (defaultValue = "0") int page, @RequestBody DTOBusquedaDisciplina filtros) {
         try {
             var pageable = org.springframework.data.domain.PageRequest.of(
                     page, 10, org.springframework.data.domain.Sort.by("id").ascending()
             );
-            return ResponseEntity.ok(service.buscarDisciplinas(pageable, filtros));
+            return ResponseEntity.ok(service.buscarDisciplinas(page, filtros));
         }
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
@@ -106,6 +106,21 @@ public class DisciplinaController {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
                     "No se pudo dar de baja la disciplina"
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @PutMapping("/restaurar")
+    public ResponseEntity restaurarDisciplina(@RequestParam(name="id", required=true) Long id) {
+        try{
+            service.restaurarDisciplina(id);
+            return ResponseEntity.ok().build();
+        }
+        catch (Exception e) {
+            HttpErrorException error = new HttpErrorException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "No se pudo restaurar la disciplina"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

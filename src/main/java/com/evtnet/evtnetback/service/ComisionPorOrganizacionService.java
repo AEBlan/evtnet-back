@@ -6,9 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface ComisionPorOrganizacionService extends BaseService<ComisionPorOrganizacion, Long> {
-    Page<DTOComisionPorOrganizacion> obtenerListaComisionPorOrganizacion(Pageable pageable) throws Exception;
+    Page<DTOComisionPorOrganizacion> obtenerListaComisionPorOrganizacion(int page, boolean activas, boolean noActivas) throws Exception;
     DTOComisionPorOrganizacion obtenerComisionPorOrganizacionCompleto(Long id) throws Exception;
     void altaComisionPorOrganizacion(DTOComisionPorOrganizacion comisionPorOrganizacion) throws Exception;
     void modificarComisionPorOrganizacion(DTOComisionPorOrganizacion comisionPorOrganizacion) throws Exception;
     void bajaComisionPorOrganizacion(Long id) throws Exception;
+    void restaurarComisionPorOrganizacion(Long id) throws Exception;
 }
