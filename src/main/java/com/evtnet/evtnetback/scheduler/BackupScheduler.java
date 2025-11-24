@@ -5,6 +5,7 @@ import com.evtnet.evtnetback.executor.BackupExecutor;
 import com.evtnet.evtnetback.service.BackupService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -34,9 +35,7 @@ public class BackupScheduler {
 
             ProgramacionBackup prog = backupService.obtenerProgramacionActiva();
             if (prog != null) {
-                executor.evaluarYEjecutarAutomaticosPendientes(
-                        prog.getCopiasIncrementales()
-                );
+                executor.evaluarYEjecutarAutomaticosPendientes(prog);
                 executor.aplicarRetencion(prog.getCopiasAConservar());
             }
 
@@ -45,6 +44,26 @@ public class BackupScheduler {
             e.printStackTrace();
         }
     }
+
+    @Scheduled(fixedDelay = 60000) // cada 30 segundos
+    public void verificarPeriodicamente() {
+        try {
+            System.out.println("[SCHEDULER] Revisión periódica...");
+
+            executor.ejecutarManualesPendientes();
+
+            ProgramacionBackup prog = backupService.obtenerProgramacionActiva();
+            if (prog == null) return;
+
+            executor.evaluarYEjecutarAutomaticosPendientes(prog);
+
+            executor.aplicarRetencion(prog.getCopiasAConservar());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public void programarSiguienteEjecucion() {
 
@@ -65,9 +84,7 @@ public class BackupScheduler {
 
         tareaProgramada = () -> {
             try {
-                executor.evaluarYEjecutarAutomaticosPendientes(
-                        prog.getCopiasIncrementales()
-                );
+                executor.evaluarYEjecutarAutomaticosPendientes(prog);
                 executor.aplicarRetencion(prog.getCopiasAConservar());
                 programarSiguienteEjecucion();
             } catch (Exception e) {
