@@ -35,8 +35,8 @@ public interface ComisionPorInscripcionRepository extends BaseRepository <Comisi
         SELECT COUNT(c) > 0
         FROM ComisionPorInscripcion c
         WHERE c.montoLimite = :montoLimite
-          AND (c.fechaHasta IS NULL OR c.fechaHasta > :hoy)
-         AND c.fechaDesde < :hoy
+          AND (c.fechaHasta IS NULL OR c.fechaHasta > CURRENT_DATE)
+         AND c.fechaDesde < CURRENT_DATE
           AND (:id IS NULL OR c.id <> :id)
     """)
     boolean existsMontoLimiteVigente(

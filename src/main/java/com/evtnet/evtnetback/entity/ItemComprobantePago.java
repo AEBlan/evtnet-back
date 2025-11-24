@@ -26,11 +26,11 @@ public class ItemComprobantePago extends Base {
     // --- Relaciones ---
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cobro_id", nullable = false)
+    @JoinColumn(name = "cobro_id")
     private Usuario cobro;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pago_id", nullable = false)
+    @JoinColumn(name = "pago_id")
     private Usuario pago;
 
     @ManyToOne(fetch = FetchType.LAZY)

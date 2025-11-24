@@ -903,9 +903,17 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		boolean pagoRealizado = false;
 
+		List<ComprobantePago> comprobantes = new ArrayList<>();
+
 		if (r.isUsarCronograma() && !admins.contains(username)) {
 			if (h.getPrecioOrganizacion().doubleValue() > 0f) {
-				mercadoPagoSingleton.verifyPayments(List.of(r.getPago()));
+				Usuario propietario = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEspacio().getNombre().equalsIgnoreCase("Propietario")).max(Comparator.comparing(AdministradorEspacio::getFechaHoraAlta)).orElseThrow(() -> new Exception("El espacio no tiene propietario")).getUsuario();
+
+				List<DTOPago> pagos = r.getPagos();
+				for (DTOPago pago : pagos) {
+					pago.setDestinatario(propietario);
+				}
+				comprobantes = mercadoPagoSingleton.verifyPayments(pagos);
 			}
 			pagoRealizado = true;
 		}
@@ -933,6 +941,11 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		e.setSubEspacio(subespacio);
 
 		e = eventoRepo.save(e);
+
+		for (ComprobantePago c : comprobantes) {
+			c.setEvento(e);
+			comprobanteRepo.save(c);
+		}
 
 		for (Disciplina d : disciplinas) {
 			DisciplinaEvento de = DisciplinaEvento.builder()
@@ -1179,7 +1192,20 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		//BigDecimal comision_inscripcion = parametroSistemaService.getDecimal("comision_inscripcion", new BigDecimal("0.1"));
 
-		mercadoPagoSingleton.verifyPayments(dto.getPagos());
+		List<DTOPago> pagos = dto.getPagos();
+		for (DTOPago p : pagos) {
+			if (p.getExternal_reference().contains("Adicional")) {
+				Usuario propietario = e.getSubEspacio().getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEspacio().getNombre().equalsIgnoreCase("Propietario")).max(Comparator.comparing(AdministradorEspacio::getFechaHoraAlta)).orElseThrow(() -> new Exception("El espacio no tiene propietario")).getUsuario();
+
+				p.setDestinatario(propietario);
+			} else if (p.getExternal_reference().contains("Inscripción")) {
+				p.setDestinatario(e.getOrganizador());
+			}
+
+		}
+
+		List<ComprobantePago> comprobantes = mercadoPagoSingleton.verifyPayments(pagos);
+
 		for (DTOPago datosPago : dto.getPagos()) {
 			registroSingleton.write("Pagos", "pago", "ejecucion", "Por inscripción a evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'. ID de pago: " + datosPago.getPaymentId());
 		}
@@ -1201,7 +1227,12 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 
 		ins.setPermitirDevolucionCompleta(false);
 
-		inscripcionRepo.save(ins);
+		ins = inscripcionRepo.save(ins);
+
+		for (ComprobantePago c : comprobantes) {
+			c.setInscripcion(ins);
+			comprobanteRepo.save(c);
+		}
 
 		if (dto.getInvitados() != null) {
 			for (DTOInscripcion.Invitado i : dto.getInvitados()) {

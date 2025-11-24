@@ -1,11 +1,32 @@
 package com.evtnet.evtnetback.util;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.List;
 
+import com.evtnet.evtnetback.config.jackson.LocalDateTimeFlexDeserializer;
 import com.evtnet.evtnetback.entity.ComprobantePago;
+import com.evtnet.evtnetback.entity.ItemComprobantePago;
+import com.evtnet.evtnetback.repository.ComprobantePagoRepository;
+import com.evtnet.evtnetback.repository.ItemComprobantePagoRepository;
+import com.evtnet.evtnetback.repository.UsuarioRepository;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.PdfWriter;
+import com.mercadopago.client.payment.PaymentClient;
+import com.mercadopago.client.payment.PaymentRefundClient;
 import com.mercadopago.exceptions.MPApiException;
+import com.mercadopago.resources.payment.Payment;
+import com.mercadopago.resources.payment.PaymentFeeDetail;
+import com.mercadopago.resources.payment.PaymentRefund;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -22,7 +43,6 @@ import com.mercadopago.client.preference.PreferencePaymentTypeRequest;
 import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.resources.preference.Preference;
 import com.mercadopago.MercadoPagoConfig;
-import com.mercadopago.client.oauth.OauthClient;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,23 +54,41 @@ public class MercadoPagoSingleton {
     private final String clientId;
     private final String clientSecret;
     private final String redirectUri;
+    private final String marketPlaceToken;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final UsuarioRepository usuarioRepository;
+    private final ComprobantePagoRepository comprobantePagoRepository;
+    private final ItemComprobantePagoRepository itemComprobantePagoRepository;
 
-    private final boolean debug = false;
+    private final boolean debugPayments;
+    private final boolean debugRefunds;
 
     public MercadoPagoSingleton(
             @Value("${app.frontend.baseUrl}") String baseUrl,
             @Value("${mercadopago.client.id}") String clientId,
             @Value("${mercadopago.client.secret}") String clientSecret,
-            @Value("${mercadopago.redirect.uri}") String redirectUri
+            @Value("${mercadopago.redirect.uri}") String redirectUri,
+            @Value("${mercadopago.marketplace.token}") String marketPlaceToken,
+            UsuarioRepository usuarioRepository,
+            ComprobantePagoRepository comprobantePagoRepository,
+            ItemComprobantePagoRepository itemComprobantePagoRepository,
+
+            @Value("${mercadopago.debug.payments}") boolean debugPayments,
+            @Value("${mercadopago.debug.refunds}") boolean debugRefunds
     ) {
         this.baseUrl = baseUrl;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.redirectUri = redirectUri;
+        this.marketPlaceToken = marketPlaceToken;
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
+        this.usuarioRepository = usuarioRepository;
+        this.comprobantePagoRepository = comprobantePagoRepository;
+        this.itemComprobantePagoRepository = itemComprobantePagoRepository;
+        this.debugPayments = debugPayments;
+        this.debugRefunds = debugRefunds;
     }
 
     // OAuth Methods
@@ -228,6 +266,7 @@ public class MercadoPagoSingleton {
                 .binaryMode(true)
                 .paymentMethods(paymentMethod)
                 .items(items)
+                .externalReference(concepto)
                 .build();
 
         PreferenceClient client = new PreferenceClient();
@@ -244,48 +283,177 @@ public class MercadoPagoSingleton {
                 .build();
     }
 
-    public void verifyPayments(List<DTOPago> pagos) throws Exception {
-        if (debug) return;
+    public List<ComprobantePago> verifyPayments(List<DTOPago> pagos) throws Exception {
+        if (debugPayments) {
+            // Return mock comprobantes in debug mode
+            String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Sesión vencida"));
+            Usuario usuarioLogueado = usuarioRepository.findByUsername(username).orElseThrow(() -> new Exception("No se encontró al usuario que pagó"));
+
+            List<ComprobantePago> comprobantes = new ArrayList<>();
+            for (DTOPago pago : pagos) {
+                ComprobantePago comprobante = comprobantePagoRepository.save(ComprobantePago.builder()
+                        .numero(pago.getPaymentId())
+                        .concepto(pago.getExternal_reference())
+                        .fechaHoraEmision(LocalDateTime.now())
+                        .archivo("/mock/path/receipt.pdf")
+                        .build());
+                comprobantes.add(comprobante);
+            }
+            return comprobantes;
+        }
+
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Sesión vencida"));
+        Usuario usuarioLogueado = usuarioRepository.findByUsername(username).orElseThrow(() -> new Exception("No se encontró al usuario que pagó"));
+
+        List<ComprobantePago> comprobantes = new ArrayList<>();
 
         for (DTOPago pago : pagos) {
-            String url = "https://api.mercadopago.com/v1/payments/" + pago.getPaymentId();
+            MercadoPagoConfig.setAccessToken(pago.getDestinatario().getMercadoPagoAccessToken());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + MercadoPagoConfig.getAccessToken());
+            PaymentClient client = new PaymentClient();
+            Payment payment = client.get(Long.valueOf(pago.getPaymentId()));
 
-            HttpEntity<String> request = new HttpEntity<>(headers);
 
+
+            // Download PDF receipt
+            String pdfPath = null;
             try {
-                ResponseEntity<PaymentResponse> response = restTemplate.exchange(
-                        url,
-                        HttpMethod.GET,
-                        request,
-                        PaymentResponse.class
-                );
+                pdfPath = generateReceiptPdf(payment, usuarioLogueado, pago.getDestinatario());
+                //pdfPath = downloadReceipt(pago.getPaymentId());
+            } catch (IOException ignored) {
 
-                if (response.getStatusCode() == HttpStatus.OK) {
-                    PaymentResponse payment = response.getBody();
+            }
 
-                    if (!"approved".equals(payment.status)) {
-                        throw new Exception("Pago " + pago.getPaymentId() + " no está aprobado. Estado: " + payment.status);
-                    }
+            // Create and save comprobante
+            ComprobantePago comprobante = comprobantePagoRepository.save(ComprobantePago.builder()
+                    .numero(pago.getPaymentId())
+                    .concepto(pago.getExternal_reference())
+                    .fechaHoraEmision(payment.getDateApproved().toLocalDateTime())
+                    .archivo(pdfPath)
+                    .build());
 
+            BigDecimal feeAmount = payment.getFeeDetails().stream().filter(f -> f.getType().equalsIgnoreCase("application_fee")).findFirst().orElse(new PaymentFeeDetail()).getAmount();
+            if (feeAmount == null) feeAmount = BigDecimal.ZERO;
+
+            BigDecimal grossAmount = payment.getTransactionAmount().subtract(feeAmount);
+
+            // Create payment item
+            itemComprobantePagoRepository.save(ItemComprobantePago.builder()
+                    .detalle(pago.getExternal_reference())
+                    .montoUnitario(grossAmount)
+                    .cantidad(1)
+                    .pago(usuarioLogueado)
+                    .cobro(pago.getDestinatario())
+                    .comprobantePago(comprobante)
+                    .build());
+
+            // Create commission item
+            itemComprobantePagoRepository.save(ItemComprobantePago.builder()
+                    .detalle("Comisión de evtnet")
+                    .montoUnitario(feeAmount)
+                    .cantidad(1)
+                    .pago(usuarioLogueado)
+                    .cobro(null)
+                    .comprobantePago(comprobante)
+                    .build());
+
+            comprobantes.add(comprobante);
+        }
+
+        return comprobantes;
+    }
+
+    public String generateReceiptPdf(Payment payment, Usuario buyer, Usuario seller) throws Exception {
+        // === 1. Output path ===
+        String comprobantesDir = "/app/storage/comprobantes";
+        Files.createDirectories(Paths.get(comprobantesDir));
+
+        String fileName = "receipt_" + payment.getId() + ".pdf";
+        Path filePath = Paths.get(comprobantesDir, fileName);
+
+        // === 2. Small A5 page ===
+        Document document = new Document(PageSize.A5);
+        PdfWriter.getInstance(document, new FileOutputStream(filePath.toFile()));
+        document.open();
+
+        // === 3. Logo ===
+        File file = new File(getClass().getResource("/default.png").getFile());
+        Path path = file.toPath();
+        Image logo = Image.getInstance(path.toAbsolutePath().toString());
+        logo.scaleToFit(70, 70);
+        logo.setAlignment(Element.ALIGN_CENTER);
+        document.add(logo);
+
+        document.add(new Paragraph("\n"));
+
+        // === 4. Title ===
+        Paragraph title = new Paragraph("RECIBO DE PAGO");
+        title.setAlignment(Element.ALIGN_CENTER);
+        document.add(title);
+
+        // === 5. Subtitle (evtnet) ===
+        Paragraph evtnet = new Paragraph("emitido por evtnet");
+        evtnet.setAlignment(Element.ALIGN_CENTER);
+        document.add(evtnet);
+
+        document.add(new Paragraph("\n\n"));
+
+        // === 6. Core receipt text ===
+        BigDecimal gross = payment.getTransactionAmount();
+        BigDecimal net = payment.getTransactionDetails().getNetReceivedAmount();
+
+        Paragraph mainText = new Paragraph(
+                "Yo, " + seller.getNombre() + " " + seller.getApellido() + " (DNI " + seller.getDni() + ", @" + seller.getUsername() + ") " +
+                        ", recibí de " + buyer.getNombre() + " " + buyer.getApellido() + " (DNI " + buyer.getDni() + ", @" + buyer.getUsername() + ") " +
+                        " la suma de $" + net + "."
+        );
+        mainText.setAlignment(Element.ALIGN_LEFT);
+        document.add(mainText);
+
+        document.add(new Paragraph("\n"));
+
+        // === 7. Fees ===
+        BigDecimal mpFee = BigDecimal.ZERO;
+        BigDecimal evtFee = BigDecimal.ZERO;
+
+        if (payment.getFeeDetails() != null) {
+            for (PaymentFeeDetail fee : payment.getFeeDetails()) {
+                if ("mercadopago_fee".equalsIgnoreCase(fee.getType())) {
+                    mpFee = mpFee.add(fee.getAmount());
                 } else {
-                    throw new Exception("Error al verificar pago " + pago.getPaymentId() + ". Status: " + response.getStatusCode());
+                    evtFee = evtFee.add(fee.getAmount());
                 }
-
-            } catch (Exception e) {
-                throw new Exception("Error verificando pago " + pago.getPaymentId() + ": " + e.getMessage(), e);
             }
         }
+
+        document.add(new Paragraph("Monto bruto abonado: $" + gross));
+        document.add(new Paragraph("Comisión Mercado Pago: $" + mpFee));
+        document.add(new Paragraph("Comisión evtnet: $" + evtFee));
+        document.add(new Paragraph("\n"));
+
+        // === 8. Payment extra info ===
+        document.add(new Paragraph("ID de pago MP: " + payment.getId()));
+        if (payment.getDescription() != null) {
+            document.add(new Paragraph("Concepto: " + payment.getDescription()));
+        }
+
+        document.add(new Paragraph("Fecha: " + payment.getDateApproved()));
+
+        document.add(new Paragraph("\n\nGracias por utilizar evtnet."));
+
+        // === 9. Close ===
+        document.close();
+
+        return fileName;
     }
+
 
     public void refundPayment(ComprobantePago comprobante) throws Exception {
         refundPayment(comprobante, 100);
     }
 
     public void refundPayment(ComprobantePago comprobante, int porcentaje) throws Exception {
-        if (debug) return;
+        if (debugRefunds) return;
 
         if (porcentaje < 0 || porcentaje > 100) {
             throw new IllegalArgumentException("El porcentaje debe estar entre 0 y 100");
@@ -302,46 +470,38 @@ public class MercadoPagoSingleton {
             throw new Exception("El comprobante no tiene items");
         }
 
-        String sellerAccessToken = comprobante.getItems().get(0).getCobro().getMercadoPagoAccessToken();
+        String sellerAccessToken = comprobante.getItems().stream().filter(i -> i.getCobro() != null).max(Comparator.comparing(ItemComprobantePago::getDetalle)).orElseThrow(() -> new Exception("No se encontró el destinatario de la transferencia original")).getCobro().getMercadoPagoAccessToken();
 
         if (sellerAccessToken == null || sellerAccessToken.isEmpty()) {
             throw new Exception("No se puede reembolsar: el vendedor no tiene token de Mercado Pago");
         }
 
-        String url = "https://api.mercadopago.com/v1/payments/" + paymentId + "/refunds";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + sellerAccessToken);
-
-        RefundRequest refundRequest = new RefundRequest();
-
-        if (porcentaje < 100) {
-            // Calculate total amount from items (gross + commission)
-            BigDecimal totalAmount = comprobante.getItems().stream()
-                    .map(item -> item.getMontoUnitario().multiply(new BigDecimal(item.getCantidad())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            refundRequest.amount = totalAmount.multiply(new BigDecimal(porcentaje)).divide(new BigDecimal(100));
-        }
-        // If porcentaje == 100, send empty/null amount for full refund
-
-        HttpEntity<RefundRequest> request = new HttpEntity<>(refundRequest, headers);
-
+        MercadoPagoConfig.setAccessToken(sellerAccessToken);
+        PaymentRefundClient client = new PaymentRefundClient();
+        BigDecimal monto = comprobante.getItems().stream()
+                .map(item -> item.getMontoUnitario().multiply(new BigDecimal(item.getCantidad())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         try {
-            ResponseEntity<RefundResponse> response = restTemplate.postForEntity(
-                    url,
-                    request,
-                    RefundResponse.class
-            );
-
-            if (response.getStatusCode() != HttpStatus.CREATED &&
-                    response.getStatusCode() != HttpStatus.OK) {
-                throw new Exception("Error al reembolsar pago " + paymentId + ". Status: " + response.getStatusCode());
-            }
-
+            PaymentRefund refund = client.refund(Long.valueOf(paymentId), monto);
         } catch (Exception e) {
             throw new Exception("Error reembolsando pago " + paymentId + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void refundIncompletePayments(List<DTOPago> pagos) throws Exception {
+        if (debugRefunds) return;
+
+        for (DTOPago pago : pagos) {
+            if (pago.getPaymentId() == null || pago.getPaymentId().isEmpty()) {
+                continue;
+            }
+
+            MercadoPagoConfig.setAccessToken(marketPlaceToken);
+
+            PaymentClient client = new PaymentClient();
+            Payment payment = client.get(Long.valueOf(pago.getPaymentId()));
+
+            payment.getTransactionDetails();
         }
     }
 
@@ -359,6 +519,13 @@ public class MercadoPagoSingleton {
 
         @JsonProperty("transaction_amount")
         public BigDecimal transactionAmount;
+
+        @JsonProperty("marketplace_fee")
+        public BigDecimal marketplaceFee;
+
+        @JsonProperty("date_approved")
+        @JsonDeserialize(using = LocalDateTimeFlexDeserializer.class)
+        public LocalDateTime dateApproved;
 
         @JsonProperty("metadata")
         public java.util.Map<String, String> metadata;

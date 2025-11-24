@@ -791,6 +791,11 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         usuarioRepository.save(usuario);
     }
 
+    @Override
+    public void cancelarPagoIncompleto(List<DTOPago> pagos) throws Exception {
+        mercadoPagoSingleton.refundIncompletePayments(pagos);
+    }
+
 
     // ---------- Helpers ----------
     private String suggestUsername(String email) {
