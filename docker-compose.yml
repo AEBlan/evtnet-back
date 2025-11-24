@@ -46,7 +46,7 @@ services:
 
       # Ruta de storage
       APP_STORAGE_PERFILES: "/app/storage/perfiles"
-      APP_STORAGE_LOGS: "/app/storage/logs" 
+      APP_STORAGE_LOGS: "/app/storage/logs"
 
     networks:
       - evtnet-net
