@@ -243,7 +243,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo entregar la propuedad del espacio - "+e.getMessage()
+                    "No se pudo entregar la propiedad del espacio - "+e.getMessage()
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

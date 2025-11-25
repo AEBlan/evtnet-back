@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -319,5 +320,23 @@ public class UsuarioController extends BaseControllerImpl<Usuario, UsuarioServic
             @RequestParam(name = "page", defaultValue = "0") int page
     ) {
         return ResponseEntity.ok(service.obtenerDenunciasUsuario(page));
+    }
+
+
+    // --- Integración con Mercado Pago ---
+    @GetMapping("/obtenerLinkIntegrarMP")
+    public ResponseEntity<String> obtenerLinkIntegrarMP() throws Exception {
+        return ResponseEntity.ok(service.obtenerLinkIntegrarMP());
+    }
+
+    @GetMapping("/obtenerCredencialesMP")
+    public void obtenerCredencialesMP(String code, String state) throws Exception {
+        service.obtenerCredencialesMP(code, state);
+    }
+
+    @DeleteMapping("/cancelarPagoIncompleto")
+    public ResponseEntity<Void> cancelarPagoIncompleto(@RequestBody List<DTOPago> pagos) throws Exception{
+        service.cancelarPagoIncompleto(pagos);
+        return ResponseEntity.ok().build();
     }
 }

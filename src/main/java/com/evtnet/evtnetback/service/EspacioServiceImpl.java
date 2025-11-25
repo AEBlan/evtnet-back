@@ -7,6 +7,8 @@ import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.dto.disciplinas.DTODisciplinas;
 import com.evtnet.evtnetback.dto.espacios.*;
 import com.evtnet.evtnetback.dto.usuarios.DTOBusquedaUsuario;
+import com.evtnet.evtnetback.util.CurrentUser;
+import com.evtnet.evtnetback.util.MercadoPagoSingleton;
 import com.evtnet.evtnetback.util.RegistroSingleton;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +47,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
     private final IconoCaracteristicaRepository iconoCaracteristicaRepository;
     private final RegistroSingleton registroSingleton;
     private final ChatRepository chatRepo;
+    private final MercadoPagoSingleton mercadoPagoSingleton;
+
 
     @Value("${app.storage.documentacion:/app/storage/documentacion}")
     private String directorioBase;
@@ -69,7 +73,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             ResenaEspacioRepository resenaEspacioRepository,
             IconoCaracteristicaRepository iconoCaracteristicaRepository,
             RegistroSingleton registroSingleton,
-            ChatRepository chatRepo
+            ChatRepository chatRepo,
+            MercadoPagoSingleton mercadoPagoSingleton
     ) {
         super(espacioRepository);
         this.espacioRepository = espacioRepository;
@@ -92,6 +97,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         this.iconoCaracteristicaRepository = iconoCaracteristicaRepository;
         this.registroSingleton = registroSingleton;
         this.chatRepo = chatRepo;
+        this.mercadoPagoSingleton = mercadoPagoSingleton;
     }
 
     @Override
@@ -875,6 +881,10 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         Usuario usuarioPropietario=this.usuarioRepository.findByUsername(usernamePropietario).get();
         Espacio espacio=this.espacioRepository.findById(idEspacio).get();
 
+        if (!mercadoPagoSingleton.checkUsuarioAutorizado(usuario)) {
+            throw new Exception("No se pudo asignar a este usuario como propietario dado que no ha vinculado su cuenta de Mercado Pago. Solicítele que haga esto para poder continuar.");
+        }
+
         if(administradorEspacioPropietarioActual.getTipoAdministradorEspacio()==tipoAdministradorEspacio){
             administradorEspacioPropietarioActual.setFechaHoraBaja(LocalDateTime.now());
             this.administradorEspacioRepository.save(administradorEspacioPropietarioActual);
@@ -1141,6 +1151,14 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         }
         if(documentacion.isEmpty()) throw new Exception("La documentación es requerida");
 
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión para crear un espacio"));
+        if (!dtoEspacio.getUsername().equals(username)) {
+            throw new Exception("Usuario incorrecto");
+        }
+        Usuario usuario = usuarioRepository.findByUsername(username).orElseThrow(() -> new Exception("No se encontró al usuario"));
+        if (!mercadoPagoSingleton.checkUsuarioAutorizado(usuario)) {
+            throw new Exception("Primero debe vincular su cuenta a Mercado Pago");
+        }
     }
 
     private void validarDatosCreacionEspacioPublido (DTOCrearEspacio dtoEspacio) throws Exception {

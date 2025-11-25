@@ -48,5 +48,5 @@ public class DTOEventoCreate {
 
     private int maxParticipantes;
 
-    private DTOPago pago;
+    private List<DTOPago> pagos;
 }

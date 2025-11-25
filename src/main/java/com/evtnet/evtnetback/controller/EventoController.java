@@ -87,6 +87,12 @@ public class EventoController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/inscribirse/cancelar")
+    public ResponseEntity<Void> inscribirseCancelar(@RequestBody DTOInscripcion dto) throws Exception {
+        service.inscribirseCancelar(dto);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/desinscribirse")
     public ResponseEntity<Void> desinscribirse(@RequestParam long idEvento) throws Exception {
         service.desinscribirse(idEvento);
