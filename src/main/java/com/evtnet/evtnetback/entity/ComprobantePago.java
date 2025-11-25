@@ -24,7 +24,7 @@ public class ComprobantePago extends Base {
     @Column(name = "fecha_hora_emision")
     private LocalDateTime fechaHoraEmision;
 
-    @Column(name = "archivo", nullable = false)
+    @Column(name = "archivo", nullable = true)
     private String archivo;
 
     // --- Relaciones ---

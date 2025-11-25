@@ -5,6 +5,7 @@ import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.dto.usuarios.*;
 import com.evtnet.evtnetback.security.JwtUtil;
 import com.evtnet.evtnetback.util.CurrentUser;
+import com.evtnet.evtnetback.util.MercadoPagoSingleton;
 import com.evtnet.evtnetback.util.RegistroSingleton;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -59,6 +60,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     private final DenunciaEventoRepository denunciaEventoRepository;
     private final RegistroSingleton registroSingleton;
     private final ParametroSistemaService parametroSistemaService;
+
+    private final MercadoPagoSingleton mercadoPagoSingleton;
     
     //private final DenunciaEventoEstadoRepository denunciaEventoEstadoRepository;
     //private final EstadoDenunciaEventoRepository estadoDenunciaEventoRepository;
@@ -100,7 +103,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
             ChatRepository chatRepository,
             DenunciaEventoRepository denunciaEventoRepository,
             RegistroSingleton registroSingleton,
-            ParametroSistemaService parametroSistemaService
+            ParametroSistemaService parametroSistemaService,
+            MercadoPagoSingleton mercadoPagoSingleton
             //DenunciaEventoEstadoRepository denunciaEventoEstadoRepository,
             //EstadoDenunciaEventoRepository estadoDenunciaEventoRepository
             
@@ -127,6 +131,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         this.denunciaEventoRepository = denunciaEventoRepository;
         this.registroSingleton = registroSingleton;
         this.parametroSistemaService = parametroSistemaService;
+        this.mercadoPagoSingleton = mercadoPagoSingleton;
         //this.denunciaEventoEstadoRepository = denunciaEventoEstadoRepository;
         //this.estadoDenunciaEventoRepository = estadoDenunciaEventoRepository;
 
@@ -294,6 +299,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .token(token)
                 .permisos(permisos)
                 .username(u.getUsername())
+                .vinculadoMP(mercadoPagoSingleton.checkUsuarioAutorizado(u))
                 .user(DTOAuth.User.builder()
                     .nombre(u.getNombre())
                     .apellido(u.getApellido())
@@ -636,6 +642,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .fechaNacimiento(mostrarPerfilCompleto ? fnac : null)
                 .calificaciones(items)
                 .idChat(chat != null ? chat.getId() : null)
+                .vinculadoMP(mostrarPerfilCompleto ? mercadoPagoSingleton.checkUsuarioAutorizado(u) : null)
                 .build();
     }
 
@@ -756,6 +763,38 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         }
 
         return null;
+    }
+
+    @Override
+    public String obtenerLinkIntegrarMP() throws Exception {
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión para realizar esta acción"));
+        Usuario usuario = usuarioRepository.findByUsername(username).orElseThrow(() -> new Exception("Debe iniciar sesión para realizar esta acción"));
+
+        String aux = mercadoPagoSingleton.getAuthorizationUrl(username);
+        return aux;
+    }
+
+    @Override
+    public void obtenerCredencialesMP(String code, String state) throws Exception {
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe iniciar sesión para realizar esta acción"));
+        if (!state.equals(username)) {
+            throw new Exception("Solo el titular de la cuenta puede vincularla a Mercado Pago");
+        }
+        Usuario usuario = usuarioRepository.findByUsername(username).orElseThrow(() -> new Exception("Debe iniciar sesión para realizar esta acción"));
+
+        MercadoPagoSingleton.OAuthCredentials credenciales = mercadoPagoSingleton.exchangeCodeForToken(code, state);
+
+        usuario.setMercadoPagoUserId(credenciales.userId);
+        usuario.setMercadoPagoPublicKey(credenciales.publicKey);
+        usuario.setMercadoPagoAccessToken(credenciales.accessToken);
+        usuario.setMercadoPagoRefreshToken(credenciales.refreshToken);
+
+        usuarioRepository.save(usuario);
+    }
+
+    @Override
+    public void cancelarPagoIncompleto(List<DTOPago> pagos) throws Exception {
+        mercadoPagoSingleton.refundIncompletePayments(pagos);
     }
 
 

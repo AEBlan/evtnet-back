@@ -108,6 +108,12 @@ public class Usuario extends Base {
     @OneToMany(mappedBy = "encargadoSubEspacio")
     private List<SubEspacio> subEspacios;
 
+
+    private String mercadoPagoAccessToken;
+    private String mercadoPagoPublicKey;
+    private String mercadoPagoRefreshToken;
+    private Long mercadoPagoUserId;
+
     public List<String> getPermisos() {
         return this.getRolesUsuario().stream().map(r -> r.getRol().getRolPermisos().stream().map(p -> p.getPermiso().getNombre()).toList()).flatMap(List::stream).toList();
     }
