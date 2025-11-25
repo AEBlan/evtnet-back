@@ -582,6 +582,14 @@ INSERT INTO entidad_registro (nombre)
 SELECT 'instancia_mascota'
 WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='instancia_mascota');
 
+INSERT INTO entidad_registro (nombre)
+SELECT 'backup_manual'
+    WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='backup_manual');
+
+INSERT INTO entidad_registro (nombre)
+SELECT 'backup'
+    WHERE NOT EXISTS (SELECT 1 FROM entidad_registro WHERE nombre='backup');
+
 
 -- =========================
 -- Acciones de registro
