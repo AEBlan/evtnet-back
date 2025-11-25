@@ -4,5 +4,6 @@
     "cSpell.words": [
     ],
     "java.autobuild.enabled": false,
-    "java.import.maven.enabled": true
+    "java.import.maven.enabled": true,
+    "liveServer.settings.port": 5533
 }

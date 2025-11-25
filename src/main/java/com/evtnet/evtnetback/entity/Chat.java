@@ -56,12 +56,12 @@ public class Chat extends Base {
   @JoinColumn(name = "evento_id", unique = true)
   private Evento evento;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "super_evento_id", unique = true)
   private SuperEvento superEvento;
 
   // ---- N chats pueden pertenecer a un mismo espacio
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "espacio_id")
   private Espacio espacio;
 

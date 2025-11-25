@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Test WebSocket Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<h2>Prueba de Chat por WebSocket</h2>
+
+<button onclick="connect()">Conectar</button>
+<button onclick="disconnect()">Desconectar</button>
+
+<br><br>
+
+<div>
+    <label>Mensaje:</label>
+    <input id="msg" type="text" placeholder="Escribe un mensaje" />
+
+    <label>ID Usuario:</label>
+    <input id="userId" type="number" value="1" />
+
+    <label>ID Chat:</label>
+    <input id="chatId" type="number" value="1" />
+
+    <button onclick="sendMessage()">Enviar</button>
+</div>
+
+<h3>Mensajes recibidos:</h3>
+<pre id="messages"></pre>
+
+<script>
+    let stompClient = null;
+
+    function connect() {
+        const socket = new SockJS("http://localhost:8080/ws");
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function (frame) {
+            console.log("Conectado: " + frame);
+
+            const chatId = document.getElementById("chatId").value;
+
+            stompClient.subscribe("/topic/chat/" + chatId, function (msg) {
+                const body = JSON.parse(msg.body);
+                document.getElementById("messages").innerText +=
+                    JSON.stringify(body, null, 2) + "\n\n";
+            });
+        });
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+        }
+        console.log("Desconectado");
+    }
+
+    function sendMessage() {
+        const chatId = parseInt(document.getElementById("chatId").value);
+        const usuarioId = parseInt(document.getElementById("userId").value);
+        const texto = document.getElementById("msg").value;
+
+        stompClient.send("/app/chat.send", {}, JSON.stringify({
+            chatId: chatId,
+            usuarioId: usuarioId,
+            texto: texto
+        }));
+    }
+</script>
+
+</body>
+</html>
