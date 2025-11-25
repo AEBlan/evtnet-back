@@ -42,6 +42,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .exceptionHandling(ex -> ex
             .authenticationEntryPoint(jwtAuthenticationEntryPoint)
         )
+        
         .authorizeHttpRequests(auth -> auth
             // CORS preflight
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -95,6 +96,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             // Instancias de mascota públicas
             .requestMatchers(HttpMethod.GET, "/instanciasMascota/obtenerInstanciasParaPagina").permitAll()
             .requestMatchers(HttpMethod.POST, "/instanciasMascota/registrarVisualizacion").permitAll()
+            // ===== WebSocket =====
+            .requestMatchers("/ws/**", "/topic/**", "/queue/**").permitAll()
+            .requestMatchers("/chat-test.html").permitAll()
             // Todo lo demás, autenticado
             .anyRequest().authenticated()
         )

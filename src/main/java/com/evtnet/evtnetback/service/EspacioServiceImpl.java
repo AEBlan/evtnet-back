@@ -46,7 +46,9 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
     private final ResenaEspacioRepository resenaEspacioRepository;
     private final IconoCaracteristicaRepository iconoCaracteristicaRepository;
     private final RegistroSingleton registroSingleton;
+    private final ChatRepository chatRepo;
     private final MercadoPagoSingleton mercadoPagoSingleton;
+
 
     @Value("${app.storage.documentacion:/app/storage/documentacion}")
     private String directorioBase;
@@ -71,6 +73,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             ResenaEspacioRepository resenaEspacioRepository,
             IconoCaracteristicaRepository iconoCaracteristicaRepository,
             RegistroSingleton registroSingleton,
+            ChatRepository chatRepo,
             MercadoPagoSingleton mercadoPagoSingleton
     ) {
         super(espacioRepository);
@@ -93,6 +96,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
         this.resenaEspacioRepository = resenaEspacioRepository;
         this.iconoCaracteristicaRepository = iconoCaracteristicaRepository;
         this.registroSingleton = registroSingleton;
+        this.chatRepo = chatRepo;
         this.mercadoPagoSingleton = mercadoPagoSingleton;
     }
 
@@ -174,6 +178,16 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             }
 
         }
+        // Creacion de chat
+        Chat chat = Chat.builder()
+        .tipo(Chat.Tipo.ESPACIO)
+        .fechaHoraAlta(LocalDateTime.now())
+        .espacio(espacio)
+        .build();
+
+        chatRepo.save(chat);
+
+
         registroSingleton.write("Espacios", "espacio_privado", "creacion", "Espacio de ID " + espacio.getId() + " nombre" +espacio.getNombre()+ "'");
         return espacio.getId();
     }

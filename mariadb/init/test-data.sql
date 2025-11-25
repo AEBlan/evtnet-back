@@ -1449,5 +1449,17 @@ INSERT INTO inscripcion (id, evento_id, usuario_id, fecha_hora_alta)
 SELECT 55, 54, 43, NOW()
 WHERE NOT EXISTS (SELECT 1 FROM inscripcion WHERE id = 55);
 
+/*Prueba de chat*/
+-- ===========================================================
+-- CHAT PARA ESPACIO: Polideportivo UTN (Propietario Sergio)
+-- ===========================================================
+
+INSERT INTO chat (tipo, fecha_hora_alta, espacio_id)
+SELECT 'ESPACIO', NOW(), e.id
+FROM espacio e
+WHERE e.id = 1
+  AND NOT EXISTS (
+       SELECT 1 FROM chat c WHERE c.espacio_id = e.id
+  );
 
 COMMIT;

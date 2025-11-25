@@ -4,6 +4,7 @@ import com.evtnet.evtnetback.entity.ProgramacionBackup;
 import com.evtnet.evtnetback.executor.BackupExecutor;
 import com.evtnet.evtnetback.service.BackupService;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class BackupScheduler {
     private final BackupExecutor executor;
     private Runnable tareaProgramada;
 
-    public BackupScheduler(TaskScheduler scheduler,
+    public BackupScheduler(@Qualifier("taskScheduler") TaskScheduler scheduler,
                            BackupService backupService,
                            BackupExecutor executor) {
         this.scheduler = scheduler;
