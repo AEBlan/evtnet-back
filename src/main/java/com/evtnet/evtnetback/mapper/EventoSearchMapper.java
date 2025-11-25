@@ -65,7 +65,7 @@ public final class EventoSearchMapper {
                         ? e.getSubEspacio().getEspacio().getNombre()
                         : null,
                 rol,
-                e.getInscripciones() == null ? null : e.getInscripciones().size()
+                e.getInscripciones() == null ? null : e.getInscripciones().stream().filter(ins -> ins.getFechaHoraBaja() == null).toList().size()
         );
     }
 

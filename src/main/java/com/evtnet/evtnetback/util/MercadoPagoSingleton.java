@@ -91,6 +91,21 @@ public class MercadoPagoSingleton {
         this.debugRefunds = debugRefunds;
     }
 
+
+    public boolean checkUsuarioAutorizado(Usuario usuario) {
+        if (usuario.getMercadoPagoUserId() == null
+                || usuario.getMercadoPagoPublicKey() == null
+                || usuario.getMercadoPagoPublicKey().isEmpty()
+                || usuario.getMercadoPagoAccessToken() == null
+                || usuario.getMercadoPagoAccessToken().isEmpty()
+                || usuario.getMercadoPagoRefreshToken() == null
+                || usuario.getMercadoPagoRefreshToken().isEmpty()
+        ) {
+            return false;
+        }
+        return true;
+    }
+
     // OAuth Methods
 
     /**
@@ -473,7 +488,7 @@ public class MercadoPagoSingleton {
         String sellerAccessToken = comprobante.getItems().stream().filter(i -> i.getCobro() != null).max(Comparator.comparing(ItemComprobantePago::getDetalle)).orElseThrow(() -> new Exception("No se encontró el destinatario de la transferencia original")).getCobro().getMercadoPagoAccessToken();
 
         if (sellerAccessToken == null || sellerAccessToken.isEmpty()) {
-            throw new Exception("No se puede reembolsar: el vendedor no tiene token de Mercado Pago");
+            throw new Exception("No se puede reembolsar: el destinatario no tiene token de Mercado Pago");
         }
 
         MercadoPagoConfig.setAccessToken(sellerAccessToken);
@@ -496,12 +511,23 @@ public class MercadoPagoSingleton {
                 continue;
             }
 
-            MercadoPagoConfig.setAccessToken(marketPlaceToken);
+            if (pago.getDestinatario() == null) {
+                throw new Exception("No se pudo identificar al destinatario del pago");
+            }
+            String sellerAccessToken = pago.getDestinatario().getMercadoPagoAccessToken();
+            if (sellerAccessToken == null || sellerAccessToken.isEmpty()) {
+                throw new Exception("No se puede reembolsar: el destinatario no tiene token de Mercado Pago");
+            }
 
-            PaymentClient client = new PaymentClient();
-            Payment payment = client.get(Long.valueOf(pago.getPaymentId()));
 
-            payment.getTransactionDetails();
+            MercadoPagoConfig.setAccessToken(sellerAccessToken);
+            PaymentRefundClient client = new PaymentRefundClient();
+
+            try {
+                PaymentRefund refund = client.refund(Long.valueOf(pago.getPaymentId()));
+            } catch (Exception e) {
+                throw new Exception("Error reembolsando pago no completo " + pago.getPaymentId()  + ": " + e.getMessage(), e);
+            }
         }
     }
 

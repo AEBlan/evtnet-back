@@ -299,6 +299,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .token(token)
                 .permisos(permisos)
                 .username(u.getUsername())
+                .vinculadoMP(mercadoPagoSingleton.checkUsuarioAutorizado(u))
                 .user(DTOAuth.User.builder()
                     .nombre(u.getNombre())
                     .apellido(u.getApellido())
@@ -641,7 +642,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
                 .fechaNacimiento(mostrarPerfilCompleto ? fnac : null)
                 .calificaciones(items)
                 .idChat(chat != null ? chat.getId() : null)
-                .vinculadoMP(Objects.equals(currUsername, username) ? u.getMercadoPagoUserId() != null : false)
+                .vinculadoMP(mostrarPerfilCompleto ? mercadoPagoSingleton.checkUsuarioAutorizado(u) : null)
                 .build();
     }
 

@@ -740,6 +740,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		SubEspacio subespacio = subEspacioRepo.findById(req.getSubEspacioId()).orElseThrow(() -> new Exception("No se encontró el subespacio"));
 
 		String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Debe autenticarse para ver este evento"));
+		Usuario usuario = usuarioRepo.findByUsername(username).orElseThrow(() -> new Exception("No se encontró al usuario"));
+		if (!mercadoPagoSingleton.checkUsuarioAutorizado(usuario)) {
+			throw new Exception("Primero debe vincular su cuenta a Mercado Pago");
+		}
 
 		boolean administrador = subespacio.getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername().equals(username)).count() == 1;
 
@@ -1248,6 +1252,33 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		registroSingleton.write("Eventos", "inscripcion", "creacion", "A evento de ID " + e.getId() + " nombre '" + e.getNombre() + "'");
 	}
 
+	@Override
+	@Transactional
+	public void inscribirseCancelar(DTOInscripcion dto) throws Exception {
+		Evento e = eventoRepo.findById(dto.getIdEvento())
+				.orElseThrow(() -> new HttpErrorException(404, "Evento no encontrado"));
+
+		String username = CurrentUser.getUsername()
+				.orElseThrow(() -> new HttpErrorException(404, "Debe iniciar sesión antes de intentar inscribirse"));
+
+		Usuario u = usuarioRepo.findByUsername(username)
+				.orElseThrow(() -> new HttpErrorException(404, "Usuario no encontrado"));
+
+
+		List<DTOPago> pagos = dto.getPagos();
+		for (DTOPago p : pagos) {
+			if (p.getExternal_reference().contains("Adicional")) {
+				Usuario propietario = e.getSubEspacio().getEspacio().getAdministradoresEspacio().stream().filter(a -> a.getFechaHoraBaja() == null && a.getTipoAdministradorEspacio().getNombre().equalsIgnoreCase("Propietario")).max(Comparator.comparing(AdministradorEspacio::getFechaHoraAlta)).orElseThrow(() -> new Exception("El espacio no tiene propietario")).getUsuario();
+
+				p.setDestinatario(propietario);
+			} else if (p.getExternal_reference().contains("Inscripción")) {
+				p.setDestinatario(e.getOrganizador());
+			}
+
+		}
+
+		mercadoPagoSingleton.refundIncompletePayments(pagos);
+	}
 	@Override
 	@Transactional
 	public void desinscribirse(long idEvento) throws Exception {
@@ -2110,6 +2141,10 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 		}
 
 		AdministradorEvento adminActual = nuevosOrganizadores.get(0);
+
+		if (!mercadoPagoSingleton.checkUsuarioAutorizado(adminActual.getUsuario())) {
+			throw new Exception("No se pudo asignar a este usuario como organizador dado que no ha vinculado su cuenta de Mercado Pago. Solicítele que haga esto para poder continuar.");
+		}
 
 		if (adminActual.getTipoAdministradorEvento().getNombre().equals("Organizador")) {
 			throw new Exception("El usuario ya es el organizador");
