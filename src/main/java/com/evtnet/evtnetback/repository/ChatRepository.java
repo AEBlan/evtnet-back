@@ -18,14 +18,38 @@ public interface ChatRepository extends BaseRepository <Chat, Long> {
     // ✅ Para listar por ámbito
     List<Chat> findAllByTipoAndEvento_Id(Chat.Tipo tipo, Long eventoId);
     List<Chat> findAllByTipoAndSuperEvento_Id(Chat.Tipo tipo, Long superEventoId);
+
+
+    // Buscar chat DIRECTO entre dos usernames, sin importar el orden
+        @Query("""
+        SELECT c FROM Chat c
+        WHERE c.tipo = 'DIRECTO'
+          AND ((c.usuario1.username = :u1 AND c.usuario2.username = :u2)
+            OR (c.usuario1.username = :u2 AND c.usuario2.username = :u1))
+    """)
+    Optional<Chat> findDirectoBetween(String u1, String u2);
+
+    // ESPACIO
     List<Chat> findAllByTipoAndEspacio_Id(Chat.Tipo tipo, Long espacioId);
 
-    // ✅ Buscar un directo entre A y B sin importar el orden
-    @Query("""
-           select c from Chat c
-           where c.tipo = com.evtnet.evtnetback.entity.Chat$Tipo.DIRECTO
-             and ((c.usuario1.username = :u1 and c.usuario2.username = :u2)
-               or (c.usuario1.username = :u2 and c.usuario2.username = :u1))
-           """)
-    Optional<Chat> findDirectoBetween(@Param("u1") String u1, @Param("u2") String u2);
+    // Para obtener el chat único de un espacio (único chat por espacio)
+    Optional<Chat> findByEspacio_Id(Long espacioId);
+
+    // EVENTO
+
+    List<Chat> findAllByEvento_Id(Long eventoId);
+
+    // Para obtener el chat único de un evento (único chat por evento)
+    Optional<Chat> findByEvento_Id(Long eventoId);
+
+
+    //SUPEREVENTO
+
+    Optional<Chat> findBySuperEvento_Id(Long superEventoId);
+
+
+
+
+
+
 }

@@ -131,11 +131,30 @@
       <version>${mapstruct.version}</version>
     </dependency>
 
+    <!-- SPRING WEBSOCKET (STOMP) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-websocket</artifactId>
+    </dependency>
+
+    <!-- SPRING MESSAGING (para @MessageMapping, SimpMessagingTemplate, etc.) -->
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-messaging</artifactId>
+    </dependency>
+
     <!--Mercado Pago-->
     <dependency>
       <groupId>com.mercadopago</groupId>
       <artifactId>sdk-java</artifactId>
       <version>2.1.7</version>
+    </dependency>
+
+    <!--PDF-->
+    <dependency>
+      <groupId>com.itextpdf</groupId>
+      <artifactId>itextpdf</artifactId>
+      <version>5.5.13.4</version>
     </dependency>
 
     <!-- Test -->

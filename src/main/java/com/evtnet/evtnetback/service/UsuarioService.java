@@ -37,6 +37,12 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
     FotoResponse obtenerFotoDePerfil(String username) throws Exception;              // ← unificado
     FotoResponseString obtenerImagenDeCalificacion(String nombre) throws Exception;
 
+    String obtenerLinkIntegrarMP() throws Exception;
+
+    void obtenerCredencialesMP(String code, String state) throws Exception;
+
+    void cancelarPagoIncompleto(List<DTOPago> pagos) throws Exception;
+
     class FotoResponse {
         private final byte[] bytes;
         private final String contentType;

@@ -31,8 +31,7 @@ public class SuperEvento extends Base {
     @OneToMany(mappedBy = "superEvento", fetch = FetchType.EAGER)
     private List<AdministradorSuperEvento> administradorSuperEventos;
 
-    // 1 super_evento -> n chat (FK está en Chat)
-    @OneToMany(mappedBy = "superEvento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Chat> chats;
+    @OneToOne(mappedBy = "superEvento")
+    private Chat chat;
 
 }

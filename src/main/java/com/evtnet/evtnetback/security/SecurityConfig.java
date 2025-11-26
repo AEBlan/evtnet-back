@@ -42,6 +42,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .exceptionHandling(ex -> ex
             .authenticationEntryPoint(jwtAuthenticationEntryPoint)
         )
+        
         .authorizeHttpRequests(auth -> auth
             // CORS preflight
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -95,6 +96,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             // Instancias de mascota públicas
             .requestMatchers(HttpMethod.GET, "/instanciasMascota/obtenerInstanciasParaPagina").permitAll()
             .requestMatchers(HttpMethod.POST, "/instanciasMascota/registrarVisualizacion").permitAll()
+            // ===== WebSocket =====
+            .requestMatchers("/ws/**", "/topic/**", "/queue/**").permitAll()
+            .requestMatchers("/chat-test.html").permitAll()
             // Todo lo demás, autenticado
             .anyRequest().authenticated()
         )
@@ -115,7 +119,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
     CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173", "http://192.168.100.100:5173"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173", "http://192.168.100.100:5173", "https://evtnet.sebaogas.cc"));
         configuration.setAllowedMethods(Arrays.asList("POST", "PUT", "GET", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
