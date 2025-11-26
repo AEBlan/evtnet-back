@@ -72,7 +72,7 @@ public class BackupServiceImpl extends BaseServiceImpl <ProgramacionBackup, Long
 
                 Integer dependeDe = null;
                 if (nombre.contains("auto_inc")) {
-                    dependeDe = Integer.parseInt(partes[4]);
+                    dependeDe = Integer.parseInt(partes[5]);
                 }
 
                 String fecha = partes[partes.length - 2];
@@ -87,7 +87,7 @@ public class BackupServiceImpl extends BaseServiceImpl <ProgramacionBackup, Long
                 }
                 backups.add(DTOBackup.builder()
                                 .id(id)
-                                .ruta(p.toString())
+                                .ruta(nombre)
                                 .tamano(tamano)
                                 .fechaHora(fechaHora.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                                 .tipo(tipo)
@@ -144,7 +144,7 @@ public class BackupServiceImpl extends BaseServiceImpl <ProgramacionBackup, Long
 
         List<Path> todas = obtenerTodasLasCarpetas(base);
 
-        Path carpetaObjetivo = Paths.get(dto.getRuta());
+        Path carpetaObjetivo = Paths.get(backupDirectory, dto.getRuta());
 
         List<Path> aEliminar = new ArrayList<>();
         aEliminar.add(carpetaObjetivo);
@@ -159,7 +159,7 @@ public class BackupServiceImpl extends BaseServiceImpl <ProgramacionBackup, Long
                     String nombre = p.getFileName().toString();
                     if (nombre.contains("auto_inc")) {
                         String[] partes = nombre.split("_");
-                        int dependeDe = Integer.parseInt(partes[3]);
+                        int dependeDe = Integer.parseInt(partes[5]);
                         if (dependeDe == idBase) aEliminar.add(p);
                     }
                 }
@@ -173,7 +173,7 @@ public class BackupServiceImpl extends BaseServiceImpl <ProgramacionBackup, Long
                     String nombre = p.getFileName().toString();
                     if (nombre.contains("auto_inc")) {
                         String[] partes = nombre.split("_");
-                        int dependeDe = Integer.parseInt(partes[3]);
+                        int dependeDe = Integer.parseInt(partes[5]);
                         if (dependeDe == idInc) aEliminar.add(p);
                     }
                 }
