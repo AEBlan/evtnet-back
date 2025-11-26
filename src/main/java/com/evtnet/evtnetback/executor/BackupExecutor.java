@@ -4,6 +4,7 @@ import com.evtnet.evtnetback.entity.ProgramacionBackup;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -117,7 +118,7 @@ public class BackupExecutor {
                     .filter(p -> p.getFileName().toString().contains("auto_comp"))
                     .filter(p -> {
                         String[] partes = p.getFileName().toString().split("_");
-                        return partes.length > 2 && Long.parseLong(partes[1]) == idProgramacionBackup;
+                        return partes.length > 2 && Long.parseLong(partes[2]) == idProgramacionBackup;
                     })
                     .max(Comparator.comparing(this::extraerFechaDesdeNombre));
         }
@@ -130,7 +131,7 @@ public class BackupExecutor {
                     .filter(p -> p.getFileName().toString().contains("auto_inc"))
                     .filter(p -> {
                         String[] partes = p.getFileName().toString().split("_");
-                        return partes.length > 2 && Long.parseLong(partes[1]) == idProgramacionBackup;
+                        return partes.length > 2 && Long.parseLong(partes[2]) == idProgramacionBackup;
                     })
                     .max(Comparator.comparing(this::extraerFechaDesdeNombre));
         }
@@ -140,88 +141,90 @@ public class BackupExecutor {
     public void ejecutarManual(Path carpetaPendiente) throws IOException {
         try {
             ejecutarMariabackup(carpetaPendiente, null);
-        } catch (Exception e) { }
-
-        renombrarManualPendiente(carpetaPendiente);
+            renombrarManualPendiente(carpetaPendiente);
+        } catch (Exception e) {
+            System.out.print(e.getMessage());
+         }
     }
 
     private void ejecutarCopiaAutomaticaCompleta(Long idProgramacionBackup) throws IOException {
         int id = calcularSiguienteId();
-        String tmpName = "backup_"+idProgramacionBackup+"_" + id + "_tmp";
+        String tmpName = "backup_"+id+"_" + idProgramacionBackup + "_tmp";
         Path tmp = Paths.get(backupDirectory, tmpName);
         Files.createDirectories(tmp);
 
         try {
             ejecutarMariabackup(tmp, null);
-        } catch (Exception e) { }
-
-        String finalName = generarNombreCompleta(id, idProgramacionBackup);
-        Files.move(tmp, tmp.resolveSibling(finalName), StandardCopyOption.ATOMIC_MOVE);
+            String finalName = generarNombreCompleta(id, idProgramacionBackup);
+            Files.move(tmp, tmp.resolveSibling(finalName), StandardCopyOption.ATOMIC_MOVE);
+        } catch (Exception e) {
+            System.out.print(e.getMessage());
+        }
     }
 
     private void ejecutarCopiaAutomaticaIncremental(Path completaBase, Long idProgramacionBackup) throws IOException {
         int id = calcularSiguienteId();
         int dependeDe = extraerId(completaBase);
-        String tmpName = "backup_" + idProgramacionBackup + "_" + id + "_tmp";
+        String tmpName = "backup_" + id + "_" + idProgramacionBackup + "_tmp";
         Path tmp = Paths.get(backupDirectory, tmpName);
         Files.createDirectories(tmp);
 
         try {
             ejecutarMariabackup(tmp, completaBase);
-        } catch (Exception e) { }
+            String finalName = generarNombreIncremental(id, dependeDe, idProgramacionBackup);
+            Files.move(tmp, tmp.resolveSibling(finalName), StandardCopyOption.ATOMIC_MOVE);
+        } catch (Exception e) {
+            System.out.print(e.getMessage());
+        }
 
-        String finalName = generarNombreIncremental(id, dependeDe, idProgramacionBackup);
-        Files.move(tmp, tmp.resolveSibling(finalName), StandardCopyOption.ATOMIC_MOVE);
+
     }
 
     private void ejecutarMariabackup(Path destino, Path base) throws IOException, InterruptedException {
 
         String container = dbContainer;
-        String containerLocal = dbContainer+"_local";
+        //String containerLocal = dbContainer+"_local";
 
         String carpeta = destino.getFileName().toString();
         //docker exec evtnet-mariadb mariadb-backup --backup --target-dir=/tmp/backup --user=root --password=root_pass
         String tempBackupDir = "/tmp/backup";
 
         List<String> limpiarCmd = List.of(
-                "docker", "exec", containerLocal,
-                "bash", "-c", "rm -rf " + tempBackupDir + "/*"
+            "docker", "exec", container,
+            "sh", "-c", "rm -rf " + tempBackupDir + "/*"
         );
         new ProcessBuilder(limpiarCmd).inheritIO().start().waitFor();
 
         List<String> mkdirCmd = List.of(
-                "docker", "exec", containerLocal,
-                "mkdir", "-p", tempBackupDir
+                "docker", "exec", container,
+                "sh", "-c", "mkdir -p " + tempBackupDir
         );
         new ProcessBuilder(mkdirCmd).inheritIO().start().waitFor();
 
         List<String> cmd = new ArrayList<>();
         cmd.add("docker");
         cmd.add("exec");
-        cmd.add(containerLocal);
+        cmd.add(container);
         cmd.add("mariadb-backup");
         cmd.add("--backup");
 
         cmd.add("--target-dir=" + tempBackupDir);
-
-        if (base != null) {
-            String carpetaBase = base.getFileName().toString();
-            //cmd.add("--incremental-basedir=/backups/" + carpetaBase + "/data");
-        }
 
         cmd.add("--user=root");
         cmd.add("--password=root_pass");
 
         new ProcessBuilder(cmd).inheritIO().start().waitFor();
 
+        String destinoHost = backupDirectory + "/" + carpeta;
+        new File(destinoHost).mkdirs();
+
         //docker cp evtnet-mariadb:/tmp/backup/. "%BACKUP_DIR%/"
         List<String> copyCmd = List.of(
-                "docker", "cp",
-                containerLocal + ":/tmp/backup/.",
-                backupDirectory + "/" + carpeta
+            "docker", "cp",
+            container + ":" + tempBackupDir + "/.",
+            destinoHost
         );
         new ProcessBuilder(copyCmd).inheritIO().start().waitFor();
-
     }
 
     public void aplicarRetencion(int conservar) throws IOException {
@@ -267,12 +270,12 @@ public class BackupExecutor {
 
     private String generarNombreCompleta(int id, Long idProgramacionBackup) {
         String fecha = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm"));
-        return "backup_" + idProgramacionBackup + "_" + id + "_auto_comp_" + fecha;
+        return "backup_" + id + "_" + idProgramacionBackup + "_auto_comp_" + fecha;
     }
 
     private String generarNombreIncremental(int id, int dependeDe, Long idProgramacionBackup) {
         String fecha = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm"));
-        return "backup_" + id + "_auto_inc_" + dependeDe + "_" + fecha;
+        return "backup_" + id + "_" + idProgramacionBackup + "_auto_inc_" + dependeDe + "_" + fecha;
     }
 
     private int calcularSiguienteId() {
@@ -289,9 +292,7 @@ public class BackupExecutor {
 
     private int extraerId(Path p) {
         String[] partes = p.getFileName().toString().split("_");
-        if(partes[2].equals("manual"))
-            return Integer.parseInt(partes[1]);
-        else return Integer.parseInt(partes[2]);
+        return Integer.parseInt(partes[1]);
     }
 
     private LocalDateTime extraerFechaDesdeNombre(Path p) {

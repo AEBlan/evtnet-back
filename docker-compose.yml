@@ -11,7 +11,7 @@ services:
       MARIADB_PASSWORD: evtnet_pass
       MARIADB_ROOT_PASSWORD: root_pass
       MARIADB_AUTO_UPGRADE: "1"
-      TZ: "UTC"
+      TZ: "America/Argentina/Buenos_Aires"
     ports:
       - "3307:3306"
     volumes:
@@ -28,9 +28,15 @@ services:
     depends_on:
       - mariadb
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./storage/perfiles:/app/storage/perfiles
       - ./storage/logs:/app/storage/logs
       - ./uploads:/app/uploads
+      - ./storage/iconos:/storage/iconos
+      - ./storage/documentacion:/storage/documentacion
+      - ./storage/imagenesEspacio:/storage/imagenesEspacio
+      - ./storage/tipoCalificacion:/storage/tipoCalificacion
+      - ./storage/backups:/app/backups
     ports:
       - "8080:8080"
     environment:
@@ -47,6 +53,8 @@ services:
       # Ruta de storage
       APP_STORAGE_PERFILES: "/app/storage/perfiles"
       APP_STORAGE_LOGS: "/app/storage/logs"
+
+      TZ: "America/Argentina/Buenos_Aires"
 
     networks:
       - evtnet-net
