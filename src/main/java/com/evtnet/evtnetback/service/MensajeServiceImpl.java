@@ -56,9 +56,9 @@ public class MensajeServiceImpl extends BaseServiceImpl <Mensaje, Long> implemen
     private DTOMensajeResponse toDTOMensajeResponse(Mensaje mensaje) {
         return DTOMensajeResponse.builder()
                 .id(mensaje.getId())
-                .chatId(mensaje.getChat().getId())
-                .usuarioId(mensaje.getUsuario().getId())
+                .username(mensaje.getUsuario().getUsername())
                 .usuarioNombre(mensaje.getUsuario().getNombre())
+                .usuarioApellido(mensaje.getUsuario().getApellido())
                 .texto(mensaje.getTexto())
                 .fechaHora(mensaje.getFechaHora())
                 .build();

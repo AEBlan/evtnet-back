@@ -9,6 +9,5 @@ import lombok.Data;
 @Builder
 public class DTOMensaje {
     private Long chatId;
-    private Long usuarioId;
     private String texto;
 }

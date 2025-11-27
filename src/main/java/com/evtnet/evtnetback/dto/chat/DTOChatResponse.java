@@ -18,4 +18,9 @@ public class DTOChatResponse {
     private String nombreEvento;
     private Long superEventoId;
     private String nombreSuperEvento;
+    private String usuarioUsername;
+    private String usuarioNombre;
+    private String usuarioApellido;
+    private Long grupoId;
+    private String nombreGrupo;
 }
