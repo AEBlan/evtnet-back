@@ -55,7 +55,7 @@ public interface UsuarioService extends BaseService<Usuario, Long> {
         public String getContentType() { return contentType; }
     }
 
-        public class FotoResponseString {
+    public class FotoResponseString {
         private final String content;
         private final String contentType;
 

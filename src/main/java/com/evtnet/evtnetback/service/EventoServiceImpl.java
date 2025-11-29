@@ -2353,21 +2353,25 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 						organizador = "?";
 					}
 
+					EstadoDenunciaEvento estado = d.getEstados().isEmpty() ? null : d.getEstados().get(d.getEstados().size() - 1).getEstadoDenunciaEvento();
+					boolean permiteCambioEstado = estado == null ? false : !estado.getTransicionesOrigen().stream().filter(t -> t.getFechaHoraBaja() == null).toList().isEmpty();
+
 					return DTODenunciaEventoSimple.builder()
 					.idDenuncia(d.getId())
 					.titulo(d.getTitulo())
 					.usernameDenunciante(d.getDenunciante().getUsername())
 					.nombreEvento(d.getEvento().getNombre())
 					.usernameOrganizador(organizador)
-					.estado(d.getEstados().isEmpty()
+					.estado(estado == null
 							? "SIN_ESTADO"
-							: d.getEstados().get(d.getEstados().size() - 1).getEstadoDenunciaEvento().getNombre())
+							: estado.getNombre())
 					.fechaHoraUltimoCambio(d.getEstados().isEmpty()
 							? null
 							: d.getEstados().stream().filter(e -> e.getFechaHoraHasta() == null).toList().get(0).getFechaHoraDesde())
 					.fechaHoraIngreso(d.getEstados().isEmpty()
 							? null
 							: d.getEstados().stream().filter(e -> e.getEstadoDenunciaEvento().getNombre().equalsIgnoreCase("Ingresado")).toList().get(0).getFechaHoraDesde())
+					.permiteCambioEstado(permiteCambioEstado)
 					.build();
 				});
 	}
@@ -2377,10 +2381,14 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 	@Override
 	@Transactional
 	public DTODenunciaEventoCompleta obtenerDenunciaCompleta(long idDenuncia) throws Exception {
-	DenunciaEvento d = denunciaEventoRepo.findById(idDenuncia)
-		.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
+		DenunciaEvento d = denunciaEventoRepo.findById(idDenuncia)
+			.orElseThrow(() -> new HttpErrorException(404, "Denuncia no encontrada"));
 
-	return DTODenunciaEventoCompleta.builder()
+		EstadoDenunciaEvento estado = d.getEstados().isEmpty() ? null : d.getEstados().get(d.getEstados().size() - 1).getEstadoDenunciaEvento();
+		boolean permiteCambioEstado = estado == null ? false : !estado.getTransicionesOrigen().stream().filter(t -> t.getFechaHoraBaja() == null).toList().isEmpty();
+
+
+		return DTODenunciaEventoCompleta.builder()
 		.id(d.getId())
 		.titulo(d.getTitulo())
 		.descripcion(d.getDescripcion())
@@ -2431,6 +2439,7 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 					.build()
 			).toList())
 			.build())
+		.permiteCambioEstado(permiteCambioEstado)
 		.build();
 	}
 

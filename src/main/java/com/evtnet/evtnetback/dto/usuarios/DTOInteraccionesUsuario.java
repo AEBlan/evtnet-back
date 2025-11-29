@@ -9,7 +9,7 @@ import java.util.List;
 public class DTOInteraccionesUsuario {
     private List<InteraccionDTO> interacciones;
 
-    @Data @NoArgsConstructor @AllArgsConstructor
+    @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class InteraccionDTO {
         private Long id;
         private String nombre;

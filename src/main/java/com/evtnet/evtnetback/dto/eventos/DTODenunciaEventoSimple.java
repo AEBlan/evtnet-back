@@ -17,4 +17,5 @@ public class DTODenunciaEventoSimple {
     private String estado;
     private LocalDateTime fechaHoraUltimoCambio;
     private LocalDateTime fechaHoraIngreso;
+    private boolean permiteCambioEstado;
 }

@@ -10,6 +10,7 @@ import com.evtnet.evtnetback.repository.TipoCalificacionRepository;
 import com.evtnet.evtnetback.dto.tipoCalificacion.DTOTipoCalificacion;
 import com.evtnet.evtnetback.dto.tipoCalificacion.DTOTipoCalificacionSelect;
 import com.evtnet.evtnetback.util.RegistroSingleton;
+import com.evtnet.evtnetback.util.TimeUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -67,18 +68,20 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
         if (!vigentesFiltro && dadasDeBajaFiltro) {
             spec = spec.and((root, cq, cb) -> cb.isNotNull(root.get("fechaHoraBaja")));
         }
+
         Page<TipoCalificacion> tiposCalificacion = tipoCalificacionRepository.findAll(spec, pageable);
+        Path imagenesPath = Paths.get(imagenesDirectorio);
         List<TipoCalificacion> filtrados = tiposCalificacion
                 .stream()
-                .filter(ic -> ic.getImagen() != null && Files.exists(Paths.get(ic.getImagen())))
+                .filter(ic -> ic.getImagen() != null && Files.exists(imagenesPath.resolve(ic.getImagen())))
                 .toList();
         List<DTOTipoCalificacion> dtos = filtrados.stream().map(ic -> {
-                String base64Image = encodeFileToBase64(ic.getImagen());
+                Path path = imagenesPath.resolve(ic.getImagen());
+                String base64Image = encodeFileToBase64(path.toAbsolutePath().toString());
                 String[] parts = base64Image.split(",");
                 String base64Data = parts[1];
 
                 String extension = "";
-                Path path = Paths.get(ic.getImagen());
                 String fileName = path.getFileName().toString();
 
                 int dotIndex = fileName.lastIndexOf('.');
@@ -92,9 +95,9 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
                             .nombre(ic.getNombre())
                             .url(base64Data)
                             .fechaAlta(ic.getFechaHoraAlta()==null ? null
-                                    :ic.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                                    : TimeUtil.toMillis(ic.getFechaHoraAlta()))
                             .fechaBaja(ic.getFechaHoraBaja()==null ? null
-                                    :ic.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                                    : TimeUtil.toMillis(ic.getFechaHoraBaja()))
                             .contentType(contentType)
                             .build();
         }).toList();
@@ -116,12 +119,13 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
         TipoCalificacion tipoCalificacion = tipoCalificacionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tipo de calificación no encontrado"));
 
-        String base64Image = encodeFileToBase64(tipoCalificacion.getImagen());
+        Path path = Paths.get(imagenesDirectorio).resolve(tipoCalificacion.getImagen());
+        String base64Image = encodeFileToBase64(path.toAbsolutePath().toString());
         String[] parts = base64Image.split(",");
         String base64Data = parts[1];
 
         String extension = "";
-        Path path = Paths.get(tipoCalificacion.getImagen());
+
         String fileName = path.getFileName().toString();
 
         int dotIndex = fileName.lastIndexOf('.');
@@ -164,10 +168,12 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
 
         TipoCalificacion entidad = TipoCalificacion.builder()
                 .nombre(dto.getNombre())
-                .imagen(guardarImagenBase64(dto.getUrl(), dto.getId()))
+                .imagen("")
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
 
+        entidad = this.save(entidad);
+        entidad.setImagen(guardarImagenBase64(dto.getUrl(), entidad.getId()));
         entidad = this.save(entidad);
         registroSingleton.write("Parametros", "tipo_calificacion", "creacion", "TipoCalificacion de ID " + entidad.getId() + " nombre '"+entidad.getNombre()+"'");
 
@@ -279,7 +285,7 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
         }
         Path filePath=Paths.get(imagenesDirectorio).resolve(fileName).toAbsolutePath().normalize();
         Files.write(filePath, fileBytes);
-        return filePath.toString();
+        return filePath.getFileName().toString();
     }
 
     private String encodeFileToBase64(String filePath) {

@@ -16,6 +16,7 @@ public class DTODenunciaEventoCompleta {
     private DenuncianteDTO denunciante;
     private List<HistoricoDTO> historico;
     private EventoDTO evento;
+    private boolean permiteCambioEstado;
 
     @Builder @Data
     public static class DenuncianteDTO {

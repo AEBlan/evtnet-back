@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -75,7 +76,7 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     @Value("${app.google.clientId:}")
     private String googleClientId;
 
-    @Value("${app.storage.calificaciones:/app/uploads/calificaciones}")
+    @Value("${app.storage.tipoCalificacion:/app/storage/tipoCalificacion}")
     private String calificacionesDir;
 
     @Value("${app.front.resetBaseUrl:http://localhost:5173/usuarios/restablecerContrasena}")
@@ -736,33 +737,20 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
 
     @Override
     public FotoResponseString obtenerImagenDeCalificacion(String nombre) throws Exception {
-        if (nombre == null || nombre.isBlank()) return null;
 
-        String tipo = nombre.trim().toLowerCase(Locale.ROOT);
-        switch (tipo) {
-            case "buena":
-            case "media":
-            case "mala":
-                break;
-            default:
-                return null;
+        TipoCalificacion tc = tipoCalificacionRepository.findByNombreIgnoreCase(nombre).orElseThrow(() -> new Exception("No se encontró el tipo de calificación"));
+
+        Path imagePath = Paths.get(calificacionesDir).resolve(tc.getImagen());
+
+        if (!Files.exists(imagePath)) {
+            throw new FileNotFoundException("Imagen no encontrada: " + nombre);
         }
 
-        Path base = Paths.get(calificacionesDir);
-        Files.createDirectories(base);
+        byte[] imageBytes = Files.readAllBytes(imagePath);
+        String asString = new String(imageBytes, StandardCharsets.ISO_8859_1);
+        String contentType = Files.probeContentType(imagePath);
 
-        Path img = base.resolve(tipo + ".png").toAbsolutePath().normalize();
-        if (!Files.exists(img)) {
-            img = base.resolve("default.png").toAbsolutePath().normalize();
-        }
-
-        if (Files.exists(img)) {
-            byte[] data = Files.readAllBytes(img);
-            String asString = new String(data, StandardCharsets.ISO_8859_1);
-            return new FotoResponseString(asString, "image/png");
-        }
-
-        return null;
+        return new FotoResponseString(asString, contentType);
     }
 
     @Override
@@ -1627,72 +1615,47 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
     public DTOInteraccionesUsuario adminObtenerInteraccionesUsuario(String username) {
         List<DTOInteraccionesUsuario.InteraccionDTO> interacciones = new ArrayList<>();
 
-        // 1) Grupos (pertenencias)
-        for (UsuarioGrupo ug : usuarioGrupoRepository.findAllForUsername(username)) {
-            Grupo g = ug.getGrupo();
-            if (g != null) {
-                interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
-                        g.getId(), g.getNombre(), "Grupo",
-                        ug.getFechaHoraAlta(), null, null
-                ));
-            }
-        }
+        interacciones = chatRepository.buscar(username, "").stream()
+            .filter(c -> c.getMensajes().stream().map(m -> m.getUsuario().getUsername()).toList().contains(username))
+            .map(c -> {
+                String nombre = "";
+                String un = null;
+                switch (c.getTipo()) {
+                    case DIRECTO -> {
+                        if (c.getUsuario1().getUsername().equals(username)) {
+                            nombre = "Chat con " + c.getUsuario2().getNombre() + " " + c.getUsuario2().getApellido();
+                            un = c.getUsuario2().getUsername();
+                        } else {
+                            nombre = "Chat con " + c.getUsuario1().getNombre() + " " + c.getUsuario1().getApellido();
+                            un = c.getUsuario1().getUsername();
+                        }
+                    }
+                    case EVENTO -> {
+                        nombre = "Chat: " + c.getEvento().getNombre();
+                    }
+                    case SUPEREVENTO -> {
+                        nombre = "Chat: " + c.getSuperEvento().getNombre();
+                    }
+                    case ESPACIO -> {
+                        nombre = "Chat: " + c.getEspacio().getNombre();
+                    }
+                    case GRUPAL -> {
+                        nombre = "Chat: " + c.getGrupo().getNombre();
+                    }
+                }
 
-        // 2) Eventos (organizador.username) -> inicio/fin
-        for (Evento ev : eventoRepository.findAllByOrganizador_Username(username)) {
-            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
-                    ev.getId(), ev.getNombre(), "Evento",
-                    ev.getFechaHoraInicio(), ev.getFechaHoraFin(), null
-            ));
-        }
+                Mensaje primero = chatRepository.findFirstMessageByUserInChat(c.getId(), username).orElse(null);
+                Mensaje ultimo = chatRepository.findLastMessageByUserInChat(c.getId(), username).orElse(null);
 
-        // 3) Espacios (propietario.username) -> alta/baja
-        for (Espacio es : espacioRepository.findAllByPropietario_Username(username)) {
-            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
-                    es.getId(), es.getNombre(), "Espacio",
-                    es.getFechaHoraAlta(), es.getFechaHoraBaja(), null
-            ));
-        }
-
-        // 4) SuperEventos (usuario.username) -> sin fechas en la entidad
-        for (SuperEvento se : superEventoRepository.findAllByUsuario_Username(username)) {
-            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
-                    se.getId(), se.getNombre(), "SuperEvento",
-                    null, null, null
-            ));
-        }
-
-        // 5) Directos (chat DIRECTO por username en usuario1 o usuario2) — método con 6 argumentos
-        for (Chat c : chatRepository.findAllByTipoAndUsuario1_UsernameOrTipoAndUsuario2_Username(
-                Chat.Tipo.DIRECTO, username,
-                Chat.Tipo.DIRECTO, username)) {
-
-            Usuario otro = usernameEquals(c.getUsuario1(), username) ? c.getUsuario2() : c.getUsuario1();
-            String otroUsername = (otro != null) ? otro.getUsername() : null;
-            String nombre = (otro != null) ? displayName(otro) : "Chat directo";
-
-            interacciones.add(new DTOInteraccionesUsuario.InteraccionDTO(
-                    c.getId(), nombre, "Directo",
-                    c.getFechaHoraAlta(), c.getFechaHoraBaja(), otroUsername
-            ));
-        }
-
-        // Deduplicar por (tipo,id) + ordenar por fechaDesde desc (nulls al final)
-        interacciones = interacciones.stream()
-                .collect(Collectors.collectingAndThen(
-                        Collectors.toMap(
-                                it -> it.getTipo() + "#" + it.getId(),
-                                it -> it,
-                                (a, b) -> a,
-                                LinkedHashMap::new
-                        ),
-                        m -> new ArrayList<>(m.values())
-                ));
-
-        interacciones.sort(Comparator
-                .comparing(DTOInteraccionesUsuario.InteraccionDTO::getFechaDesde,
-                        Comparator.nullsLast(Comparator.naturalOrder()))
-                .reversed());
+                return DTOInteraccionesUsuario.InteraccionDTO.builder()
+                        .id(c.getId())
+                        .nombre(nombre)
+                        .tipo(c.getTipo().name())
+                        .fechaDesde(primero != null ? primero.getFechaHora() : null)
+                        .fechaHasta(ultimo != null ? ultimo.getFechaHora() : null)
+                        .username(un)
+                        .build();
+        }).toList();
 
         return new DTOInteraccionesUsuario(interacciones);
     }
