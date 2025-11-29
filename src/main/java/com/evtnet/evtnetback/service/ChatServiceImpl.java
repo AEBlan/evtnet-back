@@ -3,6 +3,7 @@ package com.evtnet.evtnetback.service;
 import com.evtnet.evtnetback.dto.chat.DTOChatResponse;
 import com.evtnet.evtnetback.entity.*;
 import com.evtnet.evtnetback.repository.*;
+import com.evtnet.evtnetback.util.CurrentUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
@@ -33,38 +34,23 @@ public class ChatServiceImpl extends BaseServiceImpl <Chat, Long> implements Cha
 
     }
 
-    @Override
-    public List<Chat> findAllByUsuario(String username) {
-        return chatRepository.findAllByTipoAndUsuario1_UsernameOrTipoAndUsuario2_Username(
-                Chat.Tipo.DIRECTO, username,
-                Chat.Tipo.DIRECTO, username
-        );
-    }
 
     @Override
-    public List<Chat> findAllBySuperEvento(Long superEventoId) {
-        return chatRepository.findAllByTipoAndSuperEvento_Id(Chat.Tipo.SUPEREVENTO, superEventoId);
-    }
+    public DTOChatResponse crearChatDirecto(String username) throws Exception {
 
-    @Override
-    public Optional<Chat> findDirectoBetween(String username1, String username2) {
-        return chatRepository.findDirectoBetween(username1, username2);
-    }
-
-    @Override
-    public Chat crearChatDirecto(String username1, String username2) {
+        String usernameOrigen = CurrentUser.getUsername().orElseThrow(() -> new Exception("No se encontró al usuario"));
 
         // validar que no exista
-        Optional<Chat> existente = chatRepository.findDirectoBetween(username1, username2);
+        Optional<Chat> existente = chatRepository.findDirectoBetween(usernameOrigen, username);
         if (existente.isPresent()) {
-            return existente.get();
+            return toChatResponseDTO(existente.get());
         }
 
-        Usuario u1 = usuarioRepository.findByUsername(username1)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username1));
+        Usuario u1 = usuarioRepository.findByUsername(usernameOrigen)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + usernameOrigen));
 
-        Usuario u2 = usuarioRepository.findByUsername(username2)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username2));
+        Usuario u2 = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
 
         Chat nuevo = Chat.builder()
                 .tipo(Chat.Tipo.DIRECTO)
@@ -73,51 +59,49 @@ public class ChatServiceImpl extends BaseServiceImpl <Chat, Long> implements Cha
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
 
-        return chatRepository.save(nuevo);
+        return toChatResponseDTO(chatRepository.save(nuevo));
     }
 
-    //Espacio
 
-    @Override
-    public List<Chat> findAllByEspacio(Long espacioId) {
-        return chatRepository.findAllByTipoAndEspacio_Id(Chat.Tipo.ESPACIO, espacioId);
-    }
+    public DTOChatResponse obtenerChat(Long idChat) throws Exception {
+        Chat chat = chatRepository.findById(idChat).orElseThrow(() -> new Exception("No se encontró el chat"));
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("No se encontró al usuario"));
 
-    @Override
-    public Optional<Chat> findByEspacioId(Long espacioId) {
-        return chatRepository.findByEspacio_Id(espacioId);
-    }
+        validarAcceso(chat, username);
 
-    @Override
-    public List<Chat> findByTipoAndEspacio_Id(Chat.Tipo tipo, Long espacioId) {
-        return chatRepository.findAllByTipoAndEspacio_Id(tipo, espacioId);
-    }
-    
-    @Override
-    @Transactional
-    public DTOChatResponse getOrCreateChatParaEspacio(Long espacioId) {
-        Chat chat = chatRepository.findByEspacio_Id(espacioId)
-                .orElseGet(() -> crearChatParaEspacio(espacioId));
-
-        // acá convertimos la entidad al DTOResponse
         return toChatResponseDTO(chat);
     }
 
-    private Chat crearChatParaEspacio(Long espacioId) {
-        Espacio espacio = espacioRepository.findById(espacioId)
-                .orElseThrow(() -> new RuntimeException("Espacio no encontrado"));
 
-        Chat chat = Chat.builder()
-                .tipo(Chat.Tipo.ESPACIO)
-                .espacio(espacio)
-                .fechaHoraAlta(LocalDateTime.now())
-                .build();
+    public List<DTOChatResponse> obtenerDirectos() throws Exception {
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Inicie sesión para ver sus chats"));
 
-        return chatRepository.save(chat);
+        return chatRepository.getDirectos(username).stream().map(c -> {
+            try {
+                return toChatResponseDTO(c);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).toList();
     }
 
-    // 🔹 Mapeo manual a DTO 
-    private DTOChatResponse toChatResponseDTO(Chat chat) {
+    public List<DTOChatResponse> buscarChats(String texto) throws Exception {
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Inicie sesión para ver sus chats"));
+
+        return chatRepository.buscar(username, texto).stream().map(c -> {
+            try {
+                return toChatResponseDTO(c);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).toList();
+    }
+
+    
+
+
+
+    private DTOChatResponse toChatResponseDTO(Chat chat) throws Exception {
         DTOChatResponse dto = new DTOChatResponse();
         dto.setId(chat.getId());
         dto.setTipo(chat.getTipo().name());
@@ -141,61 +125,83 @@ public class ChatServiceImpl extends BaseServiceImpl <Chat, Long> implements Cha
             dto.setNombreSuperEvento(chat.getSuperEvento().getNombre());
         }
 
+        // Usuario
+        if (chat.getUsuario1() != null && chat.getUsuario2() != null) {
+            String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+            if (chat.getUsuario1().getUsername().equals(username)) {
+                dto.setUsuarioUsername(chat.getUsuario2().getUsername());
+                dto.setUsuarioNombre(chat.getUsuario2().getNombre());
+                dto.setUsuarioApellido(chat.getUsuario2().getApellido());
+            } else {
+                dto.setUsuarioUsername(chat.getUsuario1().getUsername());
+                dto.setUsuarioNombre(chat.getUsuario1().getNombre());
+                dto.setUsuarioApellido(chat.getUsuario1().getApellido());
+            }
+        }
+
+        // Grupo
+
+        if (chat.getGrupo() != null) {
+            dto.setGrupoId(chat.getGrupo().getId());
+            dto.setNombreGrupo(chat.getGrupo().getNombre());
+        }
+
         return dto;
     }
 
 
-    
-    // Para evento
-    @Override
-    public List<Chat> findAllByEvento(Long eventoId) {
-        return chatRepository.findAllByTipoAndEvento_Id(Chat.Tipo.EVENTO, eventoId);
-    }
+    private void validarAcceso(Chat chat, String username) throws Exception {
+        Usuario usuario = usuarioRepository.findByUsername(username).orElseThrow(() -> new Exception("No se encontró al usuario"));
 
-    @Override
-    @Transactional
-    public DTOChatResponse getOrCreateChatParaEvento(Long eventoId) {
-        Chat chat = chatRepository.findByEvento_Id(eventoId)
-                .orElseGet(() -> crearChatParaEvento(eventoId));
+        switch (chat.getTipo()) {
 
-        return toChatResponseDTO(chat);
-    }
-    private Chat crearChatParaEvento(Long eventoId) {
-        Evento evento = eventoRepository.findById(eventoId)
-                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
-
-        Chat chat = Chat.builder()
-                .tipo(Chat.Tipo.EVENTO)
-                .evento(evento)
-                .fechaHoraAlta(LocalDateTime.now())
-                .build();
-
-        return chatRepository.save(chat);
-    }
-
-    // Para super evento
-    @Override
-    @Transactional
-    public DTOChatResponse getOrCreateChatParaSuperEvento(Long superEventoId) {
-
-        Chat chat = chatRepository.findBySuperEvento_Id(superEventoId)
-                .orElseGet(() -> crearChatParaSuperEvento(superEventoId));
-
-        return toChatResponseDTO(chat);
-    }
-
-    private Chat crearChatParaSuperEvento(Long superEventoId) {
-
-        SuperEvento superEvento = superEventoRepository.findById(superEventoId)
-                .orElseThrow(() -> new RuntimeException("SuperEvento no encontrado"));
-
-        Chat chat = Chat.builder()
-                .tipo(Chat.Tipo.SUPEREVENTO)
-                .superEvento(superEvento)
-                .fechaHoraAlta(LocalDateTime.now())
-                .build();
-
-        return chatRepository.save(chat);
+            case DIRECTO -> {
+                if (chat.getUsuario1() == null || chat.getUsuario2() == null) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+                if (!chat.getUsuario1().getUsername().equals(username) && !chat.getUsuario2().getUsername().equals(username)) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+            }
+            case EVENTO -> {
+                if (chat.getEvento() == null) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+                boolean inscripto = chat.getEvento().getInscripciones().stream().filter(ins -> ins.getFechaHoraBaja() == null).map(ins -> ins.getUsuario().getUsername()).toList().contains(username);
+                boolean admin = chat.getEvento().getAdministradoresEvento().stream().filter(adm -> adm.getFechaHoraBaja() == null).map(adm -> adm.getUsuario().getUsername()).toList().contains(username);
+                if (!inscripto && !admin) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+            }
+            case SUPEREVENTO -> {
+                if (chat.getSuperEvento() == null) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+                boolean admin = chat.getSuperEvento().getAdministradorSuperEventos().stream().filter(adm -> adm.getFechaHoraBaja() == null).map(adm -> adm.getUsuario().getUsername()).toList().contains(username);
+                if (!admin) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+            }
+            case ESPACIO -> {
+                if (chat.getEspacio() == null) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+                boolean admin = chat.getEspacio().getAdministradoresEspacio().stream().filter(adm -> adm.getFechaHoraBaja() == null).map(adm -> adm.getUsuario().getUsername()).toList().contains(username);
+                if (!admin) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+            }
+            case GRUPAL -> {
+                if (chat.getGrupo() == null) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+                boolean admin = chat.getGrupo().getUsuariosGrupo().stream().filter(usr -> usr.getFechaHoraBaja() == null && (usr.getAceptado() != null && usr.getAceptado())).map(usr -> usr.getUsuario().getUsername()).toList().contains(username);
+                if (!admin) {
+                    throw new Exception("No tiene permiso para acceder a este chat");
+                }
+            }
+        }
     }
 
     

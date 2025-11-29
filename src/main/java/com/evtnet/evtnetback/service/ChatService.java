@@ -7,35 +7,11 @@ import java.util.Optional;
 import java.util.List;
 
 public interface ChatService extends BaseService <Chat, Long> {
-    List<Chat> findAllByUsuario(String username);
+    DTOChatResponse crearChatDirecto(String username) throws Exception;
 
-    Optional<Chat> findDirectoBetween(String username1, String username2);
+    DTOChatResponse obtenerChat(Long idChat) throws Exception;
 
-    Chat crearChatDirecto(String username1, String username2);
+    List<DTOChatResponse> obtenerDirectos() throws Exception;
 
-    // Para espacio
-
-    List<Chat> findAllByEspacio(Long espacioId);
-
-    Optional<Chat> findByEspacioId(Long espacioId);
-
-    List<Chat> findByTipoAndEspacio_Id(Chat.Tipo tipo, Long espacioId);
-
-    DTOChatResponse getOrCreateChatParaEspacio(Long espacioId);
-
-    // Para evento
-
-    DTOChatResponse getOrCreateChatParaEvento(Long eventoId);
-
-    List<Chat> findAllByEvento(Long eventoId);
-
-    // Para superevento
-
-    DTOChatResponse getOrCreateChatParaSuperEvento(Long superEventoId);
-
-    List<Chat> findAllBySuperEvento(Long superEventoId);
-
-
-    
-    
+    List<DTOChatResponse> buscarChats(String texto) throws Exception;
 }

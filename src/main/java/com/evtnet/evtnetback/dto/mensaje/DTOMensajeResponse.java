@@ -9,9 +9,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class DTOMensajeResponse {
     private Long id;
-    private Long chatId;
-    private Long usuarioId;
+    private String username;
     private String usuarioNombre;
+    private String usuarioApellido;
     private String texto;
     private LocalDateTime fechaHora;
 }

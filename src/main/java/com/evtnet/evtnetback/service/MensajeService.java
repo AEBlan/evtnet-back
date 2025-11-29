@@ -6,7 +6,7 @@ import java.util.List;
 
 
 public interface MensajeService extends BaseService <Mensaje, Long> {
-    Mensaje enviarMensaje(Long chatId, Long usuarioAutorId, String texto);
+    Mensaje enviarMensaje(Long chatId, String texto) throws Exception;
     List<DTOMensajeResponse> obtenerHistorial(Long chatId);
 
 }

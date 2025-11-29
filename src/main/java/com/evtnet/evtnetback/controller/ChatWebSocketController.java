@@ -10,12 +10,14 @@ import com.evtnet.evtnetback.service.MensajeService;
 import com.evtnet.evtnetback.repository.ChatRepository;
 import com.evtnet.evtnetback.repository.UsuarioRepository;
 
+import com.evtnet.evtnetback.util.CurrentUser;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 
 @Controller
@@ -29,40 +31,39 @@ public class ChatWebSocketController  {
     private final UsuarioRepository usuarioRepo;
 
     @MessageMapping("/chat.send")
-    public void send(DTOMensaje dto) {
-    
+    public void send(DTOMensaje dto, Principal principal) {
         try {
-
-                Chat chat = chatRepo.findById(dto.getChatId())
+            Chat chat = chatRepo.findById(dto.getChatId())
                     .orElseThrow(() -> new RuntimeException("Chat no encontrado"));
 
-                Usuario autor = usuarioRepo.findById(dto.getUsuarioId())
+            String username = principal.getName();
+
+            Usuario autor = usuarioRepo.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-                Mensaje msg = Mensaje.builder()
-                        .chat(chat)
-                        .usuario(autor)
-                        .texto(dto.getTexto())
-                        .fechaHora(LocalDateTime.now())
-                        .build();
+            Mensaje msg = Mensaje.builder()
+                    .chat(chat)
+                    .usuario(autor)
+                    .texto(dto.getTexto())
+                    .fechaHora(LocalDateTime.now())
+                    .build();
 
-                Mensaje saved = mensajeService.save(msg);
+            Mensaje saved = mensajeService.save(msg);
 
-                DTOMensajeResponse response = DTOMensajeResponse.builder()
-                        .id(saved.getId())
-                        .chatId(chat.getId())
-                        .usuarioId(autor.getId())
-                        .usuarioNombre(autor.getNombre())
-                        .texto(saved.getTexto())
-                        .fechaHora(saved.getFechaHora())
-                        .build();
+            DTOMensajeResponse response = DTOMensajeResponse.builder()
+                    .id(saved.getId())
+                    .username(autor.getUsername())
+                    .usuarioNombre(autor.getNombre())
+                    .usuarioApellido(autor.getApellido())
+                    .texto(saved.getTexto())
+                    .fechaHora(saved.getFechaHora())
+                    .build();
 
-                template.convertAndSend("/topic/chat/" + chat.getId(), response);
-            
-            } catch (Exception e) {
+            template.convertAndSend("/topic/chat/" + chat.getId(), response);
+
+        } catch (Exception e) {
             e.printStackTrace();
-            // Podés enviar un mensaje de error si querés
-            }
+        }
     }
 
 }

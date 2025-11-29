@@ -296,6 +296,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                         .nombre(espacioEstado.getEstadoEspacio().getNombre())
                         .descripcion(espacioEstado.getDescripcion())
                         .build())
+                .idChat(espacio.getChat() != null ? espacio.getChat().getId() : null)
                 .build();
     }
 

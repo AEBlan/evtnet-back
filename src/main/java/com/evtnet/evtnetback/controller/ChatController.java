@@ -21,70 +21,33 @@ public class ChatController {
     private final ChatService chatService;
     private final MensajeService mensajeService;
 
-    // ===================================================
-    // 1) OBTENER TODOS LOS CHATS DE UN USUARIO
-    // ===================================================
-    @GetMapping("/usuario/{username}")
-    public List<Chat> obtenerChatsDeUsuario(@PathVariable String username) {
-        return chatService.findAllByUsuario(username);
-    }
-
-    // ===================================================
-    // 2) OBTENER UN CHAT DIRECTO ENTRE DOS USUARIOS
-    // ===================================================
-    @GetMapping("/directo")
-    public Chat obtenerChatDirecto(
-            @RequestParam String u1,
-            @RequestParam String u2
-    ) {
-        return chatService.findDirectoBetween(u1, u2)
-                .orElseThrow(() -> new RuntimeException("No existe chat directo entre " + u1 + " y " + u2));
-    }
-
-    // ===================================================
-    // 3) HISTORIAL DE MENSAJES DE UN CHAT
-    // ===================================================
     @GetMapping("/{chatId}/mensajes")
     public List<DTOMensajeResponse> obtenerMensajesDeChat(@PathVariable Long chatId) {
         return mensajeService.obtenerHistorial(chatId);
     }
 
-    // ===================================================
-    // 4) CREAR CHAT DIRECTO (si no existe)
-    // ===================================================
     @PostMapping("/directo")
-    public Chat crearChatDirecto(
-            @RequestParam String u1,
-            @RequestParam String u2
-    ) {
-        return chatService.findDirectoBetween(u1, u2)
-                .orElseGet(() -> chatService.crearChatDirecto(u1, u2));
+    public DTOChatResponse crearChatDirecto(@RequestParam String username) throws Exception {
+        return chatService.crearChatDirecto(username);
     }
 
-    // ===================================================
-    //  CREAR CHAT ESPACIO (si no existe)
-    // ===================================================
-    @GetMapping("/espacio/{espacioId}")
-    public ResponseEntity<DTOChatResponse> getOrCreateChat(@PathVariable Long id) {
-        DTOChatResponse dto = chatService.getOrCreateChatParaEspacio(id);
-        return ResponseEntity.ok(dto);
+    @GetMapping("/detalle/{idChat}")
+    public DTOChatResponse obtenerChat (@PathVariable Long idChat) throws Exception {
+        return chatService.obtenerChat(idChat);
     }
 
-    // ================================================================
-    // Obtener / crear chat de EVENTO
-    // ================================================================
-    @GetMapping("/evento/{eventoId}")
-    public DTOChatResponse crearChatParaEvento(@PathVariable Long eventoId) {
-        return chatService.getOrCreateChatParaEvento(eventoId);
+    @GetMapping("/obtenerDirectos")
+    public List<DTOChatResponse> obtenerDirectos () throws Exception {
+        return chatService.obtenerDirectos();
+    }
+    @GetMapping("/buscarChats")
+    public List<DTOChatResponse> buscarChats(@RequestParam String texto) throws Exception {
+        return chatService.buscarChats(texto);
     }
 
-    // ================================================================
-    // Obtener / crear chat de SUPEREVENTO
-    // ================================================================
-
-    @GetMapping("/superevento/{superEventoId}")
-    public DTOChatResponse crearChatParaSuperEvento(@PathVariable Long superEventoId) {
-        return chatService.getOrCreateChatParaSuperEvento(superEventoId);
+    @PostMapping("/enviarMensaje/{idChat}")
+    public void enviarMensaje (@PathVariable Long idChat, @RequestParam String mensaje) throws Exception {
+        mensajeService.enviarMensaje(idChat, mensaje);
     }
     
 }
