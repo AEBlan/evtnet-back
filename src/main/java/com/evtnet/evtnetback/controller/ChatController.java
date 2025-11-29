@@ -35,5 +35,19 @@ public class ChatController {
     public DTOChatResponse obtenerChat (@PathVariable Long idChat) throws Exception {
         return chatService.obtenerChat(idChat);
     }
+
+    @GetMapping("/obtenerDirectos")
+    public List<DTOChatResponse> obtenerDirectos () throws Exception {
+        return chatService.obtenerDirectos();
+    }
+    @GetMapping("/buscarChats")
+    public List<DTOChatResponse> buscarChats(@RequestParam String texto) throws Exception {
+        return chatService.buscarChats(texto);
+    }
+
+    @PostMapping("/enviarMensaje/{idChat}")
+    public void enviarMensaje (@PathVariable Long idChat, @RequestParam String mensaje) throws Exception {
+        mensajeService.enviarMensaje(idChat, mensaje);
+    }
     
 }

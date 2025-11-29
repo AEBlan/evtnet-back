@@ -72,6 +72,31 @@ public class ChatServiceImpl extends BaseServiceImpl <Chat, Long> implements Cha
         return toChatResponseDTO(chat);
     }
 
+
+    public List<DTOChatResponse> obtenerDirectos() throws Exception {
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Inicie sesión para ver sus chats"));
+
+        return chatRepository.getDirectos(username).stream().map(c -> {
+            try {
+                return toChatResponseDTO(c);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).toList();
+    }
+
+    public List<DTOChatResponse> buscarChats(String texto) throws Exception {
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Inicie sesión para ver sus chats"));
+
+        return chatRepository.buscar(username, texto).stream().map(c -> {
+            try {
+                return toChatResponseDTO(c);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).toList();
+    }
+
     
 
 
@@ -135,7 +160,7 @@ public class ChatServiceImpl extends BaseServiceImpl <Chat, Long> implements Cha
                 if (chat.getUsuario1() == null || chat.getUsuario2() == null) {
                     throw new Exception("No tiene permiso para acceder a este chat");
                 }
-                if (!chat.getUsuario1().getUsername().equals(username) && chat.getUsuario2().getUsername().equals(username)) {
+                if (!chat.getUsuario1().getUsername().equals(username) && !chat.getUsuario2().getUsername().equals(username)) {
                     throw new Exception("No tiene permiso para acceder a este chat");
                 }
             }
@@ -171,7 +196,7 @@ public class ChatServiceImpl extends BaseServiceImpl <Chat, Long> implements Cha
                 if (chat.getGrupo() == null) {
                     throw new Exception("No tiene permiso para acceder a este chat");
                 }
-                boolean admin = chat.getGrupo().getUsuariosGrupo().stream().filter(usr -> usr.getFechaHoraBaja() == null).map(usr -> usr.getUsuario().getUsername()).toList().contains(username);
+                boolean admin = chat.getGrupo().getUsuariosGrupo().stream().filter(usr -> usr.getFechaHoraBaja() == null && (usr.getAceptado() != null && usr.getAceptado())).map(usr -> usr.getUsuario().getUsername()).toList().contains(username);
                 if (!admin) {
                     throw new Exception("No tiene permiso para acceder a este chat");
                 }

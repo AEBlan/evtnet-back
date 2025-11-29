@@ -1765,13 +1765,13 @@ public class EventoServiceImpl extends BaseServiceImpl<Evento, Long> implements 
 					.map(c -> DTOInscripcionesEvento.TransferenciaDTO.builder()
 						.numero(c.getNumero())
 						.monto(c.getItems().stream()
-							.filter(it -> it.getCobro().getUsername().equals(i.getUsuario().getUsername())
-								|| it.getPago().getUsername().equals(i.getUsuario().getUsername()))
+							.filter(it -> it.getCobro() != null && it.getCobro().getUsername().equals(i.getUsuario().getUsername())
+								|| it.getPago() != null && it.getPago().getUsername().equals(i.getUsuario().getUsername()))
 							.map(it ->
 								it.getMontoUnitario()
 									.multiply(BigDecimal.valueOf(it.getCantidad()))
 									.multiply(BigDecimal.valueOf(
-										it.getCobro().getUsername().equals(i.getUsuario().getUsername()) ? -1f : 1f
+										it.getCobro() != null && it.getCobro().getUsername().equals(i.getUsuario().getUsername()) ? -1f : 1f
 									))
 							).reduce(BigDecimal.ZERO, BigDecimal::add)).build()
 					).toList()

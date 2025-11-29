@@ -6,20 +6,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import com.evtnet.evtnetback.entity.*;
+import com.evtnet.evtnetback.repository.*;
 import org.springframework.stereotype.Service;
 
-import com.evtnet.evtnetback.entity.Evento;
-import com.evtnet.evtnetback.entity.EventoEstado;
-import com.evtnet.evtnetback.entity.SuperEvento;
-import com.evtnet.evtnetback.entity.TipoAdministradorSuperEvento;
-import com.evtnet.evtnetback.entity.Usuario;
-import com.evtnet.evtnetback.entity.AdministradorSuperEvento;
-import com.evtnet.evtnetback.repository.BaseRepository;
-import com.evtnet.evtnetback.repository.SuperEventoRepository;
-import com.evtnet.evtnetback.repository.UsuarioRepository;
-import com.evtnet.evtnetback.repository.AdministradorSuperEventoRepository;
-import com.evtnet.evtnetback.repository.TipoAdministradorSuperEventoRepository;
-import com.evtnet.evtnetback.repository.EventoRepository;
 import com.evtnet.evtnetback.dto.supereventos.DTOAdministradoresSuperevento;
 import com.evtnet.evtnetback.dto.supereventos.DTOBusquedaAdministrados;
 import com.evtnet.evtnetback.dto.supereventos.DTOBusquedaEvento;
@@ -46,6 +36,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
     private final AdministradorSuperEventoRepository adminRepo;
     private final TipoAdministradorSuperEventoRepository tipoAdminRepo;
     private final EventoRepository eventoRepo;
+    private final ChatRepository chatRepo;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -57,7 +48,8 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
         UsuarioRepository usuarioRepo, 
         AdministradorSuperEventoRepository adminRepo,
         TipoAdministradorSuperEventoRepository tipoAdminRepo,
-        EventoRepository eventoRepo
+        EventoRepository eventoRepo,
+        ChatRepository chatRepo
     ) {
         super(baseRepository);
         this.repo = repo;
@@ -66,6 +58,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
         this.adminRepo = adminRepo;
         this.tipoAdminRepo = tipoAdminRepo;
         this.eventoRepo = eventoRepo;
+        this.chatRepo = chatRepo;
     }
 
     @Override
@@ -191,6 +184,7 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
             .nombre(superEvento.getNombre())
             .descripcion(superEvento.getDescripcion())
             .esAdministrador(superEvento.getAdministradorSuperEventos().stream().filter(a -> a.getFechaHoraBaja() == null && a.getUsuario().getUsername().equals(username)).count() > 0)
+            .chatId(superEvento.getChat().getId())
             .eventos(superEvento.getEventos().stream().map(e -> {
                 List<EventoEstado> historico = e.getEventosEstado().stream().filter(h -> h.getFechaHoraBaja() == null).toList();
                 boolean cancelado = false;
@@ -235,6 +229,14 @@ public class SuperEventoServiceImpl extends BaseServiceImpl <SuperEvento,Long> i
             .build();
 
         superEvento = repo.save(superEvento);
+
+        Chat chat = Chat.builder()
+                .tipo(Chat.Tipo.SUPEREVENTO)
+                .superEvento(superEvento)
+                .fechaHoraAlta(LocalDateTime.now())
+                .build();
+
+        chatRepo.save(chat);
 
         AdministradorSuperEvento admin = AdministradorSuperEvento.builder()
             .usuario(usuario)

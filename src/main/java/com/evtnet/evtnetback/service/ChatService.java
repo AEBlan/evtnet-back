@@ -10,4 +10,8 @@ public interface ChatService extends BaseService <Chat, Long> {
     DTOChatResponse crearChatDirecto(String username) throws Exception;
 
     DTOChatResponse obtenerChat(Long idChat) throws Exception;
+
+    List<DTOChatResponse> obtenerDirectos() throws Exception;
+
+    List<DTOChatResponse> buscarChats(String texto) throws Exception;
 }

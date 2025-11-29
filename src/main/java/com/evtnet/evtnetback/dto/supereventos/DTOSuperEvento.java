@@ -12,6 +12,7 @@ public class DTOSuperEvento {
     private String nombre;
     private String descripcion;
     private Boolean esAdministrador;
+    private Long chatId;
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class DTOEvento { 
