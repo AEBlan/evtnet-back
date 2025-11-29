@@ -53,6 +53,10 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
     @Value("${app.storage.documentacion:/app/storage/documentacion}")
     private String directorioBase;
 
+    @Value("${app.storage.perfiles:/app/storage/perfiles}")
+    private String directorioPerfiles;
+
+
     public EspacioServiceImpl(
             EspacioRepository espacioRepository,
             DisciplinaRepository disciplinaRepository,
@@ -328,6 +332,12 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             dtoSubespacios.add(dtoSubespacioEditar);
         }
         boolean esAdmin=this.espacioRepository.existsByIdAndPropietarioAdmin_Username(id, username, "Administrador");
+        boolean esProp=this.espacioRepository.existsByIdAndPropietarioAdmin_Username(id, username, "Propietario");
+
+        if (!esAdmin && !esProp) {
+            throw new Exception("No tiene permiso para administrar este espacio");
+        }
+
         EspacioEstado espacioEstado = this.espacioEstadoRepository.findActualByEspacio(id);
         List<EstadoEspacio> estadosPosibles=this.estadoEspacioRepository.findDestinosByOrigen(espacioEstado.getEstadoEspacio().getId());
         List<DTOEstadoEspacio> estadosTransicion=new ArrayList<>();
@@ -365,7 +375,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 .longitud(espacio.getLongitudUbicacion().doubleValue())
                 .subEspacios(dtoSubespacios)
                 .esAdmin(esAdmin)
-                .esPropietario(!esAdmin)
+                .esPropietario(esProp)
                 .esPublico(tipoEspacio.getNombre().equalsIgnoreCase("público"))
                 .estado(DTOEspacioEstado.builder()
                         .id(espacioEstado.getEstadoEspacio().getId())
@@ -378,7 +388,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                 .build();
 
         DTOArchivo archivo;
-        if(!espacio.getBasesYCondiciones().isEmpty()){
+        if(espacio.getBasesYCondiciones() != null && !espacio.getBasesYCondiciones().isEmpty()){
             byte[] content = Files.readAllBytes(Paths.get(directorioBase, espacio.getBasesYCondiciones()));
             archivo = DTOArchivo.builder()
                     .nombreArchivo(espacio.getBasesYCondiciones())
@@ -807,7 +817,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                     .esPropietario(this.espacioRepository.existsByIdAndPropietarioAdmin_Username(idEspacio, usuario.getUsername(), "Propietario"))
                     .build();
             if(usuario.getFotoPerfil()!=null){
-                String base64Image = encodeFileToBase64(usuario.getFotoPerfil());
+                Path path = Paths.get(directorioPerfiles);
+                String base64Image = encodeFileToBase64(path.resolve(usuario.getFotoPerfil()).toAbsolutePath().toString());
                 String[] parts = base64Image.split(",");
                 String base64Data = parts[1];
                 String mimeType = parts[0].split(";")[0].split(":")[1];
@@ -938,7 +949,8 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
                     encargadoSubespacio.setNombreApellidoEncargado(subEspacio.getEncargadoSubEspacio().getNombre() + subEspacio.getEncargadoSubEspacio().getApellido());
                     encargadoSubespacio.setUsername(subEspacio.getEncargadoSubEspacio().getUsername());
                     if(subEspacio.getEncargadoSubEspacio().getFotoPerfil()!=null){
-                        String base64Image = encodeFileToBase64(subEspacio.getEncargadoSubEspacio().getFotoPerfil());
+                        Path path = Paths.get(directorioPerfiles);
+                        String base64Image = encodeFileToBase64(path.resolve(subEspacio.getEncargadoSubEspacio().getFotoPerfil()).toAbsolutePath().toString());
                         String[] parts = base64Image.split(",");
                         String base64Data = parts[1];
                         String mimeType = parts[0].split(";")[0].split(":")[1];
@@ -1125,7 +1137,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             throw new Exception("Debe indicar la ubicación (lat/lon)");
         if (dtoEspacio.getSubEspacios().isEmpty()) throw new Exception("Debe agregar al menos un subespacio");
 
-        ParametroSistema parametroRangoUbicacion = this.parametroSistemaRepository.findByNombre("rango_validar_ubicacion");
+        ParametroSistema parametroRangoUbicacion = this.parametroSistemaRepository.findByIdentificador("rango_validar_ubicacion").orElseThrow(() -> new Exception("Ocurrió un error"));
 
         double rangoMetros = Double.parseDouble(parametroRangoUbicacion.getValor());
 
@@ -1178,7 +1190,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             throw new Exception("Debe indicar la ubicación (lat/lon)");
         if (dtoEspacio.getSubEspacios().isEmpty()) throw new Exception("Debe agregar al menos un subespacio");
 
-        ParametroSistema parametroRangoUbicacion = this.parametroSistemaRepository.findByNombre("rango_validar_ubicacion");
+        ParametroSistema parametroRangoUbicacion = this.parametroSistemaRepository.findByIdentificador("rango_validar_ubicacion").orElseThrow(() -> new Exception("Ocurrió un error"));
 
         double rangoMetros = Double.parseDouble(parametroRangoUbicacion.getValor());
 
@@ -1222,7 +1234,7 @@ public class EspacioServiceImpl extends BaseServiceImpl<Espacio, Long> implement
             throw new Exception("Debe indicar la ubicación (lat/lon)");
         if (dtoEspacio.getSubEspacios().isEmpty()) throw new Exception("Debe agregar al menos un subespacio");
 
-        ParametroSistema parametroRangoUbicacion = this.parametroSistemaRepository.findByNombre("rango_validar_ubicacion");
+        ParametroSistema parametroRangoUbicacion = this.parametroSistemaRepository.findByIdentificador("rango_validar_ubicacion").orElseThrow(() -> new Exception("Ocurrió un error"));
 
         double rangoMetros = Double.parseDouble(parametroRangoUbicacion.getValor());
 

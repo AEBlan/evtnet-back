@@ -315,6 +315,7 @@ INSERT INTO permiso (nombre) SELECT 'VisionLogParametros' WHERE NOT EXISTS (SELE
 INSERT INTO permiso (nombre) SELECT 'CancelacionEventosAdmin' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='CancelacionEventosAdmin');
 INSERT INTO permiso (nombre) SELECT 'AdministracionDisciplinas' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='AdministracionDisciplinas');
 INSERT INTO permiso (nombre) SELECT 'AdministracionDenunciasEventos' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='AdministracionDenunciasEventos');
+INSERT INTO permiso (nombre) SELECT 'AdministracionSolicitudesEspaciosPrivados' WHERE NOT EXISTS (SELECT 1 FROM permiso WHERE nombre='AdministracionSolicitudesEspaciosPrivados');
 
 -- =========================
 -- Rol (fecha_hora_alta NOT NULL en tu entidad nueva)
@@ -340,8 +341,8 @@ SELECT 'Perito', NULL, NOW()
 WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='Perito');
 
 INSERT INTO rol (nombre, descripcion, fecha_hora_alta)
-SELECT 'GestorEspacios', NULL, NOW()
-    WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='GestorEspacios');
+SELECT 'Gestor de Espacios', NULL, NOW()
+    WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre='Gestor de Espacios');
 
 -- =========================
 -- Rol-Permiso (rol_permiso ahora exige fecha_hora_alta NOT NULL)
@@ -384,7 +385,7 @@ WHERE p.nombre IN (
   'AdministracionMascota','AdministracionRoles','AdministracionUsuarios','RealizacionBackup',
   'VisionLogUsuariosGrupos','VisionLogEventos','VisionLogEspacios', 'DenunciaEventos',
   'CancelacionEventosAdmin', 'AdministracionDisciplinas', 'AdministracionEspaciosPrivados',
-  'AdministracionDenunciasEventos'
+  'AdministracionDenunciasEventos', 'AdministracionSolicitudesEspaciosPrivados'
 )
   AND NOT EXISTS (
     SELECT 1 FROM rol_permiso rp
@@ -420,7 +421,7 @@ SET @rol := (SELECT id FROM rol WHERE nombre='GestorEspacios');
 INSERT INTO rol_permiso (rol_id, permiso_id, fecha_hora_alta)
 SELECT @rol, p.id, NOW() FROM permiso p
 WHERE p.nombre IN (
-  'InicioSesion', 'AdministracionEspaciosPublicos','AdministracionEspaciosPrivados','VisionEspacios','VisionPerfilPropio'
+  'InicioSesion', 'AdministracionEspaciosPublicos','AdministracionEspaciosPrivados','VisionEspacios','VisionPerfilPropio', 'AdministracionSolicitudesEspaciosPrivados'
 )
   AND NOT EXISTS (
     SELECT 1 FROM rol_permiso rp
@@ -661,37 +662,15 @@ SELECT 'Clausurado', 'Se clausura el espacio debido a irregularidades en el mism
 WHERE NOT EXISTS (SELECT 1 FROM estado_espacio WHERE nombre='Clausurado');
 
 
-insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
-select 1, now(), 1,2
-WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=1);
-
-insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
-select 2, now(), 1,4
-WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=2);
-
-insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
-select 3, now(), 1,5
-WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=3);
-
-insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
-select 4, now(), 2,3
-WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=4);
-
-insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
-select 5, now(), 2,6
-WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=5);
-
-insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
-select 6, now(), 3,2
-WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=6);
-
-insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
-select 7, now(), 4,1
-WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=7);
-
-insert into transicion_estado_espacio (id, fecha_hora_alta, estado_origen_id, estado_destino_id)
-select 8, now(), 4,5
-WHERE NOT EXISTS (SELECT 1 FROM transicion_estado_espacio WHERE id=8);
+INSERT INTO transicion_estado_espacio (fecha_hora_alta,fecha_hora_baja,estado_destino_id,estado_origen_id) VALUES
+	 ('2025-11-29 16:33:54.000000',NULL,2,1),
+	 ('2025-11-29 16:33:54.000000',NULL,3,1),
+	 ('2025-11-29 16:33:54.000000',NULL,4,1),
+	 ('2025-11-29 16:33:54.000000',NULL,1,3),
+	 ('2025-11-29 16:33:54.000000',NULL,5,4),
+	 ('2025-11-29 16:33:54.000000',NULL,4,5),
+	 ('2025-11-29 16:33:54.000000',NULL,6,4),
+	 ('2025-11-29 16:33:54.000000',NULL,6,5);
 
 
 -- =========================

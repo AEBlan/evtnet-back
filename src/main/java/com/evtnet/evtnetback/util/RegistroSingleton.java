@@ -34,8 +34,8 @@ public class RegistroSingleton {
 
     private final Path baseDir;
 
-    //Poner a true para no escribir logs
-    private final boolean preventWrite = true;
+    @Value("${registros.preventWrite:false}")
+    private final boolean preventWrite = false;
 
     public RegistroSingleton(@Value("${app.storage.logs}") String basePath, RegistroRepository repository, RequestUtils requestUtils, UsuarioRepository usuarioRepository) {
         this.repository = repository;
