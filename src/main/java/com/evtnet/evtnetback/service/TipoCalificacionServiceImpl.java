@@ -76,30 +76,29 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
                 .filter(ic -> ic.getImagen() != null && Files.exists(imagenesPath.resolve(ic.getImagen())))
                 .toList();
         List<DTOTipoCalificacion> dtos = filtrados.stream().map(ic -> {
-                Path path = imagenesPath.resolve(ic.getImagen());
-                String base64Image = encodeFileToBase64(path.toAbsolutePath().toString());
-                String[] parts = base64Image.split(",");
-                String base64Data = parts[1];
+            String base64Image = encodeFileToBase64(ic.getImagen());
+            String[] parts = base64Image.split(",");
+            String base64Data = parts[1];
 
-                String extension = "";
-                String fileName = path.getFileName().toString();
+            String extension = "";
+            String fileName = ic.getImagen();
 
-                int dotIndex = fileName.lastIndexOf('.');
-                if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
-                    extension = fileName.substring(dotIndex + 1).toLowerCase();
-                }
+            int dotIndex = fileName.lastIndexOf('.');
+            if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
+                extension = fileName.substring(dotIndex + 1).toLowerCase();
+            }
 
-                String contentType = extension.equals("svg") ? "svg" : "png";
-                    return DTOTipoCalificacion.builder()
-                            .id(ic.getId())
-                            .nombre(ic.getNombre())
-                            .url(base64Data)
-                            .fechaAlta(ic.getFechaHoraAlta()==null ? null
-                                    : TimeUtil.toMillis(ic.getFechaHoraAlta()))
-                            .fechaBaja(ic.getFechaHoraBaja()==null ? null
-                                    : TimeUtil.toMillis(ic.getFechaHoraBaja()))
-                            .contentType(contentType)
-                            .build();
+            String contentType = extension.equals("svg") ? "svg" : "png";
+            return DTOTipoCalificacion.builder()
+                    .id(ic.getId())
+                    .nombre(ic.getNombre())
+                    .url(base64Data)
+                    .fechaAlta(ic.getFechaHoraAlta()==null ? null
+                            : TimeUtil.toMillis(ic.getFechaHoraAlta()))
+                    .fechaBaja(ic.getFechaHoraBaja()==null ? null
+                            : TimeUtil.toMillis(ic.getFechaHoraBaja()))
+                    .contentType(contentType)
+                    .build();
         }).toList();
         return new PageImpl<>(dtos, pageable, dtos.size());
     }
@@ -108,9 +107,9 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
     public List<DTOTipoCalificacionSelect> obtenerTiposCalificacionSelect() throws Exception {
         List<TipoCalificacion> tiposCalificacion = tipoCalificacionRepository.findAll();
         return tiposCalificacion.stream().map(tc->DTOTipoCalificacionSelect.builder()
-                    .id(tc.getId())
-                    .nombre(tc.getNombre())
-                    .build())
+                        .id(tc.getId())
+                        .nombre(tc.getNombre())
+                        .build())
                 .collect(Collectors.toList());
     }
 
@@ -119,14 +118,12 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
         TipoCalificacion tipoCalificacion = tipoCalificacionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tipo de calificación no encontrado"));
 
-        Path path = Paths.get(imagenesDirectorio).resolve(tipoCalificacion.getImagen());
-        String base64Image = encodeFileToBase64(path.toAbsolutePath().toString());
+        String base64Image = encodeFileToBase64(tipoCalificacion.getImagen());
         String[] parts = base64Image.split(",");
         String base64Data = parts[1];
 
         String extension = "";
-
-        String fileName = path.getFileName().toString();
+        String fileName = tipoCalificacion.getImagen();
 
         int dotIndex = fileName.lastIndexOf('.');
         if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
@@ -285,15 +282,16 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
         }
         Path filePath=Paths.get(imagenesDirectorio).resolve(fileName).toAbsolutePath().normalize();
         Files.write(filePath, fileBytes);
-        return filePath.getFileName().toString();
+        return fileName;
     }
 
-    private String encodeFileToBase64(String filePath) {
+    private String encodeFileToBase64(String fileName) {
         try {
-            byte[] fileContent = Files.readAllBytes(Paths.get(filePath));
+            Path filePath = Paths.get(imagenesDirectorio).resolve(fileName).toAbsolutePath().normalize();
+            byte[] fileContent = Files.readAllBytes(filePath);
 
             String contentType;
-            if (filePath.endsWith(".svg")) {
+            if (fileName.endsWith(".svg")) {
                 contentType = "image/svg+xml";
             } else {
                 contentType = "image/png";
@@ -302,7 +300,7 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
             String base64 = Base64.getEncoder().encodeToString(fileContent);
             return "data:" + contentType + ";base64," + base64;
         } catch (Exception e) {
-            throw new RuntimeException("Error leyendo archivo de imagen: " + filePath, e);
+            throw new RuntimeException("Error leyendo archivo de imagen: " + fileName, e);
         }
     }
 }

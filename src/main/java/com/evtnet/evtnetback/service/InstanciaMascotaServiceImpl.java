@@ -5,6 +5,7 @@ import com.evtnet.evtnetback.entity.*;
 import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.util.CurrentUser;
 import com.evtnet.evtnetback.util.RegistroSingleton;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,9 @@ import java.util.stream.Collectors;
 @Service
 public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascota, Long>
         implements InstanciaMascotaService {
+
+    @Value("${app.storage.mascotas:/app/storage/mascotas}")
+    private String mascotasDirectorio;
 
     private final InstanciaMascotaRepository instanciaMascotaRepository;
     private final InstanciaMascotaSecuenciaRepository instanciaMascotaSecuenciaRepository;
@@ -68,10 +72,10 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
             String pattern = "%" + texto.toLowerCase() + "%";
 
             spec = spec.and((root, query, cb) ->
-                cb.or(
-                    cb.like(cb.lower(root.get("nombre")), pattern),
-                    cb.like(cb.lower(root.get("descripcion")), pattern)
-                )
+                    cb.or(
+                            cb.like(cb.lower(root.get("nombre")), pattern),
+                            cb.like(cb.lower(root.get("descripcion")), pattern)
+                    )
             );
         }
 
@@ -471,11 +475,11 @@ public class InstanciaMascotaServiceImpl extends BaseServiceImpl<InstanciaMascot
 
     private String encodeFileToBase64(String fileName) {
         try {
-            Path filePath = Paths.get(fileName).toAbsolutePath().normalize();
+            Path filePath = Paths.get(mascotasDirectorio).resolve(fileName).toAbsolutePath().normalize();
             byte[] fileContent = Files.readAllBytes(filePath);
 
             String contentType;
-            if (filePath.toString().endsWith(".svg")) {
+            if (fileName.endsWith(".svg")) {
                 contentType = "image/svg+xml";
             } else {
                 contentType = "image/png";

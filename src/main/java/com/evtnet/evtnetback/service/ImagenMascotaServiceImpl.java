@@ -178,16 +178,16 @@ public class ImagenMascotaServiceImpl extends BaseServiceImpl<ImagenMascota, Lon
         }
         Path filePath = Paths.get(mascotasDirectorio).resolve(fileName).toAbsolutePath().normalize();
         Files.write(filePath, fileBytes);
-        return filePath.toString();
+        return fileName;
     }
 
     private String encodeFileToBase64(String fileName) {
         try {
-            Path filePath = Paths.get(fileName).toAbsolutePath().normalize();
+            Path filePath = Paths.get(mascotasDirectorio).resolve(fileName).toAbsolutePath().normalize();
             byte[] fileContent = Files.readAllBytes(filePath);
 
             String contentType;
-            if (filePath.toString().endsWith(".svg")) {
+            if (fileName.endsWith(".svg")) {
                 contentType = "image/svg+xml";
             } else {
                 contentType = "image/png";
