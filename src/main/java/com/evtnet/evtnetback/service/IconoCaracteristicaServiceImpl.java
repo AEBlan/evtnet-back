@@ -76,7 +76,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
 
         List<IconoCaracteristica> filtrados = iconosCaracteristica
                 .stream()
-                .filter(ic -> ic.getImagen() != null && Files.exists(Paths.get(ic.getImagen())))
+                .filter(ic -> ic.getImagen() != null && Files.exists(Paths.get(iconosDirectorio).resolve(ic.getImagen())))
                 .toList();
 
         List<DTOIconoCaracteristica> dtos = filtrados.stream().map(ic -> {
@@ -85,8 +85,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
             String base64Data = parts[1];
 
             String extension = "";
-            Path path = Paths.get(ic.getImagen());
-            String fileName = path.getFileName().toString();
+            String fileName = ic.getImagen();
 
             int dotIndex = fileName.lastIndexOf('.');
             if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
@@ -121,8 +120,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
         String base64Data = parts[1];
 
         String extension = "";
-        Path path = Paths.get(iconoCaracteristica.getImagen());
-        String fileName = path.getFileName().toString();
+        String fileName = iconoCaracteristica.getImagen();
 
         int dotIndex = fileName.lastIndexOf('.');
         if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
@@ -144,6 +142,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
                 .imagen("")
                 .fechaHoraAlta(LocalDateTime.now())
                 .build());
+        icono=this.save(icono);
 
         icono.setImagen(guardarImagenBase64(iconoCaracteristica.getUrl(), icono.getId()));
         icono=this.save(icono);
@@ -190,12 +189,12 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
             String mimeType = parts[0].split(";")[0].split(":")[1];
             String contentType = mimeType.equals("image/svg+xml") ? "svg" : "png";
             caracteristicaSubEspacios.add(DTOCaracteristicaSubEspacio.builder()
-                            .id(caracteristica.getId())
-                            .idEspacio(idEspacio)
-                            .idIconoCaracteristica(caracteristica.getIconoCaracteristica().getId())
-                            .nombre(caracteristica.getNombre())
-                            .contentType(contentType)
-                            .urlIcono(base64Data)
+                    .id(caracteristica.getId())
+                    .idEspacio(idEspacio)
+                    .idIconoCaracteristica(caracteristica.getIconoCaracteristica().getId())
+                    .nombre(caracteristica.getNombre())
+                    .contentType(contentType)
+                    .urlIcono(base64Data)
                     .build()
             );
         }
@@ -233,7 +232,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
         }
         Path filePath=Paths.get(iconosDirectorio).resolve(fileName).toAbsolutePath().normalize();
         Files.write(filePath, fileBytes);
-        return filePath.toString();
+        return fileName;
     }
 
     private String encodeFileToBase64(String fileName) {
@@ -242,7 +241,7 @@ public class IconoCaracteristicaServiceImpl extends BaseServiceImpl<IconoCaracte
             byte[] fileContent = Files.readAllBytes(filePath);
 
             String contentType;
-            if (filePath.endsWith(".svg")) {
+            if (fileName.endsWith(".svg")) {
                 contentType = "image/svg+xml";
             } else {
                 contentType = "image/png";

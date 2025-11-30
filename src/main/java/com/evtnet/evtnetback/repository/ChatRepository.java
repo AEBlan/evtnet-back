@@ -2,6 +2,8 @@ package com.evtnet.evtnetback.repository;
 
 import java.util.List;
 import java.util.Optional;
+
+import com.evtnet.evtnetback.entity.Mensaje;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -98,6 +100,15 @@ public interface ChatRepository extends BaseRepository <Chat, Long> {
     ))
     """)
     List<Chat> buscar(String username, String texto);
+
+
+    // First message by user in a chat
+    @Query("SELECT m FROM Mensaje m WHERE m.chat.id = :chatId AND m.usuario.username = :username ORDER BY m.fechaHora ASC LIMIT 1")
+    Optional<Mensaje> findFirstMessageByUserInChat(@Param("chatId") Long chatId, @Param("username") String username);
+
+    // Last message by user in a chat
+    @Query("SELECT m FROM Mensaje m WHERE m.chat.id = :chatId AND m.usuario.username = :username ORDER BY m.fechaHora DESC LIMIT 1")
+    Optional<Mensaje> findLastMessageByUserInChat(@Param("chatId") Long chatId, @Param("username") String username);
 
     // ESPACIO
     List<Chat> findAllByTipoAndEspacio_Id(Chat.Tipo tipo, Long espacioId);

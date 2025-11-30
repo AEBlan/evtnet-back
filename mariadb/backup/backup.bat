@@ -6,7 +6,7 @@ if "%~1"=="" (
 )
 
 set BACKUP_NAME=%~1
-set BACKUP_DIR=C:\app\backups\%BACKUP_NAME%
+set BACKUP_DIR=C:\app\backups_b\%BACKUP_NAME%
 
 echo Creating backup: %BACKUP_NAME%
 

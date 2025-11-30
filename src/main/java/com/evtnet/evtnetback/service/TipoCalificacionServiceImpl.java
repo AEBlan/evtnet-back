@@ -10,6 +10,7 @@ import com.evtnet.evtnetback.repository.TipoCalificacionRepository;
 import com.evtnet.evtnetback.dto.tipoCalificacion.DTOTipoCalificacion;
 import com.evtnet.evtnetback.dto.tipoCalificacion.DTOTipoCalificacionSelect;
 import com.evtnet.evtnetback.util.RegistroSingleton;
+import com.evtnet.evtnetback.util.TimeUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -67,36 +68,37 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
         if (!vigentesFiltro && dadasDeBajaFiltro) {
             spec = spec.and((root, cq, cb) -> cb.isNotNull(root.get("fechaHoraBaja")));
         }
+
         Page<TipoCalificacion> tiposCalificacion = tipoCalificacionRepository.findAll(spec, pageable);
+        Path imagenesPath = Paths.get(imagenesDirectorio);
         List<TipoCalificacion> filtrados = tiposCalificacion
                 .stream()
-                .filter(ic -> ic.getImagen() != null && Files.exists(Paths.get(ic.getImagen())))
+                .filter(ic -> ic.getImagen() != null && Files.exists(imagenesPath.resolve(ic.getImagen())))
                 .toList();
         List<DTOTipoCalificacion> dtos = filtrados.stream().map(ic -> {
-                String base64Image = encodeFileToBase64(ic.getImagen());
-                String[] parts = base64Image.split(",");
-                String base64Data = parts[1];
+            String base64Image = encodeFileToBase64(ic.getImagen());
+            String[] parts = base64Image.split(",");
+            String base64Data = parts[1];
 
-                String extension = "";
-                Path path = Paths.get(ic.getImagen());
-                String fileName = path.getFileName().toString();
+            String extension = "";
+            String fileName = ic.getImagen();
 
-                int dotIndex = fileName.lastIndexOf('.');
-                if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
-                    extension = fileName.substring(dotIndex + 1).toLowerCase();
-                }
+            int dotIndex = fileName.lastIndexOf('.');
+            if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
+                extension = fileName.substring(dotIndex + 1).toLowerCase();
+            }
 
-                String contentType = extension.equals("svg") ? "svg" : "png";
-                    return DTOTipoCalificacion.builder()
-                            .id(ic.getId())
-                            .nombre(ic.getNombre())
-                            .url(base64Data)
-                            .fechaAlta(ic.getFechaHoraAlta()==null ? null
-                                    :ic.getFechaHoraAlta().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                            .fechaBaja(ic.getFechaHoraBaja()==null ? null
-                                    :ic.getFechaHoraBaja().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                            .contentType(contentType)
-                            .build();
+            String contentType = extension.equals("svg") ? "svg" : "png";
+            return DTOTipoCalificacion.builder()
+                    .id(ic.getId())
+                    .nombre(ic.getNombre())
+                    .url(base64Data)
+                    .fechaAlta(ic.getFechaHoraAlta()==null ? null
+                            : TimeUtil.toMillis(ic.getFechaHoraAlta()))
+                    .fechaBaja(ic.getFechaHoraBaja()==null ? null
+                            : TimeUtil.toMillis(ic.getFechaHoraBaja()))
+                    .contentType(contentType)
+                    .build();
         }).toList();
         return new PageImpl<>(dtos, pageable, dtos.size());
     }
@@ -105,9 +107,9 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
     public List<DTOTipoCalificacionSelect> obtenerTiposCalificacionSelect() throws Exception {
         List<TipoCalificacion> tiposCalificacion = tipoCalificacionRepository.findAll();
         return tiposCalificacion.stream().map(tc->DTOTipoCalificacionSelect.builder()
-                    .id(tc.getId())
-                    .nombre(tc.getNombre())
-                    .build())
+                        .id(tc.getId())
+                        .nombre(tc.getNombre())
+                        .build())
                 .collect(Collectors.toList());
     }
 
@@ -121,8 +123,7 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
         String base64Data = parts[1];
 
         String extension = "";
-        Path path = Paths.get(tipoCalificacion.getImagen());
-        String fileName = path.getFileName().toString();
+        String fileName = tipoCalificacion.getImagen();
 
         int dotIndex = fileName.lastIndexOf('.');
         if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
@@ -164,10 +165,12 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
 
         TipoCalificacion entidad = TipoCalificacion.builder()
                 .nombre(dto.getNombre())
-                .imagen(guardarImagenBase64(dto.getUrl(), dto.getId()))
+                .imagen("")
                 .fechaHoraAlta(LocalDateTime.now())
                 .build();
 
+        entidad = this.save(entidad);
+        entidad.setImagen(guardarImagenBase64(dto.getUrl(), entidad.getId()));
         entidad = this.save(entidad);
         registroSingleton.write("Parametros", "tipo_calificacion", "creacion", "TipoCalificacion de ID " + entidad.getId() + " nombre '"+entidad.getNombre()+"'");
 
@@ -279,15 +282,16 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
         }
         Path filePath=Paths.get(imagenesDirectorio).resolve(fileName).toAbsolutePath().normalize();
         Files.write(filePath, fileBytes);
-        return filePath.toString();
+        return fileName;
     }
 
-    private String encodeFileToBase64(String filePath) {
+    private String encodeFileToBase64(String fileName) {
         try {
-            byte[] fileContent = Files.readAllBytes(Paths.get(filePath));
+            Path filePath = Paths.get(imagenesDirectorio).resolve(fileName).toAbsolutePath().normalize();
+            byte[] fileContent = Files.readAllBytes(filePath);
 
             String contentType;
-            if (filePath.endsWith(".svg")) {
+            if (fileName.endsWith(".svg")) {
                 contentType = "image/svg+xml";
             } else {
                 contentType = "image/png";
@@ -296,7 +300,7 @@ public class TipoCalificacionServiceImpl extends BaseServiceImpl <TipoCalificaci
             String base64 = Base64.getEncoder().encodeToString(fileContent);
             return "data:" + contentType + ";base64," + base64;
         } catch (Exception e) {
-            throw new RuntimeException("Error leyendo archivo de imagen: " + filePath, e);
+            throw new RuntimeException("Error leyendo archivo de imagen: " + fileName, e);
         }
     }
 }

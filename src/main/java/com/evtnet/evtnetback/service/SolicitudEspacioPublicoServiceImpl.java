@@ -31,6 +31,9 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
     @Value("${app.storage.documentacion:/app/storage/documentacion}")
     private String directorioBase;
 
+    @Value("${app.storage.perfiles:/app/storage/perfiles}")
+    private String directorioPerfiles;
+
     private final SolicitudEspacioPublicoRepository solicitudEspacioPublicoRepository;
     private final UsuarioRepository usuarioRepository;
     private final SEPEstadoRepository sepEstadoRepository;
@@ -238,7 +241,8 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
                 .build();
 
         if(solicitudEspacioPublico.getSolicitante().getFotoPerfil()!=null){
-            String base64Image = encodeFileToBase64(solicitudEspacioPublico.getSolicitante().getFotoPerfil());
+            Path path = Paths.get(directorioPerfiles);
+            String base64Image = encodeFileToBase64(path.resolve(solicitudEspacioPublico.getSolicitante().getFotoPerfil()).toAbsolutePath().toString());
             String[] parts = base64Image.split(",");
             String base64Data = parts[1];
             String mimeType = parts[0].split(";")[0].split(":")[1];
@@ -270,7 +274,8 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
                     .email(sepEstado.getResponsable().getMail())
                     .build();
             if(sepEstado.getResponsable().getFotoPerfil()!=null){
-                String base64Image = encodeFileToBase64(sepEstado.getResponsable().getFotoPerfil());
+                Path path = Paths.get(directorioPerfiles);
+                String base64Image = encodeFileToBase64(path.resolve(sepEstado.getResponsable().getFotoPerfil()).toAbsolutePath().toString());
                 String[] parts = base64Image.split(",");
                 String base64Data = parts[1];
                 String mimeType = parts[0].split(";")[0].split(":")[1];
@@ -508,7 +513,8 @@ public class SolicitudEspacioPublicoServiceImpl extends BaseServiceImpl <Solicit
                 .build();
 
         if(propietario.getFotoPerfil()!=null){
-            String base64Image = encodeFileToBase64(propietario.getFotoPerfil());
+            Path path = Paths.get(directorioPerfiles);
+            String base64Image = encodeFileToBase64(path.resolve(propietario.getFotoPerfil()).toAbsolutePath().toString());
             String[] parts = base64Image.split(",");
             String base64Data = parts[1];
             String mimeType = parts[0].split(";")[0].split(":")[1];
