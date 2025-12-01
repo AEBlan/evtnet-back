@@ -9,8 +9,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 
+import java.io.BufferedReader;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -279,6 +285,116 @@ public class ReporteService {
                 .datos(datos)
                 .build();
         }
+
+       // 🔹 Reporte: Registraciones e inicios de sesión
+        public DTOReporteRegistracionesIniciosSesion generarReporteRegistracionesIniciosSesion(
+                long fechaDesdeMs,
+                long fechaHastaMs,
+                int anios,
+                int meses,
+                int dias,
+                int horas
+        ) throws Exception {
+
+                if (fechaDesdeMs >= fechaHastaMs)
+                throw new IllegalArgumentException("Ingrese el rango de fechas");
+
+                ZoneId tz = ZoneId.systemDefault();
+                LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
+                LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
+
+                Period periodo = Period.of(anios, meses, dias);
+                Duration duracion = Duration.ofHours(horas);
+
+                List<LocalDateTime[]> intervalos = new ArrayList<>();
+                LocalDateTime cursor = desde;
+
+                while (cursor.isBefore(hasta)) {
+                LocalDateTime next = cursor.plus(periodo).plus(duracion);
+                if (next.isAfter(hasta)) next = hasta;
+                intervalos.add(new LocalDateTime[]{cursor, next});
+                cursor = next;
+                }
+
+                // 📂 Lectura de logs CSV
+                Path logDir = Paths.get("storage/logs/UsuariosGrupos");
+                if (!Files.exists(logDir)) {
+                throw new RuntimeException("No se encontró el directorio de logs: " + logDir.toAbsolutePath());
+                }
+
+                List<RegistroLog> eventos = new ArrayList<>();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+                try (var archivos = Files.list(logDir)) {
+                archivos.filter(p -> p.toString().endsWith(".csv"))
+                        .forEach(path -> {
+                                try (BufferedReader reader = Files.newBufferedReader(path)) {
+                                String linea;
+                                boolean primera = true;
+                                while ((linea = reader.readLine()) != null) {
+                                        if (primera) {
+                                        primera = false;
+                                        continue;
+                                        }
+                                        String[] cols = linea.replace("\"", "").split(",");
+                                        if (cols.length < 3) continue;
+
+                                        String tipo = cols[0].trim();
+                                        String fechaTexto = cols[2].trim();
+
+                                        LocalDateTime fecha;
+                                        try {
+                                        fecha = LocalDateTime.parse(fechaTexto, formatter);
+                                        } catch (Exception e) {
+                                        continue; // si hay formato incorrecto, lo saltamos
+                                        }
+
+                                        eventos.add(new RegistroLog(tipo, fecha));
+                                }
+                                } catch (Exception e) {
+                                System.err.println("Error leyendo log CSV: " + path + " - " + e.getMessage());
+                                }
+                        });
+                }
+
+                // 🔹 Agrupar resultados por intervalos
+                List<DTOReporteRegistracionesIniciosSesion.Dato> datos = new ArrayList<>();
+
+                for (LocalDateTime[] rango : intervalos) {
+                long regs = eventos.stream()
+                        .filter(e -> e.tipo.equalsIgnoreCase("registro"))
+                        .filter(e -> !e.fecha.isBefore(rango[0]) && e.fecha.isBefore(rango[1]))
+                        .count();
+
+                long logins = eventos.stream()
+                        .filter(e -> e.tipo.equalsIgnoreCase("inicio_sesion"))
+                        .filter(e -> !e.fecha.isBefore(rango[0]) && e.fecha.isBefore(rango[1]))
+                        .count();
+
+                double proporcion = regs > 0 ? (double) logins / regs : 0.0;
+
+                datos.add(DTOReporteRegistracionesIniciosSesion.Dato.builder()
+                        .inicio(rango[0].atZone(tz).toInstant())
+                        .fin(rango[1].atZone(tz).toInstant())
+                        .registraciones(regs)
+                        .iniciosSesion(logins)
+                        .proporcion(proporcion)
+                        .build());
+                }
+
+                if (datos.isEmpty())
+                throw new NoSuchElementException("No se encontraron datos en el rango de fechas indicado");
+
+                return DTOReporteRegistracionesIniciosSesion.builder()
+                        .fechaHoraGeneracion(Instant.now())
+                        .datos(datos)
+                        .build();
+        }
+
+        // Clase interna simple para representar un evento
+        private record RegistroLog(String tipo, LocalDateTime fecha) {}
+
+
 
 
 }

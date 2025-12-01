@@ -109,5 +109,19 @@ public class ReporteController {
         return ResponseEntity.ok(dto);
     }
 
+    @GetMapping("/generarRegistracionesIniciosSesion")
+    public ResponseEntity<DTOReporteRegistracionesIniciosSesion> generarRegistracionesIniciosSesion(
+            @RequestParam long fechaDesde,
+            @RequestParam long fechaHasta,
+            @RequestParam(defaultValue = "0") int anios,
+            @RequestParam(defaultValue = "0") int meses,
+            @RequestParam(defaultValue = "7") int dias,
+            @RequestParam(defaultValue = "0") int horas
+    ) throws Exception {
+        var dto = reporteService.generarReporteRegistracionesIniciosSesion(
+                fechaDesde, fechaHasta, anios, meses, dias, horas
+        );
+        return ResponseEntity.ok(dto);
+    }
 
 }
