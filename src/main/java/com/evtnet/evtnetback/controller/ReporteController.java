@@ -78,38 +78,29 @@ public class ReporteController {
     // ===============================================================
     //  Reporte: Participantes por Rango Temporal
     // ===============================================================
-    @GetMapping("/generarParticipantesPorRangoTemporal")
-    public ResponseEntity<DTOReporteParticipantesPorRangoTemporal> generarParticipantesPorRangoTemporal(
-            @RequestParam(name = "todosLosEspacios", defaultValue = "false") boolean todosLosEspacios,
-            @RequestParam(name = "espacios", required = false) List<Long> espaciosIds,
-            @RequestParam(name = "fechaDesde") long fechaDesdeMs,
-            @RequestParam(name = "fechaHasta") long fechaHastaMs,
-            @RequestParam(name = "anios", defaultValue = "0") int anios,
-            @RequestParam(name = "meses", defaultValue = "0") int meses,
-            @RequestParam(name = "dias", defaultValue = "0") int dias,
-            @RequestParam(name = "horas", defaultValue = "0") int horas,
-            @RequestParam(name = "porSubespacio", defaultValue = "false") boolean porSubespacio,
-            Authentication auth
-    ) throws Exception {
-        // 🔹 Obtener username del usuario autenticado
-        String username = auth.getName();
+        @GetMapping("/generarParticipantesPorRangoTemporal")
+        public ResponseEntity<DTOReporteParticipantesPorRangoTemporal> generarParticipantesPorRangoTemporal(
+                @RequestParam boolean todosLosEspacios,
+                @RequestParam List<Long> espacios,
+                @RequestParam Long fechaDesde,
+                @RequestParam Long fechaHasta,
+                @RequestParam int anios,
+                @RequestParam int meses,
+                @RequestParam int dias,
+                @RequestParam int horas
+        ) {
 
-        // 🔹 Llamar al servicio
-        DTOReporteParticipantesPorRangoTemporal dto = reporteService.generarParticipantesPorRangoTemporal(
-                todosLosEspacios,
-                espaciosIds,
-                fechaDesdeMs,
-                fechaHastaMs,
-                anios,
-                meses,
-                dias,
-                horas,
-                porSubespacio,
-                username
-        );
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDateTime desde = Instant.ofEpochMilli(fechaDesde).atZone(zone).toLocalDateTime();
+        LocalDateTime hasta = Instant.ofEpochMilli(fechaHasta).atZone(zone).toLocalDateTime();
+
+        DTOReporteParticipantesPorRangoTemporal dto =
+                reporteService.generarParticipantesPorRangoTemporal(
+                        todosLosEspacios, espacios, desde, hasta, anios, meses, dias, horas
+                );
 
         return ResponseEntity.ok(dto);
-    }
+        }
 
     @GetMapping("/generarRegistracionesIniciosSesion")
     public ResponseEntity<DTOReporteRegistracionesIniciosSesion> generarRegistracionesIniciosSesion(

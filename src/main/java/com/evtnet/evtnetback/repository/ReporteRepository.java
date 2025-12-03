@@ -82,35 +82,21 @@ public interface ReporteRepository extends JpaRepository<Evento, Long> {
 
 
 
-    // ===============================================================
-    //  Contar Participantes por Subespacio y rango de tiempo
-    // ===============================================================
-    @Query("""
-        SELECT
-            sub.id AS subespacioId,
-            sub.nombre AS subespacio,
-            COUNT(i.id) AS participantes
-        FROM Evento e
-        JOIN e.inscripciones i
-        JOIN e.subEspacio sub
-        JOIN sub.espacio esp
-        WHERE esp.id = :espacioId
-        AND e.fechaHoraInicio >= :desde
-        AND e.fechaHoraFin <= :hasta
-        GROUP BY sub.id, sub.nombre
-    """)
-    List<RowParticipantesPorSubespacio> contarParticipantesPorRango(
-            @Param("espacioId") Long espacioId,
-            @Param("desde") LocalDateTime desde,
-            @Param("hasta") LocalDateTime hasta
-    );
 
-    // DTO de proyección para la query
-    public interface RowParticipantesPorSubespacio {
-        Long getSubespacioId();
-        String getSubespacio();
-        long getParticipantes();
-    }
+        @Query("""
+            SELECT COUNT(i.id)
+            FROM Inscripcion i
+            JOIN i.evento e
+            JOIN e.subEspacio s
+            WHERE s.id = :subespacioId
+            AND i.fechaHoraAlta BETWEEN :inicio AND :fin
+        """)
+        Long contarParticipantesEnRangoPorSubespacio(
+                @Param("subespacioId") Long subespacioId,
+                @Param("inicio") LocalDateTime inicio,
+                @Param("fin") LocalDateTime fin
+        );
+
 
     // Ingresos por INSCRIPCIÓN
     @Query("""

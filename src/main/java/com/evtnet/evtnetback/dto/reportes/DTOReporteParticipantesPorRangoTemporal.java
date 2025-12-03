@@ -4,19 +4,22 @@ import lombok.*;
 import java.time.Instant;
 import java.util.List;
 
-@Getter @Setter @Builder
-@NoArgsConstructor @AllArgsConstructor
+@Data
 public class DTOReporteParticipantesPorRangoTemporal {
-    private Instant fechaHoraGeneracion;
-    private List<Dato> datos;
 
-    @Getter @Setter @Builder
-    @NoArgsConstructor @AllArgsConstructor
-    public static class Dato {
+    private Instant fechaHoraGeneracion;
+    private List<Entrada> datos;
+
+    @Data
+    public static class Entrada {
         private String espacio;
-        private String subespacio;
-        private Instant fechaDesde;
-        private Instant fechaHasta;
+        private List<Rango> rangos;
+    }
+
+    @Data
+    public static class Rango {
+        private long inicio;       // epoch millis
+        private long fin;          // epoch millis
         private long participantes;
     }
 }
