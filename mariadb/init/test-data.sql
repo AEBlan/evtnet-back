@@ -1462,4 +1462,71 @@ WHERE e.id = 1
        SELECT 1 FROM chat c WHERE c.espacio_id = e.id
   );
 
+/*Prueba de reporte comisiones, para las pruebas pusimos archivo q pueda ser null, pero solo en remoto
+INSERT INTO evento (
+    id, nombre, descripcion, fecha_hora_inicio, fecha_hora_fin,
+    precio_inscripcion, cantidad_maxima_invitados,
+    cantidad_maxima_participantes, precio_organizacion, adicional_por_inscripcion,
+    subespacio_id
+)
+VALUES (
+    100, 'Torneo de prueba', 'Evento test',
+    '2025-01-10 10:00:00', '2025-01-10 12:00:00',
+    2000, 10, 20, 5000, 0,
+    1
+);
+
+INSERT INTO inscripcion (
+    id, fecha_hora_alta, precio_inscripcion,
+    permitir_devolucion_completa, usuario_id, evento_id
+)
+VALUES (
+    200, '2025-01-05 13:00:00', 2000,
+    true, 1, 100
+);
+INSERT INTO comprobante_pago (
+    id, numero, concepto, fecha_hora_emision,
+    inscripcion_id, evento_id
+)
+VALUES (
+    300, 'C-001', 'Pago inscripción', '2025-01-05 14:00:00',
+    200, 100
+);
+INSERT INTO item_comprobante_pago (
+    id, detalle, monto_unitario, cantidad,
+    cobro_id, pago_id, comprobante_pago_id
+)
+VALUES (
+    400, 'Inscripción evento', 2000, 1,
+    1, 1, 300
+);
+INSERT INTO comprobante_pago (
+    id, numero, concepto, fecha_hora_emision,
+    inscripcion_id, evento_id, archivo
+)
+VALUES (
+    999, 'C-001', 'Pago inscripción', '2025-01-05 14:00:00',
+    200, 100, NULL
+);
+
+INSERT INTO comprobante_pago (
+    id, numero, concepto, fecha_hora_emision,
+    inscripcion_id, evento_id, archivo
+)
+VALUES (
+    1000, 'C-002', 'Pago organización', '2025-01-06 10:00:00',
+    NULL, 100, NULL
+);
+
+INSERT INTO item_comprobante_pago (
+    id, detalle, monto_unitario, cantidad,
+    cobro_id, pago_id, comprobante_pago_id
+)
+VALUES (
+    1001, 'Organización evento', 5000, 1,
+    1, 1, 1000
+);*/
+
+
+
 COMMIT;

@@ -3,6 +3,8 @@ package com.evtnet.evtnetback.controller;
 import com.evtnet.evtnetback.service.ReporteService;
 import com.evtnet.evtnetback.dto.reportes.*;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 
@@ -124,4 +126,28 @@ public class ReporteController {
         return ResponseEntity.ok(dto);
     }
 
+
+    @GetMapping("/generarTiempoMedioMonetizacion")
+    public ResponseEntity<DTOReporteTiempoMedioMonetizacion> generarTiempoMedioMonetizacion(
+            @RequestParam("fechaDesde") Long fechaDesdeMillis,
+            @RequestParam("fechaHasta") Long fechaHastaMillis,
+            @RequestParam int anios,
+            @RequestParam int meses,
+            @RequestParam int dias,
+            @RequestParam int horas
+    ) {
+
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDateTime fechaDesde = Instant.ofEpochMilli(fechaDesdeMillis)
+                .atZone(zone).toLocalDateTime();
+        LocalDateTime fechaHasta = Instant.ofEpochMilli(fechaHastaMillis)
+                .atZone(zone).toLocalDateTime();
+
+        DTOReporteTiempoMedioMonetizacion dto =
+                reporteService.generarTiempoMedioMonetizacion(
+                        fechaDesde, fechaHasta, anios, meses, dias, horas
+                );
+
+        return ResponseEntity.ok(dto);
+    }
 }

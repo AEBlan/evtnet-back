@@ -1,6 +1,7 @@
 package com.evtnet.evtnetback.service;
 
 import com.evtnet.evtnetback.entity.Espacio;
+import com.evtnet.evtnetback.entity.Evento;
 import com.evtnet.evtnetback.repository.EspacioRepository;
 import com.evtnet.evtnetback.repository.ReporteRepository;
 import com.evtnet.evtnetback.dto.reportes.*;
@@ -15,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
 
 import java.io.BufferedReader;
+import java.math.BigDecimal;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -395,6 +397,103 @@ public class ReporteService {
         private record RegistroLog(String tipo, LocalDateTime fecha) {}
 
 
+        public DTOReporteTiempoMedioMonetizacion generarTiempoMedioMonetizacion(
+        LocalDateTime fechaDesde,
+        LocalDateTime fechaHasta,
+        int anios,
+        int meses,
+        int dias,
+        int horas
+                ) {
+
+                Agrupacion agrupacion = determinarAgrupacion(anios, meses, dias, horas);
+                List<Rango> rangos = generarRangos(fechaDesde, fechaHasta, agrupacion);
+
+                DTOReporteTiempoMedioMonetizacion dto = new DTOReporteTiempoMedioMonetizacion();
+                dto.setFechaHoraGeneracion(LocalDateTime.now());
+
+                List<DTOReporteTiempoMedioMonetizacion.Item> items = new ArrayList<>();
+
+                for (Rango r : rangos) {
+
+                        BigDecimal montoIns = reporteRepository.obtenerIngresosPorInscripcion(r.inicio(), r.fin());
+                        BigDecimal montoOrg = reporteRepository.obtenerIngresosPorOrganizacion(r.inicio(), r.fin());
+                        BigDecimal montoCuota = reporteRepository.obtenerCuotaPorEspacio(r.inicio(), r.fin());
+
+                        DTOReporteTiempoMedioMonetizacion.Item item = new DTOReporteTiempoMedioMonetizacion.Item();
+                        item.setInicio(r.inicio());
+                        item.setFin(r.fin());
+
+                        List<DTOReporteTiempoMedioMonetizacion.Medio> medios = new ArrayList<>();
+                        medios.add(crearMedio("Comisión por inscripción", montoIns));
+                        medios.add(crearMedio("Comisión por organización", montoOrg));
+                        medios.add(crearMedio("Cuota por uso del espacio", montoCuota));
+
+                        item.setMedios(medios);
+                        items.add(item);
+                }
+
+                dto.setDatos(items);
+                return dto;
+                }
+
+                private DTOReporteTiempoMedioMonetizacion.Medio crearMedio(String nombre, BigDecimal monto) {
+                DTOReporteTiempoMedioMonetizacion.Medio medio = new DTOReporteTiempoMedioMonetizacion.Medio();
+                medio.setNombre(nombre);
+                medio.setMonto(monto != null ? monto.doubleValue() : 0.0);
+                return medio;
+                }
+
+
+        // ─────────────────────────────────────────────────────────────
+        // AGRUPACIÓN (HORA / DÍA / MES)
+        // ─────────────────────────────────────────────────────────────
+
+        private enum Agrupacion { HORA, DIA, MES }
+
+        private Agrupacion determinarAgrupacion(int anios, int meses, int dias, int horas) {
+                if (horas > 0) return Agrupacion.HORA;
+                if (dias > 0) return Agrupacion.DIA;
+                return Agrupacion.MES;
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // GENERACIÓN DE RANGOS
+        // ─────────────────────────────────────────────────────────────
+
+        private List<Rango> generarRangos(LocalDateTime inicio, LocalDateTime fin, Agrupacion agrupacion) {
+                List<Rango> lista = new ArrayList<>();
+                LocalDateTime cursor = inicio;
+
+                while (!cursor.isAfter(fin)) {
+                LocalDateTime siguiente;
+
+                switch (agrupacion) {
+                        case HORA -> siguiente = cursor.plusHours(1).minusSeconds(1);
+                        case DIA -> siguiente = cursor.toLocalDate().atTime(23, 59, 59);
+                        case MES -> {
+                        LocalDateTime firstOfMonth = cursor.withDayOfMonth(1)
+                                .withHour(0).withMinute(0).withSecond(0).withNano(0);
+                        LocalDateTime lastOfMonth = firstOfMonth.plusMonths(1).minusSeconds(1);
+                        siguiente = lastOfMonth;
+                        }
+                        default -> throw new IllegalStateException("Agrupación no soportada");
+                }
+
+                if (siguiente.isAfter(fin)) {
+                        siguiente = fin;
+                }
+
+                lista.add(new Rango(cursor, siguiente));
+                cursor = siguiente.plusSeconds(1);
+                }
+
+                return lista;
+        }
+
+        private record Rango(LocalDateTime inicio, LocalDateTime fin) {}
+
+        
 
 
 }

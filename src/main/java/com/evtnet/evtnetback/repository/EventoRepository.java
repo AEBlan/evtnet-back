@@ -284,4 +284,5 @@ public interface EventoRepository extends BaseRepository<Evento, Long> {
     List<DTOEvento> findEventosByDisciplinas(@Param("idEspacio") Long idEspacio,
                                           @Param("disciplinas") List<Long> disciplinas);
 
+
 }
