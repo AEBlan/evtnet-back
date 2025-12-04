@@ -1,10 +1,13 @@
 package com.evtnet.evtnetback.service;
 
 
+import com.evtnet.evtnetback.dto.registros.DTORegistro;
 import com.evtnet.evtnetback.entity.*;
 import com.evtnet.evtnetback.repository.*;
 import com.evtnet.evtnetback.dto.reportes.*;
 import com.evtnet.evtnetback.util.CurrentUser;
+import com.evtnet.evtnetback.util.RegistroSingleton;
+import com.evtnet.evtnetback.util.TimeUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
@@ -27,6 +30,7 @@ public class ReporteService {
 
     private final ReporteRepository reporteRepository;
     private final EspacioRepository espacioRepository;
+    private final RegistroSingleton registroSingleton;
 
    /*
 
@@ -190,8 +194,8 @@ public class ReporteService {
                         var datos = filas.stream()
                                 .map(f -> DTOReporteEventosPorEspacio.Dato.builder()
                                         .espacio(f.getEspacio() + " - " + f.getSubespacio())  // Ej: "Club Municipal - Cancha 1"
-                                        .fechaDesde(iDesde)
-                                        .fechaHasta(iHasta)
+                                        .fechaDesde(Instant.ofEpochMilli(TimeUtil.toMillis(f.getInicio())))
+                                        .fechaHasta(Instant.ofEpochMilli(TimeUtil.toMillis(f.getFin())))
                                         .eventos(f.getEventos())
                                         .build())
                                 .sorted(Comparator
@@ -204,191 +208,209 @@ public class ReporteService {
                                 .datos(datos)
                                 .build();
                         }
+    public DTOReporteParticipantesPorRangoTemporal generarParticipantesPorRangoTemporal(
+            boolean todosLosEspacios,
+            List<Long> espaciosIds,
+            LocalDateTime fechaDesde,
+            LocalDateTime fechaHasta,
+            int anios,
+            int meses,
+            int dias,
+            int horas
+    ) throws Exception {
 
-                public DTOReporteParticipantesPorRangoTemporal generarParticipantesPorRangoTemporal(
-                boolean todosLosEspacios,
-                List<Long> espaciosIds,
-                LocalDateTime fechaDesde,
-                LocalDateTime fechaHasta,
-                int anios,
-                int meses,
-                int dias,
-                int horas
-        ) {
+        String username = CurrentUser.getUsername().orElseThrow(() -> new Exception("Inicie sesión para ver esta información"));
 
-        // 1️⃣ Obtener espacios
-        List<Espacio> espacios = todosLosEspacios
-                ? espacioRepository.findAll()
-                : espacioRepository.findAllById(espaciosIds);
+        List<Espacio> espacios = todosLosEspacios && (espaciosIds == null || espaciosIds.isEmpty())
+                ? espacioRepository.findAllByPropietario_Username(username)
+                : (espaciosIds != null ? espacioRepository.findAllById(espaciosIds) : new ArrayList<>());
 
         DTOReporteParticipantesPorRangoTemporal dto = new DTOReporteParticipantesPorRangoTemporal();
         dto.setFechaHoraGeneracion(Instant.now());
 
         List<DTOReporteParticipantesPorRangoTemporal.Entrada> entradas = new ArrayList<>();
 
-        long totalGeneral = 0;  // ⭐ Acumulado para "Todos los espacios"
+        // Generate time ranges
+        List<LocalDateTime[]> rangos = generarRangosTiempo(fechaDesde, fechaHasta, anios, meses, dias, horas);
+
+        // Collect all subespacio IDs
+        List<Long> subEspaciosIds = new ArrayList<>();
 
         for (Espacio esp : espacios) {
+            for (SubEspacio sub : esp.getSubEspacios()) {
+                subEspaciosIds.add(sub.getId());
 
-                for (SubEspacio sub : esp.getSubEspacios()) {
-
-                // ⭐ Cantidad total para ese subespacio
-                Long cantidad = reporteRepository.contarParticipantesEnRangoPorSubespacio(
-                        sub.getId(),
-                        fechaDesde,
-                        fechaHasta
-                );
-                if (cantidad == null) cantidad = 0L;
-
-                totalGeneral += cantidad;
-
-                // ⭐ Crear entrada normal
                 DTOReporteParticipantesPorRangoTemporal.Entrada entrada =
                         new DTOReporteParticipantesPorRangoTemporal.Entrada();
-
                 entrada.setEspacio(esp.getNombre() + " - " + sub.getNombre());
 
-                DTOReporteParticipantesPorRangoTemporal.Rango rango =
-                        new DTOReporteParticipantesPorRangoTemporal.Rango();
+                List<DTOReporteParticipantesPorRangoTemporal.Rango> rangosList = new ArrayList<>();
 
-                rango.setInicio(fechaDesde.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
-                rango.setFin(fechaHasta.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
-                rango.setParticipantes(cantidad);
+                for (LocalDateTime[] rango : rangos) {
+                    Long cantidad = reporteRepository.getInscripcionesEnRangoPorSubespacio(
+                            sub.getId(),
+                            rango[0],
+                            rango[1]
+                    ).stream().map(i -> i.getInvitados().size() + 1).reduce(0, Integer::sum).longValue();
+                    if (cantidad == null) cantidad = 0L;
 
-                entrada.setRangos(List.of(rango));
-                entradas.add(entrada);
+                    DTOReporteParticipantesPorRangoTemporal.Rango r =
+                            new DTOReporteParticipantesPorRangoTemporal.Rango();
+                    r.setInicio(rango[0].atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+                    r.setFin(rango[1].atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+                    r.setParticipantes(cantidad);
+
+                    rangosList.add(r);
                 }
+
+                entrada.setRangos(rangosList);
+                entradas.add(entrada);
+            }
         }
 
-        // 2️⃣ Si pidió "todos los espacios", agregamos un resumen
         if (todosLosEspacios) {
-                DTOReporteParticipantesPorRangoTemporal.Entrada entradaTotal =
-                        new DTOReporteParticipantesPorRangoTemporal.Entrada();
+            DTOReporteParticipantesPorRangoTemporal.Entrada entradaTotal =
+                    new DTOReporteParticipantesPorRangoTemporal.Entrada();
+            entradaTotal.setEspacio("Todos los espacios");
 
-                entradaTotal.setEspacio("Todos los espacios");
+            List<DTOReporteParticipantesPorRangoTemporal.Rango> rangosTotales = new ArrayList<>();
 
-                DTOReporteParticipantesPorRangoTemporal.Rango rangoTotal =
+            for (LocalDateTime[] rango : rangos) {
+                Long cantidadTotal = reporteRepository.contarParticipantesEnRangoPorSubespacios(
+                        subEspaciosIds,
+                        rango[0],
+                        rango[1]
+                );
+                if (cantidadTotal == null) cantidadTotal = 0L;
+
+                DTOReporteParticipantesPorRangoTemporal.Rango r =
                         new DTOReporteParticipantesPorRangoTemporal.Rango();
+                r.setInicio(rango[0].atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+                r.setFin(rango[1].atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+                r.setParticipantes(cantidadTotal);
 
-                rangoTotal.setInicio(fechaDesde.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
-                rangoTotal.setFin(fechaHasta.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
-                rangoTotal.setParticipantes(totalGeneral);
+                rangosTotales.add(r);
+            }
 
-                entradaTotal.setRangos(List.of(rangoTotal));
-                entradas.add(entradaTotal);
+            entradaTotal.setRangos(rangosTotales);
+            entradas.add(entradaTotal);
         }
 
         dto.setDatos(entradas);
         return dto;
+    }
+
+    private List<LocalDateTime[]> generarRangosTiempo(
+            LocalDateTime inicio,
+            LocalDateTime fin,
+            int anios,
+            int meses,
+            int dias,
+            int horas
+    ) throws Exception {
+
+        if (anios == 0 && meses == 0 && dias == 0 && horas == 0) {
+            throw new Exception("Seleccione el tamaño de los rangos");
         }
+        List<LocalDateTime[]> rangos = new ArrayList<>();
+        LocalDateTime current = inicio;
+
+        while (current.isBefore(fin)) {
+            LocalDateTime next = current
+                    .plusYears(anios)
+                    .plusMonths(meses)
+                    .plusDays(dias)
+                    .plusHours(horas);
+
+            if (next.isAfter(fin)) {
+                next = fin;
+            }
+
+            rangos.add(new LocalDateTime[]{current, next});
+            current = next;
+        }
+
+        return rangos;
+    }
 
        // 🔹 Reporte: Registraciones e inicios de sesión
-        public DTOReporteRegistracionesIniciosSesion generarReporteRegistracionesIniciosSesion(
-                long fechaDesdeMs,
-                long fechaHastaMs,
-                int anios,
-                int meses,
-                int dias,
-                int horas
-        ) throws Exception {
+       public DTOReporteRegistracionesIniciosSesion generarReporteRegistracionesIniciosSesion(
+               long fechaDesdeMs,
+               long fechaHastaMs,
+               int anios,
+               int meses,
+               int dias,
+               int horas
+       ) throws Exception {
 
-                if (fechaDesdeMs >= fechaHastaMs)
-                throw new IllegalArgumentException("Ingrese el rango de fechas");
+           if (fechaDesdeMs >= fechaHastaMs)
+               throw new IllegalArgumentException("Ingrese el rango de fechas");
 
-                ZoneId tz = ZoneId.systemDefault();
-                LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
-                LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
+           ZoneId tz = ZoneId.systemDefault();
+           LocalDateTime desde = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaDesdeMs), tz);
+           LocalDateTime hasta = LocalDateTime.ofInstant(Instant.ofEpochMilli(fechaHastaMs), tz);
 
-                Period periodo = Period.of(anios, meses, dias);
-                Duration duracion = Duration.ofHours(horas);
+           Period periodo = Period.of(anios, meses, dias);
+           Duration duracion = Duration.ofHours(horas);
 
-                List<LocalDateTime[]> intervalos = new ArrayList<>();
-                LocalDateTime cursor = desde;
+           List<LocalDateTime[]> intervalos = new ArrayList<>();
+           LocalDateTime cursor = desde;
 
-                while (cursor.isBefore(hasta)) {
-                LocalDateTime next = cursor.plus(periodo).plus(duracion);
-                if (next.isAfter(hasta)) next = hasta;
-                intervalos.add(new LocalDateTime[]{cursor, next});
-                cursor = next;
-                }
+           while (cursor.isBefore(hasta)) {
+               LocalDateTime next = cursor.plus(periodo).plus(duracion);
+               if (next.isAfter(hasta)) next = hasta;
+               intervalos.add(new LocalDateTime[]{cursor, next});
+               cursor = next;
+           }
 
-                // 📂 Lectura de logs CSV
-                Path logDir = Paths.get("storage/logs/UsuariosGrupos");
-                if (!Files.exists(logDir)) {
-                throw new RuntimeException("No se encontró el directorio de logs: " + logDir.toAbsolutePath());
-                }
+           // Read logs using RegistroSingleton
+           List<DTORegistro> registros = registroSingleton.getReader("UsuariosGrupos", desde, hasta).read();
 
-                List<RegistroLog> eventos = new ArrayList<>();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+           // Group results by intervals
+           List<DTOReporteRegistracionesIniciosSesion.Dato> datos = new ArrayList<>();
 
-                try (var archivos = Files.list(logDir)) {
-                archivos.filter(p -> p.toString().endsWith(".csv"))
-                        .forEach(path -> {
-                                try (BufferedReader reader = Files.newBufferedReader(path)) {
-                                String linea;
-                                boolean primera = true;
-                                while ((linea = reader.readLine()) != null) {
-                                        if (primera) {
-                                        primera = false;
-                                        continue;
-                                        }
-                                        String[] cols = linea.replace("\"", "").split(",");
-                                        if (cols.length < 3) continue;
+           for (LocalDateTime[] rango : intervalos) {
+               long regs = registros.stream()
+                       .filter(r -> r.getTipo().equalsIgnoreCase("usuario") && r.getSubtipo().equalsIgnoreCase("creacion"))
+                       .filter(r -> {
+                           LocalDateTime fecha = LocalDateTime.ofInstant(
+                                   Instant.ofEpochMilli(r.getFechaHora()),
+                                   tz
+                           );
+                           return !fecha.isBefore(rango[0]) && fecha.isBefore(rango[1]);
+                       })
+                       .count();
 
-                                        String tipo = cols[0].trim();
-                                        String fechaTexto = cols[2].trim();
+               long logins = registros.stream()
+                       .filter(r -> r.getTipo().equalsIgnoreCase("inicio_sesion"))
+                       .filter(r -> {
+                           LocalDateTime fecha = LocalDateTime.ofInstant(
+                                   Instant.ofEpochMilli(r.getFechaHora()),
+                                   tz
+                           );
+                           return !fecha.isBefore(rango[0]) && fecha.isBefore(rango[1]);
+                       })
+                       .count();
 
-                                        LocalDateTime fecha;
-                                        try {
-                                        fecha = LocalDateTime.parse(fechaTexto, formatter);
-                                        } catch (Exception e) {
-                                        continue; // si hay formato incorrecto, lo saltamos
-                                        }
+               double proporcion = regs > 0 ? (double) logins / regs : 0.0;
 
-                                        eventos.add(new RegistroLog(tipo, fecha));
-                                }
-                                } catch (Exception e) {
-                                System.err.println("Error leyendo log CSV: " + path + " - " + e.getMessage());
-                                }
-                        });
-                }
+               datos.add(DTOReporteRegistracionesIniciosSesion.Dato.builder()
+                       .inicio(rango[0].atZone(tz).toInstant())
+                       .fin(rango[1].atZone(tz).toInstant())
+                       .registraciones(regs)
+                       .iniciosSesion(logins)
+                       .proporcion(proporcion)
+                       .build());
+           }
 
-                // 🔹 Agrupar resultados por intervalos
-                List<DTOReporteRegistracionesIniciosSesion.Dato> datos = new ArrayList<>();
+           if (datos.isEmpty())
+               throw new NoSuchElementException("No se encontraron datos en el rango de fechas indicado");
 
-                for (LocalDateTime[] rango : intervalos) {
-                long regs = eventos.stream()
-                        .filter(e -> e.tipo.equalsIgnoreCase("registro"))
-                        .filter(e -> !e.fecha.isBefore(rango[0]) && e.fecha.isBefore(rango[1]))
-                        .count();
-
-                long logins = eventos.stream()
-                        .filter(e -> e.tipo.equalsIgnoreCase("inicio_sesion"))
-                        .filter(e -> !e.fecha.isBefore(rango[0]) && e.fecha.isBefore(rango[1]))
-                        .count();
-
-                double proporcion = regs > 0 ? (double) logins / regs : 0.0;
-
-                datos.add(DTOReporteRegistracionesIniciosSesion.Dato.builder()
-                        .inicio(rango[0].atZone(tz).toInstant())
-                        .fin(rango[1].atZone(tz).toInstant())
-                        .registraciones(regs)
-                        .iniciosSesion(logins)
-                        .proporcion(proporcion)
-                        .build());
-                }
-
-                if (datos.isEmpty())
-                throw new NoSuchElementException("No se encontraron datos en el rango de fechas indicado");
-
-                return DTOReporteRegistracionesIniciosSesion.builder()
-                        .fechaHoraGeneracion(Instant.now())
-                        .datos(datos)
-                        .build();
-        }
-
-        // Clase interna simple para representar un evento
-        private record RegistroLog(String tipo, LocalDateTime fecha) {}
+           return DTOReporteRegistracionesIniciosSesion.builder()
+                   .fechaHoraGeneracion(Instant.now())
+                   .datos(datos)
+                   .build();
+       }
 
 
         public DTOReporteTiempoMedioMonetizacion generarTiempoMedioMonetizacion(
@@ -398,30 +420,28 @@ public class ReporteService {
         int meses,
         int dias,
         int horas
-                ) {
+                ) throws Exception {
 
                 Agrupacion agrupacion = determinarAgrupacion(anios, meses, dias, horas);
-                List<Rango> rangos = generarRangos(fechaDesde, fechaHasta, agrupacion);
+                List<LocalDateTime[]> rangos = generarRangosTiempo(fechaDesde, fechaHasta, anios, meses, dias, horas);
 
                 DTOReporteTiempoMedioMonetizacion dto = new DTOReporteTiempoMedioMonetizacion();
                 dto.setFechaHoraGeneracion(LocalDateTime.now());
 
                 List<DTOReporteTiempoMedioMonetizacion.Item> items = new ArrayList<>();
 
-                for (Rango r : rangos) {
+                for (LocalDateTime[] r : rangos) {
 
-                        BigDecimal montoIns = reporteRepository.obtenerIngresosPorInscripcion(r.inicio(), r.fin());
-                        BigDecimal montoOrg = reporteRepository.obtenerIngresosPorOrganizacion(r.inicio(), r.fin());
-                        BigDecimal montoCuota = reporteRepository.obtenerCuotaPorEspacio(r.inicio(), r.fin());
+                        BigDecimal montoIns = reporteRepository.obtenerIngresosPorInscripcion(r[0], r[1]);
+                        BigDecimal montoOrg = reporteRepository.obtenerIngresosPorOrganizacion(r[0], r[1]);
 
                         DTOReporteTiempoMedioMonetizacion.Item item = new DTOReporteTiempoMedioMonetizacion.Item();
-                        item.setInicio(r.inicio());
-                        item.setFin(r.fin());
+                        item.setInicio(r[0]);
+                        item.setFin(r[1]);
 
                         List<DTOReporteTiempoMedioMonetizacion.Medio> medios = new ArrayList<>();
                         medios.add(crearMedio("Comisión por inscripción", montoIns));
                         medios.add(crearMedio("Comisión por organización", montoOrg));
-                        medios.add(crearMedio("Cuota por uso del espacio", montoCuota));
 
                         item.setMedios(medios);
                         items.add(item);

@@ -81,14 +81,14 @@ public class ReporteController {
         @GetMapping("/generarParticipantesPorRangoTemporal")
         public ResponseEntity<DTOReporteParticipantesPorRangoTemporal> generarParticipantesPorRangoTemporal(
                 @RequestParam boolean todosLosEspacios,
-                @RequestParam List<Long> espacios,
+                @RequestParam(required = false) List<Long> espacios,
                 @RequestParam Long fechaDesde,
                 @RequestParam Long fechaHasta,
                 @RequestParam int anios,
                 @RequestParam int meses,
                 @RequestParam int dias,
                 @RequestParam int horas
-        ) {
+        ) throws Exception {
 
         ZoneId zone = ZoneId.systemDefault();
         LocalDateTime desde = Instant.ofEpochMilli(fechaDesde).atZone(zone).toLocalDateTime();
@@ -126,7 +126,7 @@ public class ReporteController {
             @RequestParam int meses,
             @RequestParam int dias,
             @RequestParam int horas
-    ) {
+    ) throws Exception {
 
         ZoneId zone = ZoneId.systemDefault();
         LocalDateTime fechaDesde = Instant.ofEpochMilli(fechaDesdeMillis)

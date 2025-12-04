@@ -469,6 +469,8 @@ public class UsuarioServiceImpl extends BaseServiceImpl<Usuario, Long> implement
         }
 
         codigosRegistroPorMail.remove(mail);
+        registroSingleton.write("UsuariosGrupos", "usuario", "creacion", "El usuario se registró", u.getUsername());
+
         return authFromUser(u);
     }
 
