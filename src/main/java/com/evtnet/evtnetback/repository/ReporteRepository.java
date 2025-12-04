@@ -3,6 +3,7 @@ package com.evtnet.evtnetback.repository;
 import com.evtnet.evtnetback.dto.reportes.DatoLocal;
 
 import com.evtnet.evtnetback.entity.Evento;
+import com.evtnet.evtnetback.entity.Inscripcion;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
@@ -55,6 +56,8 @@ public interface ReporteRepository extends JpaRepository<Evento, Long> {
             Long getSubespacioId();
             String getSubespacio();
             long getEventos();
+            LocalDateTime getInicio();
+            LocalDateTime getFin();
         }
 
         @Query("""
@@ -63,7 +66,9 @@ public interface ReporteRepository extends JpaRepository<Evento, Long> {
                 esp.nombre AS espacio,
                 sub.id AS subespacioId,
                 sub.nombre AS subespacio,
-                COUNT(DISTINCT e.id) AS eventos
+                COUNT(DISTINCT e.id) AS eventos,
+                MIN(e.fechaHoraInicio) AS inicio,
+                MAX(e.fechaHoraFin) AS fin
             FROM Evento e
             JOIN e.subEspacio sub
             JOIN sub.espacio esp
@@ -84,15 +89,31 @@ public interface ReporteRepository extends JpaRepository<Evento, Long> {
 
 
         @Query("""
-            SELECT COUNT(i.id)
+            SELECT i
             FROM Inscripcion i
             JOIN i.evento e
             JOIN e.subEspacio s
             WHERE s.id = :subespacioId
             AND i.fechaHoraAlta BETWEEN :inicio AND :fin
+            AND i.fechaHoraBaja IS NULL
         """)
-        Long contarParticipantesEnRangoPorSubespacio(
+        List<Inscripcion> getInscripcionesEnRangoPorSubespacio(
                 @Param("subespacioId") Long subespacioId,
+                @Param("inicio") LocalDateTime inicio,
+                @Param("fin") LocalDateTime fin
+        );
+
+
+        @Query("""
+            SELECT COUNT(i.id)
+            FROM Inscripcion i
+            JOIN i.evento e
+            JOIN e.subEspacio s
+            WHERE s.id IN :subespaciosIds
+            AND i.fechaHoraAlta BETWEEN :inicio AND :fin
+        """)
+        Long contarParticipantesEnRangoPorSubespacios(
+                @Param("subespaciosIds") List<Long> subespaciosIds,
                 @Param("inicio") LocalDateTime inicio,
                 @Param("fin") LocalDateTime fin
         );
@@ -105,6 +126,7 @@ public interface ReporteRepository extends JpaRepository<Evento, Long> {
             JOIN cp.items i
         WHERE cp.fechaHoraEmision BETWEEN :inicio AND :fin
           AND cp.inscripcion IS NOT NULL
+          AND i.cobro IS NULL
     """)
     BigDecimal obtenerIngresosPorInscripcion(
             @Param("inicio") LocalDateTime inicio,
@@ -119,6 +141,7 @@ public interface ReporteRepository extends JpaRepository<Evento, Long> {
         WHERE cp.fechaHoraEmision BETWEEN :inicio AND :fin
           AND cp.evento IS NOT NULL
           AND cp.inscripcion IS NULL
+          AND i.cobro IS NULL
     """)
     BigDecimal obtenerIngresosPorOrganizacion(
             @Param("inicio") LocalDateTime inicio,
