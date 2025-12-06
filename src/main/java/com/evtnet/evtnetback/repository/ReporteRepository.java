@@ -105,14 +105,15 @@ public interface ReporteRepository extends JpaRepository<Evento, Long> {
 
 
         @Query("""
-            SELECT COUNT(i.id)
+            SELECT i
             FROM Inscripcion i
             JOIN i.evento e
             JOIN e.subEspacio s
             WHERE s.id IN :subespaciosIds
             AND i.fechaHoraAlta BETWEEN :inicio AND :fin
+            AND i.fechaHoraBaja IS NULL
         """)
-        Long contarParticipantesEnRangoPorSubespacios(
+        List<Inscripcion> getInscripcionesEnRangoPorSubespacios(
                 @Param("subespaciosIds") List<Long> subespaciosIds,
                 @Param("inicio") LocalDateTime inicio,
                 @Param("fin") LocalDateTime fin
