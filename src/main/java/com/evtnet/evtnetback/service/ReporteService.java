@@ -276,11 +276,11 @@ public class ReporteService {
             List<DTOReporteParticipantesPorRangoTemporal.Rango> rangosTotales = new ArrayList<>();
 
             for (LocalDateTime[] rango : rangos) {
-                Long cantidadTotal = reporteRepository.contarParticipantesEnRangoPorSubespacios(
+                Long cantidadTotal = reporteRepository.getInscripcionesEnRangoPorSubespacios(
                         subEspaciosIds,
                         rango[0],
                         rango[1]
-                );
+                ).stream().map(i -> i.getInvitados().size() + 1).reduce(0, Integer::sum).longValue();
                 if (cantidadTotal == null) cantidadTotal = 0L;
 
                 DTOReporteParticipantesPorRangoTemporal.Rango r =
