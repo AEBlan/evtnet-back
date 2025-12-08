@@ -24,7 +24,7 @@ public class BackupController extends BaseControllerImpl <ProgramacionBackup, Ba
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener los backups - "+e.getMessage()
+                    "No se pudo obtener los backups"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -37,7 +37,7 @@ public class BackupController extends BaseControllerImpl <ProgramacionBackup, Ba
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener la última programación - "+e.getMessage()
+                    "No se pudo obtener la última programación"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -51,7 +51,7 @@ public class BackupController extends BaseControllerImpl <ProgramacionBackup, Ba
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener crear la copia manual - "+e.getMessage()
+                    "No se pudo obtener crear la copia manual"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -65,7 +65,7 @@ public class BackupController extends BaseControllerImpl <ProgramacionBackup, Ba
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener programar la copia automática - "+e.getMessage()
+                    "No se pudo obtener programar la copia automática"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -79,7 +79,7 @@ public class BackupController extends BaseControllerImpl <ProgramacionBackup, Ba
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo eliminar la copia - "+e.getMessage()
+                    "No se pudo eliminar la copia"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

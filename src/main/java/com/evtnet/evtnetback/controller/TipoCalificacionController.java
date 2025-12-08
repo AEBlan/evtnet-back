@@ -69,7 +69,7 @@ public class TipoCalificacionController extends BaseControllerImpl <TipoCalifica
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo dar de alta el tipo de calificación. "+e.getMessage()
+                    "No se pudo dar de alta el tipo de calificación"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -84,7 +84,7 @@ public class TipoCalificacionController extends BaseControllerImpl <TipoCalifica
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo actualizar el tipo de calificación. "+e.getMessage()
+                    "No se pudo actualizar el tipo de calificación"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -114,7 +114,7 @@ public class TipoCalificacionController extends BaseControllerImpl <TipoCalifica
         catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo restaurar el tipo de calificación. "+e.getMessage()
+                    "No se pudo restaurar el tipo de calificación"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

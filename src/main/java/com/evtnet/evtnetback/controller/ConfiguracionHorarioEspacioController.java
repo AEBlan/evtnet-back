@@ -28,7 +28,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los cronogramas del espacio - "+e.getMessage()
+                    "No se pudieron obtener los cronogramas del espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -41,7 +41,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener el cronograma - "+e.getMessage()
+                    "No se pudo obtener el cronograma"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -54,7 +54,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener el detalle del cronograma - "+e.getMessage()
+                    "No se pudo obtener el detalle del cronograma"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -68,7 +68,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         }catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo eliminar el horario - "+e.getMessage()
+                    "No se pudo eliminar el horario"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -81,7 +81,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener la excepciones del cronograma - "+e.getMessage()
+                    "No se pudieron obtener la excepciones del cronograma"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -95,7 +95,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         }catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo eliminar la excepción - "+e.getMessage()
+                    "No se pudo eliminar la excepción"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -108,7 +108,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se verificar la vigencia del cronograma - "+e.getMessage()
+                    "No se verificar la vigencia del cronograma"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -123,7 +123,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         }catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo crear el cronograma - "+e.getMessage()
+                    "No se pudo crear el cronograma"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -136,7 +136,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los datos del cronograma - "+e.getMessage()
+                    "No se pudieron obtener los datos del cronograma"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -150,7 +150,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         }catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo crear el horario - "+e.getMessage()
+                    "No se pudo crear el horario"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -163,7 +163,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los datos del cronograma - "+e.getMessage()
+                    "No se pudieron obtener los datos del cronograma"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -177,7 +177,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         }catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo crear la excepción - "+e.getMessage()
+                    "No se pudo crear la excepción"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -190,7 +190,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los horarios disponibles - "+e.getMessage()
+                    "No se pudieron obtener los horarios disponibles"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -203,7 +203,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los períodos libres - "+e.getMessage()
+                    "No se pudieron obtener los períodos libres"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -217,7 +217,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         }catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo crear el cronograma - "+e.getMessage()
+                    "No se pudo crear el cronograma"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -230,7 +230,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener el valor de comisión - "+e.getMessage()
+                    "No se pudo obtener el valor de comisión"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -243,7 +243,7 @@ public class ConfiguracionHorarioEspacioController extends BaseControllerImpl <C
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener el valor de comisión - "+e.getMessage()
+                    "No se pudo obtener el valor de comisión"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
