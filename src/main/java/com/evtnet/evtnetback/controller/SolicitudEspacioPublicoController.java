@@ -29,7 +29,7 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo crear la solicitud de espacio público - "+e.getMessage()
+                    "No se pudo crear la solicitud de espacio público"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -42,7 +42,7 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener las solictudes de espacio público - "+e.getMessage()
+                    "No se pudieron obtener las solictudes de espacio público"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -55,7 +55,7 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener la solicitud de espacio público - "+e.getMessage()
+                    "No se pudo obtener la solicitud de espacio público"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -69,7 +69,7 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo cambiar el estado de la solicitud de espacio público - "+e.getMessage()
+                    "No se pudo cambiar el estado de la solicitud de espacio público"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -82,7 +82,7 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los espacios - "+e.getMessage()
+                    "No se pudieron obtener los espacios"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -96,7 +96,7 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo vincular el espacio a la solicitud - "+e.getMessage()
+                    "No se pudo vincular el espacio a la solicitud"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -109,7 +109,7 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener las solictudes de espacio privado - "+e.getMessage()
+                    "No se pudieron obtener las solictudes de espacio privado"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -122,7 +122,7 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener la solicitud de espacio privado - "+e.getMessage()
+                    "No se pudo obtener la solicitud de espacio privado"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -148,7 +148,7 @@ public class SolicitudEspacioPublicoController extends BaseControllerImpl <Solic
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo cambiar el estado de la solicitud de espacio privado - "+e.getMessage()
+                    "No se pudo cambiar el estado de la solicitud de espacio privado"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

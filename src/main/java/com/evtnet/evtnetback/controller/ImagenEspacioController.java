@@ -54,7 +54,7 @@ public class ImagenEspacioController extends BaseControllerImpl<ImagenEspacio, I
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener la imagen - "+e.getMessage()
+                    "No se pudo obtener la imagen"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -68,7 +68,7 @@ public class ImagenEspacioController extends BaseControllerImpl<ImagenEspacio, I
         }catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron actualizar las imágenes - "+e.getMessage()
+                    "No se pudieron actualizar las imágenes"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }

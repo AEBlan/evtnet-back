@@ -122,7 +122,6 @@ public class IconoCaracteristicaController extends BaseControllerImpl <IconoCara
             Path path = Paths.get(icono.getImagen());
             byte[] imagenBytes = Files.readAllBytes(path);
 
-            // Deducir tipo MIME (por ejemplo, image/png o image/jpeg)
             String mimeType = Files.probeContentType(path);
 
             return ResponseEntity.ok()

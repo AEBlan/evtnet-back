@@ -35,7 +35,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo crear el espacio - "+e.getMessage()
+                    "No se pudo crear el espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -51,7 +51,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo crear el espacio - "+e.getMessage()
+                    "No se pudo crear el espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -64,7 +64,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener el espacio - "+e.getMessage()
+                    "No se pudo obtener el espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -77,7 +77,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener el espacio - "+e.getMessage()
+                    "No se pudo obtener el espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -94,7 +94,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo editar el espacio - "+e.getMessage()
+                    "No se pudo editar el espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -108,7 +108,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo eliminar el administrador - "+e.getMessage()
+                    "No se pudo eliminar el administrador"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -123,7 +123,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo obtener el nombre del espacio - "+e.getMessage()
+                    "No se pudo obtener el nombre del espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -136,7 +136,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los tipos de espacio - "+e.getMessage()
+                    "No se pudieron obtener los tipos de espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -149,7 +149,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los espacios - "+e.getMessage()
+                    "No se pudieron obtener los espacios"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -162,7 +162,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los espacios - "+e.getMessage()
+                    "No se pudieron obtener los espacios"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -175,7 +175,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los eventos del espacio - "+e.getMessage()
+                    "No se pudieron obtener los eventos del espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -188,7 +188,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los usuarios no administradores - "+e.getMessage()
+                    "No se pudieron obtener los usuarios no administradores"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -201,7 +201,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los administradores del espacio - "+e.getMessage()
+                    "No se pudieron obtener los administradores del espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -215,7 +215,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo eliminar el administrador de espacio - "+e.getMessage()
+                    "No se pudo eliminar el administrador de espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -229,7 +229,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo agregar el administrador del espacio - "+e.getMessage()
+                    "No se pudo agregar el administrador del espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -243,7 +243,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo entregar la propiedad del espacio - "+e.getMessage()
+                    "No se pudo entregar la propiedad del espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -257,7 +257,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo agregar el encargado del subespacio - "+e.getMessage()
+                    "No se pudo agregar el encargado del subespacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -270,7 +270,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los subespacios y sus encargados - "+e.getMessage()
+                    "No se pudieron obtener los subespacios y sus encargados"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -283,7 +283,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener las reseñas del espacio - "+e.getMessage()
+                    "No se pudieron obtener las reseñas del espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -296,7 +296,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo crear la reseña para el espacio - "+e.getMessage()
+                    "No se pudo crear la reseña para el espacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -323,7 +323,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudieron obtener los espacios - "+e.getMessage()
+                    "No se pudieron obtener los espacios"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
@@ -337,7 +337,7 @@ public class EspacioController extends BaseControllerImpl <Espacio, EspacioServi
         } catch (Exception e) {
             HttpErrorException error = new HttpErrorException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "No se pudo crear la característica para el subespacio - "+e.getMessage()
+                    "No se pudo crear la característica para el subespacio"
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
